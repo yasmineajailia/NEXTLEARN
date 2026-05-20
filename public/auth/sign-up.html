@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inscription - NextLearn</title>
+
+    <!-- Shared fonts keep visual consistency with the landing page. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Dedicated auth stylesheet for better folder/file separation. -->
+    <link rel="stylesheet" href="/auth/auth.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <!-- Sign-up panel with minimal registration fields. -->
+      <section class="auth-panel" aria-labelledby="signup-title">
+        <div class="brand-line">
+          <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn" />
+          <span class="brand-by">by</span>
+          <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
+        </div>
+
+        <h1 id="signup-title">Créer un compte</h1>
+        <p class="auth-subtitle">Créez votre compte avec un identifiant et un mot de passe.</p>
+
+        <!-- Sign-up form bound to client-side registration logic below. -->
+        <form class="auth-form" id="signup-form">
+          <div id="message-container" class="message-container" style="display: none;"></div>
+          <label>
+            Nom complet
+            <input type="text" name="fullName" placeholder="Votre nom complet" required />
+          </label>
+
+          <label>
+            Identifiant
+            <input type="text" name="identifier" placeholder="Choisissez un identifiant" required />
+          </label>
+
+          <label>
+            Mot de passe
+            <input type="password" name="password" placeholder="Choisissez un mot de passe" required />
+          </label>
+
+          <button class="auth-submit" type="submit">Créer mon compte</button>
+        </form>
+
+        <p class="auth-alt">
+          Vous avez deja un compte ?
+          <a href="/sign-in">Connectez-vous</a>
+        </p>
+      </section>
+
+      <!-- Right-side context panel to support account creation intent. -->
+      <aside class="auth-aside" aria-label="Presentation NextLearn">
+        <h2>Transformez vos objectifs en progression mesurable.</h2>
+        <p>
+          Inscrivez-vous pour obtenir des recommandations de contenu, suivre votre évolution et
+          apprendre a votre rythme.
+        </p>
+        <a class="back-link" href="/">Retour à l'accueil</a>
+      </aside>
+    </main>
+
+    <script>
+      const form = document.getElementById('signup-form');
+      const messageContainer = document.getElementById('message-container');
+
+      if (!form || !messageContainer) {
+        console.error('Sign-up form elements not found');
+      } else {
+        form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = form.fullName.value.trim();
+        const identifier = form.identifier.value.trim();
+        const password = form.password.value;
+
+        try {
+          const response = await fetch('/api/sign-up', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fullName, identifier, password })
+          });
+
+          const data = await response.json().catch(() => ({}));
+
+          if (response.ok) {
+            messageContainer.className = 'message-container success';
+            messageContainer.textContent = data.message;
+            messageContainer.style.display = 'block';
+            setTimeout(() => {
+              window.location.href = '/sign-in';
+            }, 1500);
+          } else {
+            messageContainer.className = 'message-container error';
+            messageContainer.textContent = data.error || 'Erreur lors de la creation du compte';
+            messageContainer.style.display = 'block';
+          }
+        } catch (error) {
+          messageContainer.className = 'message-container error';
+          messageContainer.textContent = 'Erreur reseau';
+          messageContainer.style.display = 'block';
+        }
+        });
+      }
+    </script>
+  </body>
+</html>

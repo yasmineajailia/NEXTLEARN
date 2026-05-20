@@ -1,0 +1,52 @@
+1.1 : semaine 1
+1.2 : semaine 1
+1.3 : semaine 1
+1.4 : semaine 1
+1.5 : semaine 1
+1.6 : semaine 1
+1.7 : semaine 1
+
+2.1 : semaine 2 
+2.2 : semaine 2
+2.3 : semaine 2
+
+3.1 : semaine 3
+3.2 : semaine 3
+3.3 : semaine 3
+3.4 : semaine 3
+
+4.1 : semaine 4
+4.2 : semaine 4
+4.3 : semaine 4
+4.4 : semaine 4
+4.5 : semaine 4
+4.6 : semaine 4
+4.7 : semaine 4
+4.8 : semaine 5
+4.9 : semaine 5
+
+5.1 : semaine 6
+5.2 : semaine 6
+5.3 : semaine 6
+5.4 : semaine 6
+5.5 : semaine 6
+5.6 : semaine 6
+5.7 : semaine 6
+
+6.1 : semaine 7
+6.2 : semaine 7
+6.3 : semaine 8
+
+7.1 : semaine 9
+7.2 : semaine 9
+7.3 : semaine 10
+
+8.1 : semaine 11
+8.2 : semaine 11
+8.3 : semaine 11
+8.4 : semaine 11
+8.5 : semaine 12
+8.6 : semaine 12
+
+
+

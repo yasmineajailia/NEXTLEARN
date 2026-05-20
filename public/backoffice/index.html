@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backoffice - NextLearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/backoffice/backoffice.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <div class="backoffice-shell">
+      <aside class="sidebar">
+        <div>
+          <div class="brand-line backoffice-brand-line">
+            <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn" />
+            <span class="brand-by">by</span>
+            <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
+          </div>
+
+          <article class="role-box" aria-label="Compte connecte">
+            <label>Connecté en tant que</label>
+            <strong id="sidebar-user-name">Utilisateur</strong>
+            <span id="sidebar-user-role" class="sidebar-role-chip">Enseignant</span>
+          </article>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Sections du back-office">
+          <button data-view="overview" class="nav-item active" type="button">Vue d'ensemble</button>
+          <button data-view="content" class="nav-item" type="button">Gestion des modules</button>
+          <button data-view="teachers" class="nav-item" type="button">Gestion des enseignants</button>
+          <button data-view="classes-create" class="nav-item" type="button">Ajouter une classe</button>
+          <button data-view="classes-access" class="nav-item" type="button">Gérer l'accès aux modules</button>
+          <button data-view="students" class="nav-item" type="button">Gestion des étudiants</button>
+          <button data-view="quiz-generator" class="nav-item" type="button">Générer des quiz</button>
+        </nav>
+
+        <a href="/" class="sidebar-home-link">Retour à l'accueil</a>
+      </aside>
+
+      <main class="main-panel">
+        <header class="panel-header">
+          <div>
+            <p class="eyebrow" id="panel-eyebrow">Vue d'ensemble</p>
+            <h2 id="panel-title">Tableau de bord de progression</h2>
+          </div>
+        </header>
+
+        <section class="view active" id="view-overview">
+          <div class="filters">
+            <label>
+              Filtre classe
+              <select id="overview-class-filter"></select>
+            </label>
+            <label>
+              Filtre étudiant
+              <select id="overview-student-filter"></select>
+            </label>
+          </div>
+
+          <div class="kpi-grid" id="kpi-grid"></div>
+
+          <div class="overview-graphs" id="overview-graphs"></div>
+
+          <div class="panel-grid">
+            <article class="card wide">
+              <h3>Résumé par classe</h3>
+              <div id="class-summary-table" class="table-wrap"></div>
+            </article>
+            <article class="card wide">
+              <h3>Résumé par étudiant</h3>
+              <div id="student-summary-table" class="table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-content">
+          <section class="content-panel active" id="content-panel-module" role="tabpanel">
+            <article class="card" id="module-management-card">
+              <div id="content-management-list" class="content-management-list"></div>
+            </article>
+
+            <article class="card" id="module-insert-page" hidden>
+              <div class="editor-head">
+                <h3 id="module-insert-title">Ajouter un module</h3>
+                <button type="button" id="module-insert-cancel" class="secondary-btn">Retour liste modules</button>
+              </div>
+
+              <form id="module-insert-form" class="stack-form">
+                <label>
+                  Nom du module
+                  <input type="text" id="module-insert-name" required placeholder="Exemple: Fonctions avancees" />
+                </label>
+                <div class="button-row">
+                  <button type="submit">Inserer le module</button>
+                  <button type="button" id="module-insert-cancel-bottom" class="secondary-btn">Annuler</button>
+                </div>
+              </form>
+            </article>
+
+            <article class="card" id="module-editor-page" hidden>
+              <div class="editor-head">
+                <h3 id="module-editor-title">Modifier le module</h3>
+                <button type="button" id="module-editor-close" class="secondary-btn">Retour à la liste</button>
+              </div>
+
+              <form id="module-edit-form" class="stack-form">
+                <label>
+                  Nom du module
+                  <input type="text" id="module-edit-name" required />
+                </label>
+                <div class="button-row">
+                  <button type="submit">Enregistrer le module</button>
+                  <button type="button" id="module-delete-btn" class="danger-btn">Supprimer le module</button>
+                </div>
+              </form>
+
+              <h4>Sous-acquis du module</h4>
+              <div id="module-editor-sub-list" class="module-editor-sub-list"></div>
+
+              <section id="module-add-sub-section" class="sub-acquis-create-shell" hidden>
+                <div class="editor-head sub-acquis-create-head">
+                  <h4 id="module-add-sub-title">Ajouter un sous-acquis</h4>
+                  <button type="button" id="module-add-sub-cancel" class="secondary-btn">Annuler</button>
+                </div>
+
+                <form id="module-add-sub-form" class="stack-form two-col sub-acquis-create-form">
+                  <label>
+                    Nom du sous-acquis
+                    <input type="text" name="subName" required placeholder="Exemple: Allocation dynamique" />
+                  </label>
+                  <label>
+                    Taxonomie de Bloom
+                    <select name="bloomLevel" required>
+                      <option value="">Selectionner un niveau</option>
+                      <option value="Memoriser">Memoriser</option>
+                      <option value="Comprendre">Comprendre</option>
+                      <option value="Appliquer">Appliquer</option>
+                      <option value="Analyser">Analyser</option>
+                      <option value="Evaluer">Evaluer</option>
+                      <option value="Creer">Creer</option>
+                    </select>
+                  </label>
+                  <label>
+                    Nombre de lecons
+                    <input type="number" min="1" name="lessonsCount" value="1" required />
+                  </label>
+                  <label>
+                    Support PDF/PPT
+                    <input type="file" name="resourceFile" required accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                  </label>
+                  <label class="full-row">
+                    Lien video
+                    <input type="url" name="videoUrl" placeholder="https://..." />
+                  </label>
+                  <div class="button-row full-row sub-quiz-action-row">
+                    <button type="button" id="open-sub-quiz-builder" class="secondary-btn">Ajouter un quiz</button>
+                    <span id="sub-quiz-builder-status" class="sub-quiz-status-chip"></span>
+                  </div>
+                  <div class="button-row full-row sub-acquis-submit-row">
+                    <button type="submit">Ajouter le sous-acquis</button>
+                  </div>
+                </form>
+              </section>
+            </article>
+
+            <article class="card" id="sub-quiz-builder-page" hidden>
+              <div class="editor-head">
+                <h3>Configurer le quiz du nouveau sous-acquis</h3>
+                <button type="button" id="sub-quiz-builder-back" class="secondary-btn">Retour ajout sous-acquis</button>
+              </div>
+
+              <form id="sub-quiz-builder-meta-form" class="stack-form two-col">
+                <label>
+                  Titre du quiz
+                  <input type="text" id="sub-quiz-title" placeholder="Exemple: Quiz 1" />
+                </label>
+                <label>
+                  Type du quiz
+                  <select id="sub-quiz-type">
+                    <option value="qcm">QCM</option>
+                    <option value="vrai-faux">Vrai/Faux</option>
+                    <option value="reponse-courte">Reponse courte</option>
+                  </select>
+                </label>
+
+                <label class="full-row">
+                  Question
+                  <textarea id="sub-quiz-question" rows="2" placeholder="Saisir une question"></textarea>
+                </label>
+                <div class="full-row" id="sub-quiz-options-list"></div>
+                <div class="button-row full-row">
+                  <button type="button" id="sub-quiz-add-option" class="secondary-btn">Ajouter une option</button>
+                </div>
+                <label>
+                  Bonne reponse
+                  <select id="sub-quiz-correct-answer"></select>
+                </label>
+
+                <div class="button-row full-row">
+                  <button type="button" id="sub-quiz-add-question" class="secondary-btn">Ajouter la question</button>
+                  <button type="button" id="sub-quiz-clear" class="danger-btn">Supprimer le quiz</button>
+                </div>
+              </form>
+
+              <div class="draft-list-wrap">
+                <h4>Questions ajoutees</h4>
+                <ul id="sub-quiz-draft-list" class="draft-list"></ul>
+              </div>
+            </article>
+
+            <article class="card" id="sub-editor-page" hidden>
+              <div class="editor-head">
+                <h3 id="sub-editor-title">Modifier le sous-acquis</h3>
+                <button type="button" id="sub-editor-back" class="secondary-btn">Retour module</button>
+              </div>
+
+              <form id="sub-edit-form" class="stack-form two-col">
+                <label>
+                  Nom du sous-acquis
+                  <input type="text" id="sub-edit-name" required />
+                </label>
+                <label>
+                  Taxonomie de Bloom
+                  <select id="sub-edit-bloom" required>
+                    <option value="">Selectionner un niveau</option>
+                    <option value="Memoriser">Memoriser</option>
+                    <option value="Comprendre">Comprendre</option>
+                    <option value="Appliquer">Appliquer</option>
+                    <option value="Analyser">Analyser</option>
+                    <option value="Evaluer">Evaluer</option>
+                    <option value="Creer">Creer</option>
+                  </select>
+                </label>
+                <label>
+                  Nombre de lecons
+                  <input type="number" min="0" id="sub-edit-lessons" required />
+                </label>
+                <label>
+                  Remplacer support PDF/PPT
+                  <input type="file" id="sub-edit-resource-file" accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                </label>
+                <label class="full-row">
+                  Lien video
+                  <input type="url" id="sub-edit-video-url" placeholder="https://..." />
+                </label>
+                <label class="full-row">
+                  Quiz a modifier
+                  <select id="sub-edit-quiz-select"></select>
+                </label>
+                <label>
+                  Titre quiz
+                  <input type="text" id="sub-edit-quiz-title" />
+                </label>
+                <label>
+                  Type quiz
+                  <select id="sub-edit-quiz-type">
+                    <option value="qcm">QCM</option>
+                    <option value="vrai-faux">Vrai/Faux</option>
+                    <option value="reponse-courte">Reponse courte</option>
+                  </select>
+                </label>
+                <label class="full-row">
+                  Questions du quiz (JSON)
+                  <textarea id="sub-edit-quiz-questions" rows="8" placeholder='[{"prompt":"...","options":["A","B","C","D"],"correctAnswerIndex":0}]'></textarea>
+                </label>
+                <div class="button-row full-row">
+                  <button type="submit">Enregistrer le sous-acquis</button>
+                  <button type="button" id="sub-edit-delete-btn" class="danger-btn">Supprimer ce sous-acquis</button>
+                </div>
+              </form>
+            </article>
+          </section>
+        </section>
+
+        <section class="view" id="view-teachers">
+          <div class="panel-grid">
+            <article class="card wide">
+              <h3 id="teacher-form-title">Ajouter un enseignant</h3>
+              <form id="teacher-form" class="stack-form">
+                <label>
+                  Nom complet
+                  <input type="text" name="teacherFullName" required placeholder="Exemple: Sami Ben Ali" />
+                </label>
+                <label>
+                  Email de l'enseignant
+                  <input type="email" name="teacherEmail" required placeholder="Exemple: sami@nextlearn.tn" />
+                </label>
+                <label>
+                  Numéro de téléphone
+                  <input type="tel" name="teacherPhone" required placeholder="Exemple: +216 20 000 000" />
+                </label>
+                <label>
+                  Mot de passe
+                  <input type="password" name="teacherPassword" required minlength="6" placeholder="Minimum 6 caracteres" />
+                </label>
+                <div class="button-row">
+                  <button type="submit" id="teacher-submit-btn">Ajouter l'enseignant</button>
+                  <button type="button" id="teacher-cancel-edit" class="secondary-btn" hidden>Annuler modification</button>
+                </div>
+              </form>
+            </article>
+          </div>
+
+          <article class="card">
+            <h3>Liste des enseignants</h3>
+            <div id="teacher-table" class="table-wrap"></div>
+          </article>
+        </section>
+
+        <section class="view" id="view-classes-create">
+          <div class="panel-grid">
+            <article class="card wide classes-create-card">
+              <h3>Ajouter une classe</h3>
+              <form id="class-form" class="stack-form classes-create-form">
+                <label>
+                  Nom de la classe
+                  <input type="text" name="className" required placeholder="Exemple: INFO-2A" />
+                </label>
+                <label>
+                  Enseignant
+                  <select id="class-teacher-select" name="teacherId" required></select>
+                </label>
+                <button type="submit">Creer la classe</button>
+              </form>
+            </article>
+          </div>
+
+          <article class="card">
+            <h3>Classes</h3>
+            <div id="class-table" class="table-wrap"></div>
+          </article>
+        </section>
+
+        <section class="view" id="view-classes-access">
+          <div class="panel-grid">
+            <article class="card wide classes-access-card">
+              
+
+              
+              <form id="schedule-form" class="stack-form classes-access-form">
+                <label>
+                  Date de démarrage des cours
+                  <div class="schedule-date-picker" id="schedule-date-picker">
+                    <input id="schedule-start-date" name="startDate" type="hidden" />
+
+                    <button
+                      type="button"
+                      id="schedule-date-trigger"
+                      class="schedule-date-trigger"
+                      aria-haspopup="dialog"
+                      aria-expanded="false"
+                      aria-controls="schedule-date-popup"
+                    >
+                      <span id="schedule-date-trigger-label">Choisir une date</span>
+                    </button>
+
+                    <section id="schedule-date-popup" class="schedule-date-popup" role="dialog" hidden>
+                      <header class="schedule-date-popup-head">
+                        <button type="button" id="schedule-date-prev" class="schedule-date-nav" aria-label="Mois précédent">‹</button>
+                        <strong id="schedule-date-month-label">Mois</strong>
+                        <button type="button" id="schedule-date-next" class="schedule-date-nav" aria-label="Mois suivant">›</button>
+                      </header>
+
+                      <div class="schedule-date-weekdays" aria-hidden="true">
+                        <span>Lun</span>
+                        <span>Mar</span>
+                        <span>Mer</span>
+                        <span>Jeu</span>
+                        <span>Ven</span>
+                        <span>Sam</span>
+                        <span>Dim</span>
+                      </div>
+
+                      <div id="schedule-date-grid" class="schedule-date-grid"></div>
+                    </section>
+                  </div>
+                </label>
+                <button type="submit">Générer le calendrier global</button>
+              </form>
+
+              <hr />
+<h3>Gérer l'accès aux modules des classes</h3>
+              <form id="access-form" class="stack-form classes-access-form">
+                <label>
+                  Classe
+                  <select id="access-class-select" name="classId" required></select>
+                </label>
+                <label>
+                  Module
+                  <select id="access-module-select" name="moduleId" required></select>
+                </label>
+                <label>
+                  Règle d'accès
+                  <select name="accessRule" required>
+                    <option value="granted">Autoriser l'accès</option>
+                    <option value="blocked">Bloquer l'accès</option>
+                  </select>
+                </label>
+                <button type="submit">Appliquer la règle</button>
+              </form>
+            </article>
+
+            <article class="card wide">
+              <h3>Accès des classes par module</h3>
+              <div id="class-access-table" class="table-wrap"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-students">
+          <article class="card">
+            <div class="student-list-head">
+              <h3>Liste des étudiants</h3>
+              <button type="button" id="student-add-btn">Ajouter</button>
+            </div>
+            <div class="student-list-tools">
+              <label>
+                Rechercher un étudiant
+                <input type="search" id="student-search-input" placeholder="Nom, identifiant, email ou classe" />
+              </label>
+            </div>
+            <div id="student-table" class="table-wrap"></div>
+          </article>
+        </section>
+
+        <section class="view" id="view-quiz-generator">
+          <div class="panel-grid">
+            <article class="card wide">
+              <header>
+                <h1>Générateur de Questions Quiz</h1>
+                <p>Générez, validez et régénérez des questions de quiz avec l'aide de l'IA</p>
+              </header>
+
+              <div class="content">
+                <div id="phase-config" class="section">
+                  <div class="section-title">Type de quiz</div>
+                  <div class="quiz-mode-toggle" role="radiogroup" aria-label="Type de quiz">
+                    <label class="toggle-option">
+                      <input type="radio" name="quizScope" value="sous-acquis" checked />
+                      <span>Sous-acquis</span>
+                    </label>
+                    <label class="toggle-option">
+                      <input type="radio" name="quizScope" value="acquis" />
+                      <span>Acquis</span>
+                    </label>
+                  </div>
+
+                  <div class="section-title">Configurer la génération</div>
+                  <div class="form-group grid-2">
+                    <div>
+                      <label for="moduleId">Module *</label>
+                      <select id="moduleId" required>
+                        <option value="">-- Sélectionner un module --</option>
+                      </select>
+                    </div>
+                    <div id="subAcquisWrap">
+                      <label>Sous-acquis *</label>
+                      <div id="subAcquisList" class="subacquis-list is-disabled">
+                        <p class="subacquis-empty">-- D'abord sélectionner un module --</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-group grid-2">
+                    <div>
+                      <label for="difficulty">Niveau de difficulté</label>
+                      <select id="difficulty">
+                        <option value="beginner">Débutant</option>
+                        <option value="intermediate" selected>Intermédiaire</option>
+                        <option value="advanced">Avancé</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="count">Nombre de questions (1-10)</label>
+                      <select id="count">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5" selected>5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="button-group">
+                    <button class="btn-primary" id="btnGenerate">Générer les questions</button>
+                  </div>
+
+                  <div id="status-message" class="hidden"></div>
+                </div>
+
+                <div id="phase-review" class="section hidden">
+                  <div class="section-title">Examiner et approuver les questions</div>
+                  <div class="status info" id="review-info">
+                    <strong>Instructions:</strong> Sélectionnez les questions que vous souhaitez ajouter au quiz, puis cliquez sur "Valider et enregistrer".
+                  </div>
+                  <div id="questions-container"></div>
+                  <div class="form-group full">
+                    <label for="quizTitle">Titre du quiz (optionnel)</label>
+                    <input type="text" id="quizTitle" placeholder="ex: Quiz - Boucles for">
+                  </div>
+                  <div class="button-group">
+                    <button class="btn-success" id="btnValidate">Valider et enregistrer</button>
+                    <button class="btn-secondary" id="btnRegenerateAll">Régénérer tout</button>
+                    <button class="btn-danger" id="btnReject">Annuler</button>
+                  </div>
+                </div>
+
+                <div id="phase-success" class="section hidden">
+                  <div class="status success"><strong>Succès!</strong> Les questions ont été ajoutées au quiz.</div>
+                  <div id="success-message"></div>
+                  <div class="button-group">
+                    <button class="btn-primary" id="btnReset">Générer d'autres questions</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div id="student-modal" class="modal-shell" hidden>
+          <div class="modal-backdrop" data-action="close-student-modal"></div>
+          <div class="modal-card">
+            <div class="editor-head">
+              <h3 id="student-modal-title">Ajouter un étudiant</h3>
+              <button type="button" id="student-modal-close" class="secondary-btn">Fermer</button>
+            </div>
+
+            <div id="student-modal-chooser" class="student-modal-chooser">
+              <button type="button" id="student-modal-open-single">Ajouter un étudiant</button>
+              <button type="button" id="student-modal-open-import" class="secondary-btn">Importer une classe (JSON)</button>
+            </div>
+
+            <section id="student-modal-single" hidden>
+              <article class="card modal-inner-card">
+                <h3 id="student-form-title">Ajouter un étudiant à la classe</h3>
+                <form id="student-form" class="stack-form">
+                  <label>
+                    Nom complet de l'étudiant
+                    <input type="text" name="studentName" required placeholder="Exemple: Leila B." />
+                  </label>
+                  <label>
+                    Email de l'étudiant (utilisé pour la connexion)
+                    <input type="email" name="studentEmail" required placeholder="Exemple: leila@nextlearn.tn" />
+                  </label>
+                  <label>
+                    Identifiant de l'étudiant
+                    <input type="text" name="studentIdentifier" required minlength="3" placeholder="Exemple: leila.b" />
+                  </label>
+                  <label>
+                    Mot de passe initial
+                    <input type="password" name="studentPassword" required minlength="6" placeholder="Minimum 6 caracteres" />
+                  </label>
+                  <label>
+                    Classe
+                    <select id="student-class-select" name="classId" required></select>
+                  </label>
+                  <div class="button-row">
+                    <button type="submit" id="student-submit-btn">Ajouter l'étudiant</button>
+                    <button type="button" id="student-cancel-edit" class="secondary-btn" hidden>Annuler modification</button>
+                  </div>
+                </form>
+              </article>
+            </section>
+
+            <section id="student-modal-import" hidden>
+              <article class="card modal-inner-card">
+                <h3>Importer une classe (JSON)</h3>
+                <form id="import-students-form" class="stack-form">
+                  <label>
+                    Classe cible
+                    <select id="import-class-select" name="classId" required></select>
+                  </label>
+                  <label>
+                    Fichier JSON (étudiants)
+                    <input type="file" id="import-students-file" name="studentsFile" accept=".json,application/json" required />
+                  </label>
+                  <p class="form-hint">Format JSON: [{"fullName":"...","email":"...","identifier":"...","password":"..."}]</p>
+                  <button type="submit">Importer les étudiants</button>
+                </form>
+              </article>
+            </section>
+          </div>
+        </div>
+
+        <p id="toast" class="toast" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+
+    <script src="/backoffice/backoffice.js"></script>
+  </body>
+</html>

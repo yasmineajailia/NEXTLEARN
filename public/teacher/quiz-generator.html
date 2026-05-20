@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur de Questions Quiz - NextLearn</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="topbar container">
+      <div class="brand-wrap">
+        <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn">
+        <span class="brand-by">by</span>
+        <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit">
+      </div>
+
+      <nav class="nav-links" aria-label="Navigation principale">
+        <a href="/">Accueil</a>
+        <a href="#">Modules</a>
+        <a href="#">FAQ</a>
+      </nav>
+
+      <div class="top-actions">
+        <a class="ghost-btn action-link" href="/sign-in">S'identifier</a>
+      </div>
+    </header>
+
+    <section class="container">
+      <div class="course-card">
+        <header>
+          <h1>Générateur de Questions Quiz</h1>
+          <p>Générez, validez et régénérez des questions de quiz avec l'aide de l'IA</p>
+        </header>
+
+        <div class="content">
+      <!-- Phase 1: Configuration -->
+      <div id="phase-config" class="section">
+          <div class="section-title">Configurer la génération</div>
+        
+        <div class="form-group grid-2">
+          <div>
+            <label for="moduleId">Module *</label>
+            <select id="moduleId" required>
+              <option value="">-- Sélectionner un module --</option>
+            </select>
+          </div>
+          <div>
+            <label for="subAcquisId">Sous-acquis *</label>
+            <select id="subAcquisId" required disabled>
+              <option value="">-- D'abord sélectionner un module --</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group grid-2">
+          <div>
+            <label for="difficulty">Niveau de difficulté</label>
+            <select id="difficulty">
+              <option value="beginner">Débutant</option>
+              <option value="intermediate" selected>Intermédiaire</option>
+              <option value="advanced">Avancé</option>
+            </select>
+          </div>
+          <div>
+            <label for="count">Nombre de questions (1-10)</label>
+            <input type="number" id="count" min="1" max="10" value="5">
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button class="btn-primary" id="btnGenerate" onclick="generateQuestions()">
+            Générer les questions
+          </button>
+        </div>
+
+        <div id="status-message" class="hidden"></div>
+      </div>
+
+      <!-- Phase 2: Review & Validation -->
+      <div id="phase-review" class="section hidden">
+        <div class="section-title">Examiner et approuver les questions</div>
+        
+        <div class="status info" id="review-info">
+          <strong>Instructions:</strong> Sélectionnez les questions que vous souhaitez ajouter au quiz, puis cliquez sur "Valider et enregistrer". Vous pouvez régénérer les questions individuelles ou le lot entier.
+        </div>
+
+        <div id="questions-container"></div>
+
+        <div class="form-group full">
+          <label for="quizTitle">Titre du quiz (optionnel)</label>
+          <input type="text" id="quizTitle" placeholder="ex: Quiz - Boucles for">
+        </div>
+
+        <div class="button-group">
+          <button class="btn-success" id="btnValidate" onclick="validateQuestions()">
+            Valider et enregistrer
+          </button>
+          <button class="btn-secondary" id="btnRegenerateAll" onclick="regenerateAll()">
+            Régénérer tout
+          </button>
+          <button class="btn-danger" id="btnReject" onclick="rejectQuestions()">
+            Annuler
+          </button>
+        </div>
+      </div>
+
+      <!-- Phase 3: Success -->
+      <div id="phase-success" class="section hidden">
+        <div class="status success">
+          <strong>Succès!</strong> Les questions ont été ajoutées au quiz.
+        </div>
+        <div id="success-message"></div>
+        <div class="button-group">
+          <button class="btn-primary" onclick="resetForm()">
+            Générer d'autres questions
+          </button>
+        </div>
+      </div>
+    </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let currentSession = {
+      sessionId: null,
+      moduleId: null,
+      subAcquisId: null,
+      questions: [],
+      selectedIndices: new Set()
+    };
+
+    let modules = [];
+
+    // Initialize: Load modules
+    async function loadModules() {
+      try {
+        const response = await fetch('/api/backoffice/curriculum');
+        const data = await response.json();
+        modules = data.modules || [];
+        populateModuleSelect();
+      } catch (error) {
+        showStatus('Erreur lors du chargement des modules', 'error');
+        console.error('Error loading modules:', error);
+      }
+    }
+
+    function populateModuleSelect() {
+      const select = document.getElementById('moduleId');
+      select.innerHTML = '<option value="">-- Sélectionner un module --</option>';
+      modules.forEach(module => {
+        const option = document.createElement('option');
+        option.value = module.id;
+        option.textContent = `Module ${module.id} - ${module.name || ''}`;
+        select.appendChild(option);
+      });
+    }
+
+    function updateSubAcquisSelect() {
+      const moduleId = document.getElementById('moduleId').value;
+      const select = document.getElementById('subAcquisId');
+      
+      select.disabled = !moduleId;
+      select.innerHTML = '<option value="">-- Sélectionner --</option>';
+
+      if (!moduleId) return;
+
+      const module = modules.find(m => m.id === moduleId);
+      if (!module) return;
+
+      const subAcquis = module.acquis
+        .flatMap(a => a.sousAcquis)
+        .sort((a, b) => a.id.localeCompare(b.id));
+
+      subAcquis.forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub.id;
+        option.textContent = `${moduleId}.${sub.id} - ${sub.name || ''}`;
+        select.appendChild(option);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadModules();
+      document.getElementById('moduleId').addEventListener('change', updateSubAcquisSelect);
+    });
+
+    function showStatus(message, type = 'info') {
+      const element = document.getElementById('status-message');
+      element.textContent = message;
+      element.className = `status ${type}`;
+      element.classList.remove('hidden');
+    }
+
+    function hideStatus() {
+      document.getElementById('status-message').classList.add('hidden');
+    }
+
+    async function generateQuestions() {
+      const moduleId = document.getElementById('moduleId').value;
+      const subAcquisId = document.getElementById('subAcquisId').value;
+      const difficulty = document.getElementById('difficulty').value;
+      const count = parseInt(document.getElementById('count').value) || 5;
+
+      if (!moduleId || !subAcquisId) {
+        showStatus('Veuillez remplir tous les champs obligatoires', 'error');
+        return;
+      }
+
+      document.getElementById('btnGenerate').disabled = true;
+      showStatus('Génération des questions en cours...', 'loading');
+
+      try {
+        const response = await fetch('/api/teacher/quizzes/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ moduleId, subAcquisId, difficulty, count })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Erreur lors de la génération');
+        }
+
+        const data = await response.json();
+        currentSession.sessionId = data.sessionId;
+        currentSession.moduleId = moduleId;
+        currentSession.subAcquisId = subAcquisId;
+        currentSession.questions = data.questions;
+        currentSession.selectedIndices = new Set();
+
+        hideStatus();
+        showReviewPhase();
+      } catch (error) {
+        showStatus(error.message || 'Erreur lors de la génération', 'error');
+        console.error('Generation error:', error);
+      } finally {
+        document.getElementById('btnGenerate').disabled = false;
+      }
+    }
+
+    function showReviewPhase() {
+      document.getElementById('phase-config').classList.add('hidden');
+      document.getElementById('phase-review').classList.remove('hidden');
+      document.getElementById('phase-success').classList.add('hidden');
+      displayQuestions();
+    }
+
+    function displayQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      currentSession.questions.forEach((question, index) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        if (currentSession.selectedIndices.has(index)) {
+          card.classList.add('selected');
+        }
+
+        const isCorrect = (optIndex) => optIndex === question.correctOptionIndex;
+        const optionsHtml = question.options.map((opt, optIndex) => `
+          <li class="option-item ${isCorrect(optIndex) ? 'correct' : ''}">
+            ${opt}
+          </li>
+        `).join('');
+
+        card.innerHTML = `
+          <div class="question-header">
+            <div>
+              <div class="question-number">Question ${index + 1}</div>
+              <span class="question-source ${question.source}">${question.source === 'ai' ? 'IA' : 'Modèle'}</span>
+            </div>
+            <input type="checkbox" ${currentSession.selectedIndices.has(index) ? 'checked' : ''} 
+                   onchange="toggleQuestion(${index})">
+          </div>
+          <div class="question-prompt">${question.prompt}</div>
+          <ul class="options-list">${optionsHtml}</ul>
+          <div class="question-actions">
+            <button class="btn-small btn-secondary" onclick="regenerateQuestion(${index})">
+              Régénérer
+            </button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function toggleQuestion(index) {
+      if (currentSession.selectedIndices.has(index)) {
+        currentSession.selectedIndices.delete(index);
+      } else {
+        currentSession.selectedIndices.add(index);
+      }
+      displayQuestions();
+    }
+
+    async function regenerateQuestion(index) {
+      document.getElementById('btnRegenerateAll').disabled = true;
+      showStatus('Régénération de la question en cours...', 'loading');
+
+      try {
+        const response = await fetch('/api/teacher/quizzes/regenerate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: currentSession.sessionId,
+            indices: [index],
+            regenerateAll: false
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Erreur lors de la régénération');
+        }
+
+        const data = await response.json();
+        currentSession.questions = data.questions;
+        hideStatus();
+        displayQuestions();
+      } catch (error) {
+        showStatus(error.message || 'Erreur lors de la régénération', 'error');
+      } finally {
+        document.getElementById('btnRegenerateAll').disabled = false;
+      }
+    }
+
+    async function regenerateAll() {
+      document.getElementById('btnRegenerateAll').disabled = true;
+      showStatus('Régénération de toutes les questions en cours...', 'loading');
+
+      try {
+        const response = await fetch('/api/teacher/quizzes/regenerate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: currentSession.sessionId,
+            regenerateAll: true
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Erreur lors de la régénération');
+        }
+
+        const data = await response.json();
+        currentSession.questions = data.questions;
+        currentSession.selectedIndices.clear();
+        hideStatus();
+        displayQuestions();
+      } catch (error) {
+        showStatus(error.message || 'Erreur lors de la régénération', 'error');
+      } finally {
+        document.getElementById('btnRegenerateAll').disabled = false;
+      }
+    }
+
+    async function validateQuestions() {
+      if (currentSession.selectedIndices.size === 0) {
+        showStatus('Veuillez sélectionner au moins une question', 'error');
+        return;
+      }
+
+      document.getElementById('btnValidate').disabled = true;
+      showStatus('Enregistrement des questions en cours...', 'loading');
+
+      try {
+        const quizTitle = document.getElementById('quizTitle').value.trim();
+        const response = await fetch('/api/teacher/quizzes/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: currentSession.sessionId,
+            questionIndices: Array.from(currentSession.selectedIndices),
+            quizTitle
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Erreur lors de l\'enregistrement');
+        }
+
+        const data = await response.json();
+        hideStatus();
+        showSuccessPhase(data);
+      } catch (error) {
+        showStatus(error.message || 'Erreur lors de l\'enregistrement', 'error');
+      } finally {
+        document.getElementById('btnValidate').disabled = false;
+      }
+    }
+
+    function showSuccessPhase(data) {
+      document.getElementById('phase-config').classList.add('hidden');
+      document.getElementById('phase-review').classList.add('hidden');
+      document.getElementById('phase-success').classList.remove('hidden');
+
+      document.getElementById('success-message').innerHTML = `
+        <p><strong>${data.quizTitle}</strong> a été créé avec succès.</p>
+        <p>${data.questionCount} question(s) ont été ajoutées au quiz.</p>
+      `;
+    }
+
+    async function rejectQuestions() {
+      if (!confirm('Êtes-vous sûr de vouloir annuler et supprimer cette génération ?')) {
+        return;
+      }
+
+      try {
+        await fetch('/api/teacher/quizzes/reject', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: currentSession.sessionId })
+        });
+      } catch (error) {
+        console.error('Error rejecting session:', error);
+      }
+
+      resetForm();
+    }
+
+    function resetForm() {
+      currentSession = { sessionId: null, moduleId: null, subAcquisId: null, questions: [], selectedIndices: new Set() };
+      document.getElementById('phase-config').classList.remove('hidden');
+      document.getElementById('phase-review').classList.add('hidden');
+      document.getElementById('phase-success').classList.add('hidden');
+      hideStatus();
+
+      document.getElementById('moduleId').value = '';
+      document.getElementById('subAcquisId').value = '';
+      document.getElementById('difficulty').value = 'intermediate';
+      document.getElementById('count').value = 5;
+      document.getElementById('quizTitle').value = '';
+      updateSubAcquisSelect();
+    }
+  </script>
+  <script>
+    // When embedded in the backoffice iframe, hide the global site topbar
+    if (window.self !== window.top) {
+      document.addEventListener('DOMContentLoaded', () => {
+        const topbar = document.querySelector('.topbar');
+        if (topbar) topbar.style.display = 'none';
+
+        // tighten spacing for embedded mode
+        const page = document.querySelector('.page');
+        if (page) page.style.padding = '0';
+
+        const courseCard = document.querySelector('.course-card');
+        if (courseCard) courseCard.style.marginTop = '0';
+      });
+    }
+  </script>
+</body>
+</html>

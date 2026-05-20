@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nextlearn - Interface</title>
+
+    <!-- Fonts used by the hero and headings to preserve the visual style. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Main stylesheet served from the public folder. -->
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <!-- Header section with dual-brand logos and navigation. -->
+      <header class="topbar container">
+        <div class="brand-wrap">
+          <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn" />
+          <span class="brand-by">by</span>
+          <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
+        </div>
+
+        <nav class="nav-links" aria-label="Navigation principale">
+          <a href="#" class="active">Accueil</a>
+          <a href="#">Modules</a>
+          <a href="#">FAQ</a>
+        </nav>
+
+        <div class="top-actions">
+          <!-- Auth links point to dedicated sign-in pages. -->
+          <a class="ghost-btn action-link" href="/sign-in">S'identifier</a>
+        </div>
+      </header>
+
+      <!-- Hero section with primary message and visual cards. -->
+      <section class="hero container">
+        <div class="hero-copy">
+          <h1>
+            L'apprentissage<br />
+            pour tous, <span>sans limites</span>
+          </h1>
+          <p>
+            NextLearn, votre plateforme d'apprentissage adaptatif, vous accompagne tout au long de
+            votre parcours pour renforcer vos connaissances, combler vos lacunes et progresser a
+            votre rythme.
+          </p>
+
+          <div class="hero-cta">
+            <a href="/sign-in" class="solid-btn">Accéder au modules</a>
+            <a href="/sign-in" class="outline-btn">Évaluer mon niveau</a>
+          </div>
+
+          <ul class="hero-points">
+            <li>Accessible à tous</li>
+            <li>Formation orientée</li>
+            <li>Une nouvelle facon d'apprendre</li>
+          </ul>
+        </div>
+
+        <div class="hero-media">
+          <div class="media-ring"></div>
+          <div class="avatar-frame">
+            <img
+              src="/images/360_F_604704017_zHjlvfNLv06FIw2FulzbhwjOQeYUcGr3.jpg"
+              alt="Etudiants en contexte educatif"
+            />
+          </div>
+
+          <div class="stat-card stat-left">
+            <div class="chip-icon">▦</div>
+            <div>
+              <strong>+20</strong>
+              <span>Modules</span>
+            </div>
+          </div>
+
+          <div class="stat-card stat-top">
+            <div class="gauge"></div>
+            <div>
+              <strong>Évalues</strong>
+              <span>ton niveau</span>
+            </div>
+          </div>
+
+          <div class="stat-card stat-right">
+            <div class="chip-icon">▣</div>
+            <div>
+              <strong>+10</strong>
+              <span>Tutors</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Course catalog preview section. -->
+      <section class="catalog">
+        <div class="container">
+          <p class="eyebrow">NEXTLEARN</p>
+          <h2>
+            Nextlearn vous propose des contenus personnalisés (cours, vidéos, exercices) et
+            vous guide pas à pas vers la réussite.
+          </h2>
+
+          <form class="searchbar" action="#" method="get">
+            <input type="search" placeholder="Chercher un module ?" aria-label="Chercher un module" />
+            <button class="solid-btn" type="submit">Recherche</button>
+          </form>
+
+          <div class="cards-grid">
+            <article class="course-card">
+              <h3>programmation C</h3>
+              <p>
+                Un cours de programmation en langage C basé sur la manipulation des variables,
+                des fonctions d'entrées sorties, des structures de contrôle, des fonctions,
+                des structures et des pointeurs.
+              </p>
+              <a href="/sign-in">Accéder</a>
+            </article>
+
+            <article class="course-card">
+              <h3>UI/UX</h3>
+              <p>
+                Un cours de programmation en langage C basé sur la manipulation des variables,
+                des fonctions d'entrées sorties, des structures de contrôle, des fonctions,
+                des structures et des pointeurs.
+              </p>
+              <a href="/sign-in">Accéder</a>
+            </article>
+
+            <article class="course-card">
+              <h3>Cours anglais</h3>
+              <p>
+                Ce cours vise à renforcer les compétences en compréhension, expression orale et
+                écrite en anglais, à travers des activités variées axées sur la communication.
+              </p>
+              <a href="/sign-in">Accéder</a>
+            </article>
+          </div>
+
+          <div class="pager" aria-hidden="true">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Interactive animations for buttons, cards, and mouse tracking effects. -->
+    <script src="/animations.js"></script>
+  </body>
+</html>

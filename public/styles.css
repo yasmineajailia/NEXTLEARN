@@ -1,0 +1,565 @@
+/*
+  Global design tokens.
+  These variables make the UI easy to theme in one place.
+*/
+:root {
+  --bg: #f2f2f4;
+  --surface: #ffffff;
+  --ink: #172033;
+  --muted: #626875;
+  --line: #e5e7ee;
+  --brand: #ff3d43;
+  --brand-soft: #ffefef;
+  --shadow: 0 20px 35px rgba(18, 22, 34, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.hidden {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 20% -20%, #ffffff, var(--bg) 45%);
+}
+
+.page {
+  min-height: 100vh;
+}
+
+.container {
+  width: min(1120px, calc(100% - 3rem));
+  margin: 0 auto;
+}
+
+/* Header layout: logos, nav, and actions aligned in one row. */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 0;
+  gap: 1.4rem;
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-nextlearn {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.brand-by {
+  color: #727a8b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+  margin-inline: 0.08rem;
+}
+
+.logo-esprit {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #242d3f;
+  font-size: 0.96rem;
+}
+
+.nav-links .active {
+  color: var(--brand);
+}
+
+.top-actions {
+  display: flex;
+  gap: 0.55rem;
+}
+
+/* Action links share button visuals while preserving semantic navigation. */
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+button,
+.solid-btn,
+.outline-btn,
+.ghost-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.62rem 1rem;
+  font-weight: 600;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+button:hover,
+.solid-btn:hover,
+.outline-btn:hover,
+.ghost-btn:hover {
+  transform: translateY(-3px);
+}
+
+button:active,
+.solid-btn:active,
+.outline-btn:active,
+.ghost-btn:active {
+  transform: translateY(-1px);
+}
+
+.ghost-btn {
+  background: transparent;
+  color: #2c3448;
+}
+
+.ghost-btn:hover {
+  background: rgba(44, 52, 72, 0.06);
+  color: var(--brand);
+}
+
+.solid-btn {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(255, 61, 67, 0.22);
+}
+
+.solid-btn:hover {
+  background: #ff2733;
+  box-shadow: 0 20px 40px rgba(255, 61, 67, 0.35);
+}
+
+.outline-btn {
+  background: #fff;
+  color: var(--brand);
+  border: 1px solid #ffc2c5;
+}
+
+.outline-btn:hover {
+  border-color: var(--brand);
+  box-shadow: 0 10px 25px rgba(255, 61, 67, 0.15);
+}
+
+/* Hero split: message on left and circular visual composition on right. */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 2rem;
+  padding: 2.2rem 0 2.8rem;
+}
+
+.hero-copy h1 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(2.2rem, 4.5vw, 3.65rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.hero-copy h1 span {
+  color: var(--brand);
+}
+
+.hero-copy p {
+  margin: 1.15rem 0 1.65rem;
+  max-width: 510px;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 1rem;
+}
+
+.hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1.35rem;
+}
+
+.hero-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6rem;
+  color: #5b6172;
+  font-size: 0.92rem;
+}
+
+.hero-points li {
+  position: relative;
+  padding-left: 1.05rem;
+}
+
+.hero-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.hero-media {
+  position: relative;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+}
+
+.media-ring {
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  border: 1.3px solid rgba(255, 61, 67, 0.35);
+}
+
+.media-ring::before,
+.media-ring::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1.2px solid rgba(255, 61, 67, 0.2);
+}
+
+.media-ring::before {
+  width: 120px;
+  height: 120px;
+  right: -42px;
+  bottom: 35px;
+}
+
+.media-ring::after {
+  width: 190px;
+  height: 190px;
+  right: -78px;
+  bottom: 1px;
+}
+
+.avatar-frame {
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ccd0d8;
+  position: relative;
+  z-index: 2;
+  animation: floatIn 650ms ease-out;
+}
+
+.avatar-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stat-card {
+  position: absolute;
+  z-index: 3;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #ffd3d5;
+  box-shadow: var(--shadow);
+  padding: 0.75rem 0.8rem;
+  min-width: 114px;
+  display: flex;
+  gap: 0.62rem;
+  align-items: center;
+  animation: riseIn 700ms ease-out;
+  cursor: pointer;
+  transition: all 280ms ease-out;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px);
+  border-color: #ffb3b8;
+  box-shadow: 0 15px 35px rgba(255, 61, 67, 0.15);
+}
+
+.stat-card strong {
+  display: block;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.stat-card span {
+  color: #878da0;
+  font-size: 0.78rem;
+}
+
+.chip-icon {
+  width: 27px;
+  height: 27px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--brand);
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.gauge {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 5px solid #ffd8da;
+  border-top-color: var(--brand);
+  border-right-color: var(--brand);
+}
+
+.stat-left {
+  left: 0;
+  top: 45%;
+}
+
+.stat-top {
+  right: 26px;
+  top: 32px;
+}
+
+.stat-right {
+  right: 0;
+  bottom: 56px;
+}
+
+/* Catalog area with search and cards. */
+.catalog {
+  background: #fff;
+  border-top: 1px solid var(--line);
+  padding: 3.1rem 0 2.5rem;
+}
+
+.eyebrow {
+  margin: 0;
+  text-align: center;
+  color: var(--brand);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.catalog h2 {
+  margin: 0.52rem auto 1.7rem;
+  text-align: center;
+  max-width: 760px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+  line-height: 1.14;
+}
+
+.searchbar {
+  margin: 0 auto 1.9rem;
+  max-width: 490px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.52rem;
+}
+
+.searchbar input {
+  padding: 0.74rem 0.86rem;
+  border-radius: 10px;
+  border: 1px solid #dadde8;
+  font: inherit;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.course-card {
+  background: #fff;
+  border: 1px solid #edf0f6;
+  border-radius: 14px;
+  padding: 1.2rem 1.15rem 1rem;
+  min-height: 245px;
+  box-shadow: 0 14px 24px rgba(13, 17, 29, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.course-card h3 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.2rem;
+}
+
+.course-card p {
+  margin: 0.9rem 0 1.1rem;
+  color: var(--muted);
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.course-card a {
+  margin-top: auto;
+  color: var(--brand);
+  text-decoration: none;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 500;
+}
+
+.pager {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.38rem;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 10px;
+  background: #ccd1de;
+}
+
+.dot.active {
+  width: 24px;
+  background: var(--brand);
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth pulse animation for stat card icons on hover. */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Tablet adjustments to keep the hero and cards balanced. */
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 2.4rem;
+  }
+
+  .hero-media {
+    min-height: 370px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+  }
+}
+
+/* Mobile rules for compact spacing and one-column cards. */
+@media (max-width: 680px) {
+  .container {
+    width: min(1120px, calc(100% - 1.4rem));
+  }
+
+  .brand-by {
+    font-size: 0.72rem;
+  }
+
+  .logo-nextlearn {
+    height: 28px;
+  }
+
+  .logo-esprit {
+    height: 22px;
+  }
+
+  .nav-links {
+    width: 100%;
+    order: 3;
+    justify-content: center;
+  }
+
+  .hero-copy p {
+    font-size: 0.95rem;
+  }
+
+  .avatar-frame {
+    width: 280px;
+    height: 280px;
+  }
+
+  .media-ring {
+    width: 336px;
+    height: 336px;
+  }
+
+  .stat-left {
+    left: 8px;
+    top: 48%;
+  }
+
+  .stat-top {
+    right: 8px;
+    top: -6px;
+  }
+
+  .stat-right {
+    right: 4px;
+    bottom: 30px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}

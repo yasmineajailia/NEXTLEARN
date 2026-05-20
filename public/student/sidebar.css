@@ -1,0 +1,223 @@
+:root {
+  --sidebar-width: 270px;
+  --sidebar-bg: #fdfdfd;
+  --sidebar-ink: #1e2229;
+  --sidebar-line: #f0f2f7;
+  --sidebar-accent: #b21f2d;
+  --sidebar-accent-muted: #fff2f3;
+  --sidebar-hover-bg: #f4f6fa;
+  --transition-speed: 250ms;
+}
+
+body.sidebar-standalone {
+  padding-left: var(--sidebar-width);
+  transition: padding-left var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar {
+  background: var(--sidebar-bg);
+  color: var(--sidebar-ink);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid var(--sidebar-line);
+  width: var(--sidebar-width);
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  box-sizing: border-box;
+  transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Brand Section */
+.brand-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 0.5rem;
+  transition: opacity 150ms ease;
+}
+
+.logo-nextlearn {
+  height: 28px;
+  width: auto;
+}
+
+.brand-by {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.logo-esprit {
+  height: 20px;
+  width: auto;
+}
+
+/* Student Card Design */
+.student-card {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff5f6 0%, #ffebeb 100%);
+  border: 1px solid #fcd3d7;
+  transition: opacity 150ms ease, padding 150ms ease;
+}
+
+.card-label {
+  margin: 0;
+  color: var(--sidebar-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.student-card h2 {
+  margin: 0.3rem 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.student-id {
+  margin: 0.15rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+/* Navigation Items */
+.side-nav {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.nav-item {
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  cursor: pointer;
+  background: transparent;
+  color: #475569;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background var(--transition-speed), color var(--transition-speed);
+}
+
+.nav-item svg {
+  flex-shrink: 0;
+  color: #64748b;
+  transition: color var(--transition-speed);
+}
+
+.nav-item:hover {
+  background: var(--sidebar-hover-bg);
+  color: #0f172a;
+}
+
+.nav-item:hover svg {
+  color: #0f172a;
+}
+
+.nav-item.active {
+  background: var(--sidebar-accent-muted);
+  color: var(--sidebar-accent);
+  font-weight: 600;
+}
+
+.nav-item.active svg {
+  color: var(--sidebar-accent);
+}
+
+.nav-item.logout {
+  margin-top: auto; /* Pushes logout to the bottom if container is full height */
+  color: #94a3b8;
+}
+
+.nav-item.logout:hover {
+  background: #fef2f2;
+  color: var(--sidebar-accent);
+}
+.nav-item.logout:hover svg {
+  color: var(--sidebar-accent);
+}
+
+/* Floating Action Toggle Button */
+.sidebar-toggle {
+  position: absolute;
+  right: -12px;
+  top: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+  z-index: 100;
+  transition: background 150ms, color 150ms, transform var(--transition-speed);
+}
+
+.sidebar-toggle:hover {
+  background: var(--sidebar-hover-bg);
+  color: #0f172a;
+}
+
+.sidebar-toggle::before {
+  content: "‹";
+  font-size: 16px;
+  line-height: 1;
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   Collapsed State Styles
+   ========================================================================== */
+
+body.sidebar-collapsed {
+  --sidebar-width: 72px;
+}
+
+body.sidebar-collapsed .brand-line,
+body.sidebar-collapsed .student-card,
+body.sidebar-collapsed .nav-label {
+  opacity: 0;
+  pointer-events: none;
+  display: none !important; /* Hides text beautifully */
+}
+
+body.sidebar-collapsed .sidebar {
+  padding: 1.5rem 0.5rem;
+  align-items: center;
+}
+
+body.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+body.sidebar-collapsed .sidebar-toggle {
+  transform: rotate(180deg); /* Flips the arrow instead of changing text content */
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connexion - NextLearn</title>
+
+    <!-- Shared fonts keep visual consistency with the landing page. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Dedicated auth stylesheet for better folder/file separation. -->
+    <link rel="stylesheet" href="/auth/auth.css" />
+  </head>
+  <body>
+    <main class="auth-shell">
+      <!-- Sign-in panel with minimal account fields. -->
+      <section class="auth-panel" aria-labelledby="signin-title">
+        <div class="brand-line">
+          <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn" />
+          <span class="brand-by">by</span>
+          <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
+        </div>
+
+        <h1 id="signin-title">Se connecter</h1>
+
+        <section id="student-signin-panel" class="auth-form-panel">
+          <p class="auth-subtitle">Accédez à vos modules, votre progression et vos évaluations.</p>
+
+          <form class="auth-form" id="signin-form-student" action="/api/sign-in" method="post">
+            <div id="message-container-student" class="message-container" style="display: none;"></div>
+
+            <input type="hidden" name="role" value="étudiant" />
+
+            <label>
+              Email étudiant
+              <input type="email" name="email" placeholder="etudiant@esprit.tn" required />
+            </label>
+
+            <label>
+              Mot de passe
+              <input type="password" name="password" placeholder="Votre mot de passe étudiant" required />
+            </label>
+
+            <button class="auth-submit" type="submit">Se connecter</button>
+          </form>
+        </section>
+
+        <section id="teacher-signin-panel" class="auth-form-panel" hidden>
+          <p class="auth-subtitle">Accédez à l'espace enseignant pour gérer les classes et le contenu.</p>
+
+          <form class="auth-form" id="signin-form-teacher" action="/api/sign-in" method="post">
+            <div id="message-container-teacher" class="message-container" style="display: none;"></div>
+
+            <input type="hidden" name="role" value="enseignant" />
+
+            <label>
+              Email enseignant
+              <input type="email" name="email" placeholder="enseignant@esprit.tn" required />
+            </label>
+
+            <label>
+              Mot de passe
+              <input type="password" name="password" placeholder="Votre mot de passe enseignant" required />
+            </label>
+
+            <button class="auth-submit" type="submit">Se connecter</button>
+          </form>
+        </section>
+
+        <div class="role-switch" id="role-switch" aria-label="Choix du type de compte">
+          <button type="button" class="role-switch-btn active" data-role="étudiant" aria-pressed="true">Étudiant</button>
+          <button type="button" class="role-switch-btn" data-role="enseignant" aria-pressed="false">Enseignant</button>
+        </div>
+
+        <p class="auth-alt">
+          Mot de passe oublié ?
+          <a href="/forgot-password">Réinitialiser mon mot de passe</a>
+        </p>
+      </section>
+
+      <!-- Right-side context panel to support the auth journey. -->
+      <aside class="auth-aside" aria-label="Presentation NextLearn">
+        <h2>Apprenez avec un parcours adapté à votre niveau.</h2>
+        <p>
+          Connectez-vous pour retrouver vos cours, vos exercices personnalisés et vos indicateurs
+          de progression.
+        </p>
+        <a class="back-link" href="/">Retour à l'accueil</a>
+      </aside>
+    </main>
+
+    <script>
+      const studentPanel = document.getElementById('student-signin-panel');
+      const teacherPanel = document.getElementById('teacher-signin-panel');
+      const studentForm = document.getElementById('signin-form-student');
+      const teacherForm = document.getElementById('signin-form-teacher');
+      const studentMessage = document.getElementById('message-container-student');
+      const teacherMessage = document.getElementById('message-container-teacher');
+      const roleSwitch = document.getElementById('role-switch');
+
+      if (!studentPanel || !teacherPanel || !studentForm || !teacherForm || !studentMessage || !teacherMessage || !roleSwitch) {
+        console.error('Sign-in form elements not found');
+      } else {
+        const roleButtons = Array.from(roleSwitch.querySelectorAll('.role-switch-btn'));
+
+        const syncRoleState = (role) => {
+          const isTeacher = role === 'enseignant';
+          studentPanel.hidden = isTeacher;
+          teacherPanel.hidden = !isTeacher;
+
+          studentMessage.style.display = 'none';
+          teacherMessage.style.display = 'none';
+
+          roleButtons.forEach((button) => {
+            const isActive = button.dataset.role === role;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+          });
+        };
+
+        roleButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const selectedRole = button.dataset.role || 'étudiant';
+            syncRoleState(selectedRole);
+          });
+        });
+
+        syncRoleState('étudiant');
+
+        const handleSubmit = async (formNode, messageNode) => {
+          const role = formNode.elements.role?.value || 'étudiant';
+          const email = formNode.email.value.trim().toLowerCase();
+          const password = formNode.password.value;
+
+          try {
+            const response = await fetch('/api/sign-in', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ role, email, password })
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+              messageNode.className = 'message-container success';
+              messageNode.textContent = data.message;
+              messageNode.style.display = 'block';
+
+              if (data.user) {
+                if (data.user.role === 'étudiant') {
+                  localStorage.setItem('nextlearnCurrentUser', JSON.stringify(data.user));
+                  localStorage.removeItem('nextlearnCurrentTeacher');
+                } else {
+                  localStorage.setItem('nextlearnCurrentTeacher', JSON.stringify(data.user));
+                  localStorage.removeItem('nextlearnCurrentUser');
+                }
+              }
+
+              setTimeout(() => {
+                window.location.href = data.user?.role === 'étudiant' ? '/student/' : '/backoffice/';
+              }, 1500);
+            } else {
+              messageNode.className = 'message-container error';
+              messageNode.textContent = data.error || 'Erreur lors de la connexion';
+              messageNode.style.display = 'block';
+            }
+          } catch (error) {
+            messageNode.className = 'message-container error';
+            messageNode.textContent = 'Erreur reseau';
+            messageNode.style.display = 'block';
+          }
+        };
+
+        studentForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await handleSubmit(studentForm, studentMessage);
+        });
+
+        teacherForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await handleSubmit(teacherForm, teacherMessage);
+        });
+      }
+    </script>
+  </body>
+</html>

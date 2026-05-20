@@ -1,0 +1,38 @@
+[
+  {
+    "fullName": "Roua",
+    "email": "Roua.bensalah@esprit.tn",
+    "identifier": "identifiant1",
+    "password": "123456"
+  },
+  {
+    "fullName": "Melek Trabelsi",
+    "email": "melek.trabelsi@esprit.tn",
+    "identifier": "identifiant2",
+    "password": "123456"
+  },
+  {
+    "fullName": "chaima Gharbi",
+    "email": "chaima.gharbi@esprit.tn",
+    "identifier": "identifiant3",
+    "password": "123456"
+  },
+  {
+    "fullName": "yasmine Khelifi",
+    "email": "yasmine.khelifi@esprit.tn",
+    "identifier": "identifiant4",
+    "password": "123456"
+  },
+  {
+    "fullName": "ines Jlassi",
+    "email": "ines.jlassi@esprit.tn",
+    "identifier": "identifiant5",
+    "password": "123456"
+  },
+  {
+    "fullName": "hela Ben Amor",
+    "email": "hela.benamor@esprit.tn",
+    "identifier": "identifiant6",
+    "password": "123456"
+  }
+]

@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sous-acquis - Espace Etudiant</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/student/sidebar.css" />
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+    <style>
+      body {
+        margin: 0;
+        background: #f6f7fb;
+        color: #1f2430;
+        font-family: "Source Sans 3", "Segoe UI", sans-serif;
+      }
+
+      .page {
+        width: min(1100px, calc(100% - 2rem));
+        margin: 1.5rem auto 2.25rem;
+        padding-top: 0.5rem;
+      }
+
+      .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+      }
+
+      body.sidebar-standalone .page .head {
+        width: calc(100vw - var(--sidebar-width, 0px));
+        margin-left: calc((100% - (100vw - var(--sidebar-width, 0px))) / 2);
+        left: auto;
+      }
+
+      .title-line {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.35rem;
+        letter-spacing: 0.015em;
+      }
+
+      .back-link {
+        text-decoration: none;
+        color: #b21f2d;
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.46);
+        border: 1px solid rgba(35, 48, 74, 0.08);
+        border-radius: 22px;
+        box-shadow: 0 24px 60px rgba(18, 24, 39, 0.08);
+        padding: 1.15rem;
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+      }
+
+      .meta {
+        margin: 0.1rem 0 0.95rem;
+        color: #6b7280;
+        font-size: 0.98rem;
+      }
+
+      .resource-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+      }
+
+      #resource-links {
+        flex: 1;
+      }
+
+      .resource-group {
+        margin-top: 0;
+      }
+
+      .resource-links-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+
+      .focus-mode-btn {
+        border: 1px solid #e1e5ef;
+        border-radius: 999px;
+        padding: 0.5rem 0.9rem;
+        background: #ffffff;
+        color: #2a3140;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .focus-mode-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(18, 24, 39, 0.1);
+      }
+
+      .focus-mode-btn.active {
+        background: #1f2430;
+        color: #ffffff;
+      }
+
+      #video-links {
+        margin-left: auto;
+      }
+
+      .resource-link {
+        border: 1px solid #e1e5ef;
+        border-radius: 999px;
+        padding: 0.48rem 0.95rem;
+        background: #ffffff;
+        color: #2a3140;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+
+      .resource-link.active {
+        background: #fff1f3;
+        border-color: rgba(178, 31, 45, 0.28);
+        box-shadow: 0 8px 16px rgba(178, 31, 45, 0.08);
+      }
+
+      .resource-link:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(18, 24, 39, 0.08);
+      }
+
+      .video-button {
+        background: linear-gradient(135deg, #b21f2d 0%, #d33a4b 100%);
+        color: #ffffff;
+        border: 1px solid rgba(178, 31, 45, 0.45);
+        border-radius: 28px;
+        padding: 0.58rem 1.15rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 12px 24px rgba(154, 19, 37, 0.16);
+      }
+
+      .video-button:hover {
+        background: linear-gradient(135deg, #d33a4b 0%, #b21f2d 100%);
+        box-shadow: 0 6px 16px rgba(178, 31, 45, 0.35);
+        transform: translateY(-2px);
+      }
+
+      .video-button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(178, 31, 45, 0.25);
+      }
+
+      .video-button::before {
+        content: "▶";
+        font-size: 0.85em;
+        display: inline-block;
+      }
+
+      .viewer-shell {
+        margin-top: 1.1rem;
+        border: 1px solid #e7e9f2;
+        border-radius: 18px;
+        background: #ffffff;
+        padding: 1rem;
+        box-shadow: 0 12px 26px rgba(19, 24, 44, 0.08);
+      }
+
+      .video-shell {
+        margin-top: 1rem;
+        border: 1px solid #e7e9f2;
+        border-radius: 18px;
+        background: #ffffff;
+        padding: 1rem;
+        box-shadow: 0 12px 26px rgba(19, 24, 44, 0.08);
+      }
+
+      .viewer-title {
+        margin: 0;
+        font-weight: 700;
+        color: #2a3140;
+      }
+
+      .viewer-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.7rem;
+      }
+
+      .viewer-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .viewer-controls button {
+        border: 1px solid #e1e5ef;
+        border-radius: 999px;
+        padding: 0.42rem 0.78rem;
+        background: #ffffff;
+        color: #2a3140;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .viewer-controls button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .viewer-controls .fullscreen-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .viewer-page-indicator {
+        color: #6b7280;
+        font-weight: 700;
+      }
+
+      .pdf-canvas-wrap {
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: #f6f7fb;
+        min-height: 520px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 0.75rem;
+        border-radius: 16px;
+      }
+
+      .pdf-canvas-wrap canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+
+      .pdf-canvas-wrap:fullscreen,
+      .pdf-canvas-wrap:-webkit-full-screen {
+        width: 100vw;
+        height: 100vh;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0.5rem;
+        border-radius: 0;
+        background: #0d1117;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .pdf-canvas-wrap:fullscreen canvas,
+      .pdf-canvas-wrap:-webkit-full-screen canvas {
+        max-width: 100%;
+        max-height: 100%;
+      }
+
+      .viewer-frame {
+        width: 100%;
+        min-height: 520px;
+        border: 0;
+        border-radius: 16px;
+        background: #f6f7fb;
+        overflow: hidden;
+      }
+
+      .viewer-video {
+        width: 100%;
+        border-radius: 16px;
+        background: #000;
+        --plyr-color-main: #b21f2d;
+      }
+
+      .plyr {
+        border-radius: 16px;
+      }
+
+      .video-note {
+        margin: 0.65rem 0 0;
+        color: #6b7280;
+      }
+
+      .viewer-note {
+        margin: 0.65rem 0 0;
+        color: #6b7280;
+      }
+
+      .quiz-cta,
+      .sub-next-cta {
+        margin-top: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        text-decoration: none;
+        color: #b21f2d;
+        font-weight: 700;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.95rem;
+        line-height: 1;
+      }
+
+      .quiz-cta .arrow,
+      .sub-next-cta .arrow {
+        display: inline-block;
+        font-size: 1rem;
+      }
+
+      .sub-nav-row {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .sub-next-cta {
+        margin-top: 1rem;
+        margin-left: auto;
+        white-space: nowrap;
+      }
+
+      body.chatbot-open {
+        overflow: hidden;
+      }
+
+      .chatbot-reopen-btn {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 155;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.72rem 1rem;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02)),
+          linear-gradient(135deg, #c41d38 0%, #9a1325 55%, #6f0e1d 100%);
+        color: #ffffff;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 14px 28px rgba(154, 19, 37, 0.24);
+      }
+
+      .chatbot-reopen-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 32px rgba(154, 19, 37, 0.3);
+      }
+
+      .chatbot-reopen-btn[hidden] {
+        display: none;
+      }
+
+      .chatbot-panel {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 160;
+        width: min(400px, calc(100vw - 1.5rem));
+        height: min(68vh, 600px);
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        padding: 1rem;
+        border: 1px solid rgba(31, 36, 48, 0.09);
+        border-radius: 24px;
+        background:
+          radial-gradient(circle at top right, rgba(154, 19, 37, 0.14), transparent 24%),
+          radial-gradient(circle at bottom left, rgba(196, 29, 56, 0.1), transparent 22%),
+          rgba(255, 255, 255, 0.95);
+        box-shadow:
+          0 28px 60px rgba(20, 28, 45, 0.22),
+          0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+        backdrop-filter: blur(22px) saturate(1.12);
+        -webkit-backdrop-filter: blur(22px) saturate(1.12);
+      }
+
+      .chatbot-panel[hidden] {
+        display: none;
+      }
+
+      .chatbot-panel.is-fullscreen {
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        z-index: 9999;
+      }
+
+      .chatbot-panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.8rem;
+        padding-bottom: 0.1rem;
+      }
+
+      .chatbot-panel-eyebrow {
+        margin: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #9a1325;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+
+      .chatbot-panel-eyebrow::before {
+        content: "";
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff7a8a, #c41d38);
+        box-shadow: 0 0 0 4px rgba(154, 19, 37, 0.12);
+      }
+
+      .chatbot-panel-header h2 {
+        margin: 0.2rem 0 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.08rem;
+      }
+
+      .chatbot-panel-actions {
+        display: inline-flex;
+        gap: 0.35rem;
+      }
+
+      .chatbot-icon-btn {
+        border: 1px solid rgba(31, 36, 48, 0.08);
+        border-radius: 999px;
+        width: auto;
+        min-width: 2.1rem;
+        height: 2.1rem;
+        padding: 0 0.85rem;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 255, 0.98));
+        color: #223047;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(20, 28, 45, 0.08);
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        white-space: nowrap;
+      }
+
+      .chatbot-scope-btn {
+        min-width: 6.9rem;
+      }
+
+      .chatbot-icon-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(154, 19, 37, 0.18);
+        box-shadow: 0 12px 22px rgba(20, 28, 45, 0.1);
+      }
+
+      .chatbot-panel-subtitle {
+        margin: -0.2rem 0 0;
+        color: #5b667c;
+        font-size: 0.93rem;
+        line-height: 1.45;
+      }
+
+      .chatbot-panel-subtitle::before {
+        content: "";
+        display: block;
+        height: 1px;
+        margin-bottom: 0.75rem;
+        background: linear-gradient(90deg, rgba(154, 19, 37, 0.24), rgba(31, 91, 214, 0.08), transparent);
+      }
+
+      .chatbot-thread {
+        flex: 1;
+        min-height: 0;
+        border: 1px solid rgba(31, 36, 48, 0.08);
+        border-radius: 18px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 246, 247, 0.92)),
+          #ffffff;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 0.8rem;
+        display: grid;
+        gap: 0.6rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      }
+
+      .chatbot-bubble {
+        display: inline-block;
+        width: fit-content;
+        max-width: 100%;
+        border-radius: 16px;
+        padding: 0.42rem 0.58rem;
+        line-height: 1.25;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        font-size: 0.92rem;
+        box-shadow: 0 10px 24px rgba(20, 28, 45, 0.06);
+        place-self: start start;
+      }
+
+      .chatbot-bubble.user {
+        place-self: start end;
+        border: 1px solid rgba(154, 19, 37, 0.16);
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
+          linear-gradient(145deg, #ffeff2, #ffe4e9);
+        color: #3a2430;
+      }
+
+      .chatbot-bubble.bot {
+        place-self: start start;
+        border: 1px solid rgba(154, 19, 37, 0.14);
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08)),
+          linear-gradient(145deg, #fff6f7, #ffeaed);
+        color: #213045;
+      }
+
+      .chatbot-form {
+        margin-top: 0;
+        padding: 0.1rem 0.1rem 0;
+      }
+
+      .chatbot-label {
+        display: block;
+        font-size: 0.82rem;
+        color: #62708b;
+        margin-bottom: 0.35rem;
+        font-weight: 700;
+      }
+
+      .chatbot-input-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.6rem;
+      }
+
+      .chatbot-input-row input {
+        width: 100%;
+        border: 1px solid rgba(31, 36, 48, 0.1);
+        border-radius: 14px;
+        padding: 0.72rem 0.82rem;
+        font: inherit;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 18px rgba(20, 28, 45, 0.04);
+      }
+
+      .chatbot-input-row input:focus {
+        outline: none;
+        border-color: rgba(154, 19, 37, 0.34);
+        box-shadow: 0 0 0 4px rgba(154, 19, 37, 0.12);
+      }
+
+      .chatbot-input-row button {
+        border: 0;
+        border-radius: 14px;
+        padding: 0.72rem 0.98rem;
+        cursor: pointer;
+        color: #ffffff;
+        font-family: "Space Grotesk", sans-serif;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02)),
+          linear-gradient(135deg, #c41d38, #9a1325 70%, #6f0e1d);
+        box-shadow:
+          0 10px 22px rgba(154, 19, 37, 0.24),
+          inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        transition: transform 180ms ease, box-shadow 180ms ease;
+      }
+
+      .chatbot-input-row button:hover {
+        transform: translateY(-1px);
+        box-shadow:
+          0 14px 26px rgba(154, 19, 37, 0.28),
+          inset 0 1px 0 rgba(255, 255, 255, 0.16);
+      }
+
+      .chatbot-input-row button:disabled {
+        opacity: 0.72;
+        cursor: not-allowed;
+      }
+
+      @media (max-width: 640px) {
+        .chatbot-panel {
+          right: 0.75rem;
+          left: 0.75rem;
+          bottom: 4.8rem;
+          width: auto;
+          height: min(76vh, 640px);
+        }
+
+        .chatbot-panel.is-fullscreen {
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          z-index: 9999;
+        }
+      }
+
+      .sub-next-cta[hidden] {
+        display: none;
+      }
+
+      .quiz-cta {
+        white-space: nowrap;
+      }
+
+      .reader-focus-target {
+        position: relative;
+        z-index: 300;
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.95);
+      }
+
+      body.reader-focus-mode .chatbot-panel {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      body.reader-focus-mode .chatbot-reopen-btn {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      body.reader-focus-mode .head {
+        display: none;
+      }
+
+      body.reader-focus-mode .page {
+        padding-top: 0.75rem;
+      }
+
+      body.reader-focus-mode .course-embed {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar-slot"></div>
+    <main class="page">
+      <div class="head">
+        <p class="title-line" id="title">Sous-acquis</p>
+        <a class="back-link" id="back-to-modules-link" href="/student/programmation-c">Retour aux modules</a>
+      </div>
+
+      <p id="meta" class="meta">Chargement...</p>
+
+      <div class="resource-links-wrapper">
+        <div id="resource-links" class="resource-links"></div>
+        <div id="video-links" class="resource-links"></div>
+        <button type="button" id="focus-mode-btn" class="focus-mode-btn" hidden>Mode focus</button>
+      </div>
+
+      <section id="viewer-shell" class="viewer-shell" hidden>
+        <div class="viewer-toolbar">
+          <p class="viewer-title" id="viewer-title"></p>
+          <div class="viewer-controls" id="viewer-controls" hidden>
+            <button type="button" id="prev-page-btn" aria-label="Page precedente">&#8592;</button>
+            <span class="viewer-page-indicator" id="page-indicator">Page 1 / 1</span>
+            <button type="button" id="next-page-btn" aria-label="Page suivante">&#8594;</button>
+            <button type="button" id="fullscreen-btn" class="fullscreen-btn" aria-label="Plein écran PDF">&#x26F6;</button>
+          </div>
+        </div>
+        <div id="pdf-canvas-wrap" class="pdf-canvas-wrap" hidden>
+          <canvas id="pdf-canvas"></canvas>
+        </div>
+        <iframe id="viewer-frame" class="viewer-frame" title="Apercu support de cours" scrolling="no" hidden></iframe>
+        <p id="viewer-note" class="viewer-note"></p>
+      </section>
+
+      <section id="video-shell" class="video-shell" hidden>
+        <div class="viewer-toolbar">
+          <p class="viewer-title" id="video-title">Aperçu vidéo</p>
+        </div>
+        <video id="viewer-video" class="viewer-video" playsinline></video>
+        <p id="video-note" class="video-note"></p>
+      </section>
+
+      <div class="sub-nav-row">
+        <a class="quiz-cta" id="quiz-cta" href="#" hidden>
+          <span class="arrow">&#8595;</span>
+          <span>Repondre au questionnaire</span>
+        </a>
+
+        <a class="sub-next-cta" id="next-sub-cta" href="#" hidden>
+          <span>Aller au sous-acquis suivant</span>
+          <span class="arrow">&#8594;</span>
+        </a>
+      </div>
+    </main>
+
+    <button type="button" id="chatbot-reopen-btn" class="chatbot-reopen-btn" hidden>
+      Ouvrir assistant
+    </button>
+
+    <section class="chatbot-panel" id="chatbot-panel" hidden aria-label="Assistant NextLearn">
+      <header class="chatbot-panel-header">
+        <div>
+          <p class="chatbot-panel-eyebrow">Assistant NextLearn</p>
+        </div>
+        <div class="chatbot-panel-actions">
+          <button type="button" id="chatbot-expand-btn" class="chatbot-icon-btn" aria-label="Agrandir l'assistant">⤢</button>
+          <button type="button" id="chatbot-close-btn" class="chatbot-icon-btn" aria-label="Fermer l'assistant">×</button>
+        </div>
+      </header>
+
+      <div id="chatbot-thread" class="chatbot-thread" aria-live="polite"></div>
+
+      <form id="chatbot-form" class="chatbot-form" autocomplete="off">
+        <label for="chatbot-input" class="chatbot-label">Votre question</label>
+        <div class="chatbot-input-row">
+          <input
+            id="chatbot-input"
+            name="question"
+            type="text"
+            maxlength="280"
+            placeholder="Exemple: Quel sous-acquis dois-je revoir ?"
+            required
+          />
+          <button type="submit" id="chatbot-send-btn">Envoyer</button>
+        </div>
+      </form>
+    </section>
+
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    <script src="/student/sidebar-loader.js"></script>
+    <script type="module">
+      import * as pdfjsLib from "/vendor/pdfjs/pdf.min.mjs";
+      
+      let plyrInstance = null;
+
+      const title = document.getElementById("title");
+      const meta = document.getElementById("meta");
+      const resourceLinks = document.getElementById("resource-links");
+      const videoLinks = document.getElementById("video-links");
+      const viewerShell = document.getElementById("viewer-shell");
+      const viewerTitle = document.getElementById("viewer-title");
+      const viewerControls = document.getElementById("viewer-controls");
+      const prevPageBtn = document.getElementById("prev-page-btn");
+      const nextPageBtn = document.getElementById("next-page-btn");
+      const fullscreenBtn = document.getElementById("fullscreen-btn");
+      const pageIndicator = document.getElementById("page-indicator");
+      const pdfCanvasWrap = document.getElementById("pdf-canvas-wrap");
+      const pdfCanvas = document.getElementById("pdf-canvas");
+      const viewerFrame = document.getElementById("viewer-frame");
+      const videoShell = document.getElementById("video-shell");
+      const videoTitle = document.getElementById("video-title");
+      const viewerVideo = document.getElementById("viewer-video");
+      const viewerNote = document.getElementById("viewer-note");
+      const videoNote = document.getElementById("video-note");
+      const quizCta = document.getElementById("quiz-cta");
+      const nextSubCta = document.getElementById("next-sub-cta");
+      const chatbotPanel = document.getElementById("chatbot-panel");
+      const chatbotCloseBtn = document.getElementById("chatbot-close-btn");
+      const chatbotExpandBtn = document.getElementById("chatbot-expand-btn");
+      const chatbotThread = document.getElementById("chatbot-thread");
+      const chatbotForm = document.getElementById("chatbot-form");
+      const chatbotInput = document.getElementById("chatbot-input");
+      const chatbotSendBtn = document.getElementById("chatbot-send-btn");
+      const chatbotReopenBtn = document.getElementById("chatbot-reopen-btn");
+      const backToModulesLink = document.getElementById("back-to-modules-link");
+      const focusModeBtn = document.getElementById("focus-mode-btn");
+
+      const params = new URLSearchParams(window.location.search);
+      const moduleId = params.get("moduleId") || "";
+      const subAcquisId = params.get("subAcquisId") || "";
+      const isEmbeddedMode = params.get("embedded") === "1";
+      const currentUserRaw = localStorage.getItem("nextlearnCurrentUser");
+
+      if (backToModulesLink) {
+        backToModulesLink.href = isEmbeddedMode
+          ? "/student/programmation-c?embedded=1"
+          : "/student/programmation-c";
+      }
+
+      function getCurrentIdentifier() {
+        if (!currentUserRaw) return "";
+        try {
+          const currentUser = JSON.parse(currentUserRaw);
+          return typeof currentUser?.identifier === "string" ? currentUser.identifier : "";
+        } catch (_error) {
+          return "";
+        }
+      }
+
+      async function markLessonAsViewed() {
+        const identifier = getCurrentIdentifier();
+        if (!identifier || !moduleId || !subAcquisId) return;
+
+        try {
+          await fetch("/api/student/progress/lesson-view", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier, moduleId, subAcquisId })
+          });
+        } catch (_error) {
+          // Non-blocking for course reading flow.
+        }
+      }
+
+      const pdfState = {
+        pdf: null,
+        pageNumber: 1,
+        pageCount: 0,
+        currentUrl: "",
+        pdfFiles: [],
+        currentFileIndex: -1,
+        renderTask: null,
+        renderRequestId: 0
+      };
+
+      const chatbotState = {
+        bootstrapped: false,
+        fullscreen: false
+      };
+
+      const focusState = {
+        enabled: false,
+        target: null
+      };
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs";
+
+      function extensionLabel(filePath) {
+        const lower = filePath.toLowerCase();
+        if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) return "PPT";
+        if (lower.endsWith(".pdf")) return "PDF";
+        if ([".mp4", ".webm", ".ogg", ".mov", ".m4v"].some((ext) => lower.endsWith(ext))) return "VIDEO";
+        return "Fichier";
+      }
+
+      function isPdfFile(filePath) {
+        return filePath.toLowerCase().endsWith(".pdf");
+      }
+
+      function isVideoFile(filePath) {
+        const extensions = [".mp4", ".webm", ".ogg", ".mov", ".m4v"];
+
+        const lower = String(filePath || "").toLowerCase();
+        if (extensions.some((ext) => lower.endsWith(ext))) {
+          return true;
+        }
+
+        try {
+          const url = new URL(filePath, window.location.origin);
+          const pathname = url.pathname.toLowerCase();
+          return extensions.some((ext) => pathname.endsWith(ext));
+        } catch (_error) {
+          return false;
+        }
+      }
+
+      function isHttpUrl(value) {
+        return /^https?:\/\//i.test(String(value || "").trim());
+      }
+
+      function extractGoogleDriveFileId(url) {
+        const value = String(url || "").trim();
+        if (!value) return "";
+
+        const fileMatch = value.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+        if (fileMatch && fileMatch[1]) return fileMatch[1];
+
+        try {
+          const parsed = new URL(value);
+          const fromQuery = parsed.searchParams.get("id");
+          return fromQuery ? String(fromQuery).trim() : "";
+        } catch (_error) {
+          return "";
+        }
+      }
+
+      function toGoogleDrivePreviewUrl(url) {
+        const fileId = extractGoogleDriveFileId(url);
+        return fileId ? `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview` : "";
+      }
+
+      function buildSubAcquisLink(nextSubAcquisId) {
+        return `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(nextSubAcquisId)}${isEmbeddedMode ? "&embedded=1" : ""}`;
+      }
+
+      async function setupNextSubAcquisLink() {
+        if (!moduleId || !subAcquisId) {
+          nextSubCta.hidden = true;
+          return;
+        }
+
+        try {
+          const identifier = encodeURIComponent(getCurrentIdentifier());
+          const response = await fetch(`/api/programmation-c/modules?identifier=${identifier}`);
+          if (!response.ok) throw new Error("failed modules");
+
+          const data = await response.json();
+          const modules = Array.isArray(data.modules) ? data.modules : [];
+          const currentModule = modules.find((entry) => String(entry.id) === String(moduleId));
+          const subList = Array.isArray(currentModule?.subAcquis) ? currentModule.subAcquis : [];
+          const currentIndex = subList.findIndex((entry) => String(entry) === String(subAcquisId));
+
+          if (currentIndex >= 0 && currentIndex < subList.length - 1) {
+            const nextSubAcquisId = subList[currentIndex + 1];
+            nextSubCta.href = buildSubAcquisLink(nextSubAcquisId);
+            nextSubCta.hidden = false;
+            return;
+          }
+
+          nextSubCta.hidden = true;
+        } catch (_error) {
+          nextSubCta.hidden = true;
+        }
+      }
+
+      function getAbsoluteFileUrl(relativePath) {
+        return new URL(relativePath, window.location.origin).toString();
+      }
+
+      function openChatbotPanel(fullscreen = false) {
+        if (!chatbotPanel) return;
+
+        chatbotPanel.hidden = false;
+        if (chatbotReopenBtn) {
+          chatbotReopenBtn.hidden = true;
+        }
+        document.body.classList.add("chatbot-open");
+        setChatbotFullscreen(fullscreen);
+        ensureChatbotWelcome();
+
+        window.requestAnimationFrame(() => {
+          chatbotInput?.focus();
+        });
+      }
+
+      function closeChatbotPanel() {
+        if (!chatbotPanel) return;
+
+        chatbotPanel.hidden = true;
+        if (chatbotReopenBtn) {
+          chatbotReopenBtn.hidden = false;
+        }
+        document.body.classList.remove("chatbot-open");
+        setChatbotFullscreen(false);
+      }
+
+      function setChatbotFullscreen(fullscreen) {
+        chatbotState.fullscreen = Boolean(fullscreen);
+        chatbotPanel?.classList.toggle("is-fullscreen", chatbotState.fullscreen);
+
+        if (chatbotExpandBtn) {
+          chatbotExpandBtn.textContent = chatbotState.fullscreen ? "⤡" : "⤢";
+          chatbotExpandBtn.setAttribute(
+            "aria-label",
+            chatbotState.fullscreen ? "Réduire l'assistant" : "Agrandir l'assistant"
+          );
+        }
+      }
+
+      function appendChatMessage(role, text) {
+        if (!chatbotThread) return;
+
+        const bubble = document.createElement("article");
+        bubble.className = `chatbot-bubble ${role === "user" ? "user" : "bot"}`;
+        bubble.textContent = String(text || "").trim();
+        chatbotThread.appendChild(bubble);
+        chatbotThread.scrollTop = chatbotThread.scrollHeight;
+      }
+
+      function ensureChatbotWelcome() {
+        if (chatbotState.bootstrapped || !chatbotThread) return;
+
+        appendChatMessage(
+          "bot",
+          `Bonjour 👋 Je suis l'assistant du module ${moduleId || "actuel"}. Je répondrai uniquement avec le contexte de ce module.`
+        );
+
+        chatbotState.bootstrapped = true;
+      }
+
+      async function submitChatbotQuestion() {
+        const question = String(chatbotInput?.value || "").trim();
+        if (!question) return;
+
+        ensureChatbotWelcome();
+        appendChatMessage("user", question);
+
+        if (chatbotInput) {
+          chatbotInput.value = "";
+        }
+
+        if (chatbotSendBtn instanceof HTMLButtonElement) {
+          chatbotSendBtn.disabled = true;
+        }
+
+        try {
+          const identifier = getCurrentIdentifier();
+          const body = { 
+            identifier, 
+            message: question,
+            filterToModuleId: moduleId
+          };
+
+          const response = await fetch("/api/student/chatbot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+
+          const payload = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            appendChatMessage("bot", String(payload?.message || "Je n'ai pas pu traiter votre question."));
+            return;
+          }
+
+          appendChatMessage("bot", String(payload?.answer || "Je n'ai pas trouvé de réponse pertinente."));
+        } catch (_error) {
+          appendChatMessage("bot", "Une erreur réseau est survenue. Réessayez dans un instant.");
+        } finally {
+          if (chatbotSendBtn instanceof HTMLButtonElement) {
+            chatbotSendBtn.disabled = false;
+          }
+        }
+      }
+
+      function setPdfControlsVisible(visible) {
+        viewerShell.hidden = !visible;
+        viewerControls.hidden = !visible;
+        pdfCanvasWrap.hidden = !visible;
+        viewerFrame.hidden = visible;
+        videoShell.hidden = true;
+        refreshFocusTarget();
+      }
+
+      async function togglePdfFullscreen() {
+        if (!pdfCanvasWrap) return;
+
+        const isFullscreen = document.fullscreenElement === pdfCanvasWrap;
+
+        try {
+          if (isFullscreen) {
+            await document.exitFullscreen();
+          } else if (pdfCanvasWrap.requestFullscreen) {
+            await pdfCanvasWrap.requestFullscreen();
+          }
+        } catch (_error) {
+          // Ignore fullscreen errors to keep reading flow intact.
+        }
+      }
+
+      function setVideoVisible(visible) {
+        videoShell.hidden = !visible;
+        viewerShell.hidden = visible;
+        if (!visible && plyrInstance) {
+          plyrInstance.pause();
+        }
+        refreshFocusTarget();
+      }
+
+      function getFocusTarget() {
+        if (!videoShell.hidden) {
+          return videoShell;
+        }
+
+        if (!viewerShell.hidden) {
+          return viewerShell;
+        }
+
+        return null;
+      }
+
+      function setFocusButtonState() {
+        if (!focusModeBtn) {
+          return;
+        }
+
+        const hasTarget = Boolean(getFocusTarget());
+        focusModeBtn.hidden = !hasTarget;
+        focusModeBtn.classList.toggle("active", focusState.enabled);
+        focusModeBtn.textContent = focusState.enabled ? "Quitter focus" : "Mode focus";
+      }
+
+      function disableFocusMode() {
+        if (!focusState.enabled) {
+          setFocusButtonState();
+          return;
+        }
+
+        focusState.target?.classList.remove("reader-focus-target");
+        focusState.target = null;
+        focusState.enabled = false;
+        document.body.classList.remove("reader-focus-mode");
+        setFocusButtonState();
+      }
+
+      function enableFocusMode() {
+        const target = getFocusTarget();
+        if (!target) {
+          return;
+        }
+
+        focusState.enabled = true;
+        focusState.target = target;
+        document.body.classList.add("reader-focus-mode");
+        target.classList.add("reader-focus-target");
+        setFocusButtonState();
+      }
+
+      function toggleFocusMode() {
+        if (focusState.enabled) {
+          disableFocusMode();
+          return;
+        }
+
+        enableFocusMode();
+      }
+
+      function refreshFocusTarget() {
+        if (!focusState.enabled) {
+          setFocusButtonState();
+          return;
+        }
+
+        const nextTarget = getFocusTarget();
+        if (!nextTarget) {
+          disableFocusMode();
+          return;
+        }
+
+        if (focusState.target !== nextTarget) {
+          focusState.target?.classList.remove("reader-focus-target");
+          focusState.target = nextTarget;
+          focusState.target.classList.add("reader-focus-target");
+        }
+
+        setFocusButtonState();
+      }
+
+      function setActiveResourceButton(filePath) {
+        const allButtons = [
+          ...Array.from(resourceLinks.querySelectorAll(".resource-link")),
+          ...Array.from(videoLinks.querySelectorAll(".video-button"))
+        ];
+        allButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.filePath === filePath);
+        });
+      }
+
+      function hasPreviousPdfStep() {
+        return pdfState.pageNumber > 1 || pdfState.currentFileIndex > 0;
+      }
+
+      function hasNextPdfStep() {
+        return (
+          pdfState.pageNumber < pdfState.pageCount ||
+          pdfState.currentFileIndex < pdfState.pdfFiles.length - 1
+        );
+      }
+
+      function updatePdfControls() {
+        const totalFiles = pdfState.pdfFiles.length;
+        const fileIndicator = totalFiles > 1 ? `Fichier ${pdfState.currentFileIndex + 1}/${totalFiles} - ` : "";
+
+        pageIndicator.textContent = `${fileIndicator}Page ${pdfState.pageNumber} / ${
+          pdfState.pageCount || 1
+        }`;
+        prevPageBtn.disabled = !hasPreviousPdfStep();
+        nextPageBtn.disabled = !hasNextPdfStep();
+      }
+
+      async function renderPdfPage(pageNumber) {
+        if (!pdfState.pdf || !pdfCanvas) return;
+
+        const requestId = ++pdfState.renderRequestId;
+        const previousTask = pdfState.renderTask;
+        if (previousTask) {
+          try {
+            previousTask.cancel();
+          } catch (_error) {
+            // Ignore cancellation failures.
+          }
+        }
+
+        // Wait one frame so the container has final size after layout/fullscreen changes.
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+
+        if (requestId !== pdfState.renderRequestId) {
+          return;
+        }
+
+        const page = await pdfState.pdf.getPage(pageNumber);
+        const viewportBase = page.getViewport({ scale: 1 });
+
+        const isPdfFullscreen =
+          document.fullscreenElement === pdfCanvasWrap ||
+          document.webkitFullscreenElement === pdfCanvasWrap;
+
+        const horizontalPadding = isPdfFullscreen ? 16 : 24;
+        const verticalPadding = isPdfFullscreen ? 16 : 24;
+        const availableWidth = Math.max(280, pdfCanvasWrap.clientWidth - horizontalPadding);
+        const availableHeight = Math.max(280, pdfCanvasWrap.clientHeight - verticalPadding);
+        const widthScale = availableWidth / viewportBase.width;
+        const heightScale = availableHeight / viewportBase.height;
+        const scale = Math.max(0.1, Math.min(widthScale, heightScale));
+        const viewport = page.getViewport({ scale });
+
+        const context = pdfCanvas.getContext("2d");
+        pdfCanvas.width = Math.floor(viewport.width);
+        pdfCanvas.height = Math.floor(viewport.height);
+        pdfCanvas.style.width = `${Math.floor(viewport.width)}px`;
+        pdfCanvas.style.height = `${Math.floor(viewport.height)}px`;
+
+        const renderTask = page.render({ canvasContext: context, viewport });
+        pdfState.renderTask = renderTask;
+
+        try {
+          await renderTask.promise;
+        } catch (error) {
+          if (error?.name === "RenderingCancelledException") {
+            return;
+          }
+          throw error;
+        } finally {
+          if (pdfState.renderTask === renderTask) {
+            pdfState.renderTask = null;
+          }
+        }
+
+        if (requestId !== pdfState.renderRequestId) {
+          return;
+        }
+
+        updatePdfControls();
+      }
+
+      async function loadPdfPreview(filePath, options = {}) {
+        const { startAtPage = 1, startAtLastPage = false } = options;
+        const absoluteUrl = getAbsoluteFileUrl(filePath);
+        const fileIndex = pdfState.pdfFiles.indexOf(filePath);
+
+        if (fileIndex >= 0) {
+          pdfState.currentFileIndex = fileIndex;
+        }
+
+        if (pdfState.currentUrl === absoluteUrl && pdfState.pdf) {
+          pdfState.pageNumber = startAtLastPage
+            ? pdfState.pageCount
+            : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
+          await renderPdfPage(pdfState.pageNumber);
+          return;
+        }
+
+        pdfState.currentUrl = absoluteUrl;
+        viewerNote.textContent = "Chargement du PDF page par page...";
+        setPdfControlsVisible(true);
+
+        const loadingTask = pdfjsLib.getDocument(absoluteUrl);
+        pdfState.pdf = await loadingTask.promise;
+        pdfState.pageCount = pdfState.pdf.numPages;
+        pdfState.pageNumber = startAtLastPage
+          ? pdfState.pageCount
+          : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
+
+        await renderPdfPage(pdfState.pageNumber);
+        viewerNote.textContent = "";
+      }
+
+      function previewCourseFile(filePath) {
+        const lower = filePath.toLowerCase();
+        viewerShell.hidden = false;
+        viewerTitle.textContent = "";
+        setActiveResourceButton(filePath);
+
+        if (lower.endsWith(".pdf")) {
+          loadPdfPreview(filePath, { startAtPage: 1 }).catch(() => {
+            viewerNote.textContent = "Impossible de charger le PDF pour un affichage page par page.";
+          });
+          refreshFocusTarget();
+          return;
+        }
+
+        setPdfControlsVisible(false);
+        pdfState.currentFileIndex = -1;
+
+        if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
+          const absoluteUrl = encodeURIComponent(getAbsoluteFileUrl(filePath));
+          viewerFrame.src = `https://view.officeapps.live.com/op/embed.aspx?src=${absoluteUrl}`;
+          viewerNote.textContent =
+            "Apercu PowerPoint via Office Viewer. En local, cela peut echouer si le fichier n'est pas accessible publiquement.";
+          refreshFocusTarget();
+          return;
+        }
+
+        if (isVideoFile(filePath)) {
+          setPdfControlsVisible(false);
+          setVideoVisible(true);
+          videoTitle.textContent = ``;
+          
+          const videoUrl = getAbsoluteFileUrl(filePath);
+          videoNote.textContent = "";
+          
+          if (!plyrInstance) {
+            plyrInstance = new Plyr('#viewer-video', {
+              controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'fullscreen'],
+              autoplay: false,
+              quality: { default: 720, options: [360, 720, 1080] }
+            });
+          }
+          
+          plyrInstance.source = {
+            type: 'video',
+            sources: [{ src: videoUrl, type: 'video/mp4' }]
+          };
+          
+          plyrInstance.play().catch(() => {
+            videoNote.textContent = "La video est prête a etre lue.";
+          });
+
+          refreshFocusTarget();
+          return;
+        }
+
+        if (isHttpUrl(filePath)) {
+          setPdfControlsVisible(false);
+          setVideoVisible(false);
+
+          const drivePreviewUrl = toGoogleDrivePreviewUrl(filePath);
+          if (drivePreviewUrl) {
+            viewerFrame.src = drivePreviewUrl;
+            viewerNote.textContent = "Apercu Google Drive charge.";
+            refreshFocusTarget();
+            return;
+          }
+
+          viewerFrame.src = filePath;
+          viewerNote.textContent = "Ressource externe chargee.";
+          refreshFocusTarget();
+          return;
+        }
+
+        setVideoVisible(false);
+        viewerFrame.src = filePath;
+        viewerNote.textContent = "Apercu du fichier.";
+        refreshFocusTarget();
+      }
+
+      async function loadData() {
+        if (!moduleId || !subAcquisId) {
+          meta.textContent = "Sous-acquis introuvable.";
+          nextSubCta.hidden = true;
+          quizCta.hidden = true;
+          videoShell.hidden = true;
+          disableFocusMode();
+          return;
+        }
+
+        quizCta.href = `/student/questionnaire.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}${isEmbeddedMode ? "&embedded=1" : ""}`;
+        title.textContent = `Module ${moduleId} - Sous-acquis ${subAcquisId}`;
+        meta.textContent = "Chargement du cours...";
+
+        try {
+          const identifier = encodeURIComponent(getCurrentIdentifier());
+          const response = await fetch(
+            `/api/programmation-c/sub-acquis/${encodeURIComponent(moduleId)}/${encodeURIComponent(subAcquisId)}?identifier=${identifier}`
+          );
+          if (!response.ok) throw new Error("failed");
+
+          const data = await response.json();
+          const files = Array.isArray(data.courseFiles) ? data.courseFiles : [];
+          const videoFiles = Array.isArray(data.videoFiles) ? data.videoFiles : [];
+          const questions = Array.isArray(data.quizQuestions) ? data.quizQuestions : [];
+          const moduleName = String(data.moduleName || `Module ${moduleId}`);
+          const subAcquisName = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
+
+          title.textContent = `${moduleName} - ${subAcquisName}`;
+
+          markLessonAsViewed();
+
+          quizCta.hidden = questions.length === 0;
+          pdfState.pdfFiles = files.filter(isPdfFile);
+          pdfState.currentFileIndex = -1;
+          videoLinks.innerHTML = "";
+          videoShell.hidden = true;
+
+          resourceLinks.innerHTML = "";
+
+          if (videoFiles.length === 0) {
+            videoLinks.innerHTML = "<span>Aucune video disponible pour ce sous-acquis.</span>";
+          } else {
+            videoFiles.forEach((filePath, index) => {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "video-button";
+              button.dataset.filePath = filePath;
+              button.textContent = videoFiles.length === 1 ? "Vidéo" : `Vidéo ${index + 1}`;
+              button.addEventListener("click", () => previewCourseFile(filePath));
+              videoLinks.appendChild(button);
+            });
+          }
+
+          if (files.length > 0) {
+            previewCourseFile(files[0]);
+          } else if (videoFiles.length > 0) {
+            previewCourseFile(videoFiles[0]);
+          }
+
+          meta.textContent = "";
+          setFocusButtonState();
+        } catch (_error) {
+          meta.textContent = "Impossible de charger ce sous-acquis.";
+          quizCta.hidden = true;
+          videoLinks.innerHTML = "";
+          videoShell.hidden = true;
+          disableFocusMode();
+        }
+      }
+
+      nextPageBtn.addEventListener("click", async () => {
+        await goToNextPdfStep();
+      });
+
+      async function goToPreviousPdfStep() {
+        if (!pdfState.pdf) return;
+
+        if (pdfState.pageNumber > 1) {
+          pdfState.pageNumber -= 1;
+          await renderPdfPage(pdfState.pageNumber);
+          return;
+        }
+
+        if (pdfState.currentFileIndex > 0) {
+          const previousFilePath = pdfState.pdfFiles[pdfState.currentFileIndex - 1];
+          await loadPdfPreview(previousFilePath, { startAtLastPage: true });
+          setActiveResourceButton(previousFilePath);
+        }
+      }
+
+      async function goToNextPdfStep() {
+        if (!pdfState.pdf) return;
+
+        if (pdfState.pageNumber < pdfState.pageCount) {
+          pdfState.pageNumber += 1;
+          await renderPdfPage(pdfState.pageNumber);
+          return;
+        }
+
+        if (pdfState.currentFileIndex >= 0 && pdfState.currentFileIndex < pdfState.pdfFiles.length - 1) {
+          const nextFilePath = pdfState.pdfFiles[pdfState.currentFileIndex + 1];
+          await loadPdfPreview(nextFilePath, { startAtPage: 1 });
+          setActiveResourceButton(nextFilePath);
+        }
+      }
+
+      prevPageBtn.addEventListener("click", async () => {
+        await goToPreviousPdfStep();
+      });
+
+      fullscreenBtn?.addEventListener("click", () => {
+        if (pdfCanvasWrap.hidden) return;
+        togglePdfFullscreen();
+      });
+
+      document.addEventListener("fullscreenchange", () => {
+        if (fullscreenBtn) {
+          fullscreenBtn.setAttribute(
+            "aria-label",
+            document.fullscreenElement === pdfCanvasWrap ? "Quitter le plein écran PDF" : "Plein écran PDF"
+          );
+        }
+
+        if (!pdfCanvasWrap.hidden && pdfState.pdf) {
+          void renderPdfPage(pdfState.pageNumber);
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (pdfCanvasWrap.hidden || !pdfState.pdf) {
+          return;
+        }
+
+        void renderPdfPage(pdfState.pageNumber);
+      });
+
+      chatbotCloseBtn?.addEventListener("click", () => {
+        closeChatbotPanel();
+      });
+
+      chatbotExpandBtn?.addEventListener("click", () => {
+        openChatbotPanel(!chatbotState.fullscreen);
+      });
+
+      chatbotForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void submitChatbotQuestion();
+      });
+
+      chatbotReopenBtn?.addEventListener("click", () => {
+        openChatbotPanel(false);
+      });
+
+      focusModeBtn?.addEventListener("click", () => {
+        toggleFocusMode();
+      });
+
+      document.addEventListener("pointerdown", (event) => {
+        if (!focusState.enabled || !focusState.target) {
+          return;
+        }
+
+        const clickedNode = event.target;
+        const clickedInsideTarget = clickedNode instanceof Node && focusState.target.contains(clickedNode);
+        const clickedFocusButton = clickedNode instanceof Node && focusModeBtn?.contains(clickedNode);
+
+        if (!clickedInsideTarget && !clickedFocusButton) {
+          disableFocusMode();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && focusState.enabled) {
+          disableFocusMode();
+        }
+
+        const isPdfVisible = !pdfCanvasWrap.hidden && Boolean(pdfState.pdf);
+        const isPdfFullscreen =
+          document.fullscreenElement === pdfCanvasWrap ||
+          document.webkitFullscreenElement === pdfCanvasWrap;
+
+        if (!isPdfVisible || !isPdfFullscreen) {
+          return;
+        }
+
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          void goToPreviousPdfStep();
+          return;
+        }
+
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          void goToNextPdfStep();
+        }
+      });
+
+      loadData();
+      setupNextSubAcquisLink();
+      setFocusButtonState();
+      chatbotReopenBtn.hidden = true;
+      if (moduleId) {
+        openChatbotPanel(false);
+      }
+    </script>
+  </body>
+</html>

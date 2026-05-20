@@ -1,0 +1,39 @@
+{
+  "name": "nextlearn",
+  "version": "1.0.0",
+  "description": "NextLearn interface served by a Node.js + TypeScript backend",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "clean": "rimraf dist",
+    "seed:login-users": "tsx scripts/seed-login-users.ts"
+  },
+  "keywords": [
+    "node",
+    "typescript",
+    "express",
+    "learning"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.3.1",
+    "express": "^4.21.2",
+    "mammoth": "^1.12.0",
+    "mongoose": "^9.3.3",
+    "nodemailer": "^8.0.5",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^5.6.205"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.14",
+    "@types/nodemailer": "^8.0.0",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

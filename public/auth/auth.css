@@ -1,0 +1,300 @@
+/*
+  Auth pages design tokens.
+  Kept separate from the landing page styles for clear file organization.
+*/
+:root {
+  --auth-bg: #f3f4f8;
+  --auth-surface: #ffffff;
+  --auth-ink: #182235;
+  --auth-muted: #5f6777;
+  --auth-line: #d9deea;
+  --auth-brand: #ff3d43;
+  --auth-brand-dark: #e92a33;
+  --auth-shadow: 0 22px 44px rgba(18, 24, 39, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  color: var(--auth-ink);
+  background:
+    radial-gradient(circle at 10% 0%, #ffffff 0%, transparent 45%),
+    radial-gradient(circle at 90% 100%, #ffe9ea 0%, transparent 40%),
+    var(--auth-bg);
+}
+
+/* Main auth shell: split panel for content and visual context. */
+.auth-shell {
+  width: min(1020px, calc(100% - 2rem));
+  margin: 2rem auto;
+  background: var(--auth-surface);
+  border: 1px solid #edf0f7;
+  border-radius: 18px;
+  box-shadow: var(--auth-shadow);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+/* Left side panel carries the form and actions. */
+.auth-panel {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.brand-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo-nextlearn {
+  height: 30px;
+}
+
+.brand-by {
+  color: #7f8593;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.logo-esprit {
+  height: 23px;
+}
+
+.auth-panel h1 {
+  margin: 0.5rem 0 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.8rem, 3.2vw, 2.3rem);
+  line-height: 1.1;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: var(--auth-muted);
+  font-size: 1rem;
+}
+
+.auth-form-panel {
+  display: grid;
+  gap: 0.8rem;
+  animation: slideDown 220ms ease;
+}
+
+.auth-form-panel[hidden] {
+  display: none;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.message-container {
+  padding: 0.8rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.9rem;
+  animation: slideDown 300ms ease;
+}
+
+.message-container.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message-container.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.auth-form input,
+.auth-form select {
+  width: 100%;
+  border: 1px solid var(--auth-line);
+  border-radius: 10px;
+  padding: 0.72rem 0.8rem;
+  font: inherit;
+}
+
+.auth-form input:focus,
+.auth-form select:focus {
+  outline: 2px solid rgba(255, 61, 67, 0.2);
+  border-color: var(--auth-brand);
+}
+
+/* Reusable CTA style for submit buttons. */
+.auth-submit {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.74rem 1rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  background: var(--auth-brand);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 220ms ease, background 220ms ease;
+}
+
+.auth-submit:hover {
+  transform: translateY(-2px);
+  background: var(--auth-brand-dark);
+}
+
+.role-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: -0.05rem;
+  padding: 0.28rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f6f8fc, #eef2fa);
+  border: 1px solid #e1e7f2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.role-switch-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.46rem 0.78rem;
+  background: transparent;
+  color: #616b7d;
+  cursor: pointer;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  transition: transform 160ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.role-switch-btn:hover {
+  transform: translateY(-1px);
+  color: #2f394d;
+}
+
+.role-switch-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 61, 67, 0.18);
+}
+
+.role-switch-btn.active {
+  background: linear-gradient(135deg, #ffffff, #fff9fa);
+  color: var(--auth-brand-dark);
+  border-color: rgba(255, 61, 67, 0.24);
+  box-shadow: 0 8px 16px rgba(26, 35, 59, 0.12);
+}
+
+.role-switch-btn.active:hover {
+  transform: translateY(-1px) scale(1.01);
+}
+
+.auth-alt {
+  margin: 0;
+  color: #576072;
+}
+
+.auth-alt a {
+  color: var(--auth-brand);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+/* Right side panel adds context text and a decorative pattern. */
+.auth-aside {
+  position: relative;
+  background: linear-gradient(155deg, #111a2f 0%, #1d2940 60%, #2a3b59 100%);
+  color: #ecf0ff;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.auth-aside::before,
+.auth-aside::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.auth-aside::before {
+  width: 220px;
+  height: 220px;
+  top: -65px;
+  right: -45px;
+}
+
+.auth-aside::after {
+  width: 320px;
+  height: 320px;
+  bottom: -120px;
+  left: -80px;
+}
+
+.auth-aside h2 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.45rem;
+  max-width: 280px;
+}
+
+.auth-aside p {
+  margin: 0.75rem 0 0;
+  color: #d7deee;
+  line-height: 1.45;
+  max-width: 320px;
+}
+
+.back-link {
+  margin-top: 1rem;
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Responsive stack for tablets and phones. */
+@media (max-width: 860px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-aside {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 520px) {
+  .role-switch {
+    grid-template-columns: 1fr;
+  }
+}

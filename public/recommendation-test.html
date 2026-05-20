@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recommendation Test</title>
+    <link rel="stylesheet" href="/backoffice/backoffice.css" />
+    <style>
+      body {
+        padding: 1.5rem;
+      }
+      .test-shell {
+        max-width: 980px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(207, 31, 46, 0.18);
+        border-radius: 18px;
+        padding: 1.2rem 1.4rem;
+        box-shadow: var(--shadow-soft);
+      }
+      .test-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+      .test-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 0.9rem;
+      }
+      .output {
+        margin-top: 1rem;
+        padding: 0.9rem;
+        background: #fff8f9;
+        border: 1px solid #f0d7da;
+        border-radius: 12px;
+        font-size: 0.92rem;
+        white-space: pre-wrap;
+      }
+      .inline-help {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+      }
+      @media (max-width: 760px) {
+        .test-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <main class="test-shell">
+      <header class="panel-header">
+        <div>
+          <p class="eyebrow">Recommendation Test</p>
+          <h2>Graph-based sub-skill recommendations</h2>
+        </div>
+      </header>
+
+      <section class="card" style="margin-top: 1rem;">
+        <div class="section-title">Test inputs</div>
+        <div class="test-grid">
+          <label>
+            Sub-skill
+            <select id="skillId"></select>
+          </label>
+          <label>
+            Score
+            <input type="number" id="score" min="0" max="100" value="45" />
+          </label>
+          <label>
+            Average
+            <input type="number" id="avg" min="0" max="100" value="60" />
+          </label>
+          <label>
+            Max remediation depth
+            <input type="number" id="depth" min="1" max="5" value="2" />
+          </label>
+        </div>
+        <div class="test-actions">
+          <button class="btn-primary" id="btnRun" type="button">Run recommendation</button>
+        </div>
+        <div id="status" class="form-hint"></div>
+        <pre id="output" class="output"></pre>
+      </section>
+    </main>
+
+    <script src="/recommendation-test.js"></script>
+  </body>
+</html>

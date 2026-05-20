@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Générateur de Questions Quiz - NextLearn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .options-list { list-style: none; margin: 10px 0 0; padding: 0; }
+    .option-item { border: 1px solid #e7e3e5; background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+    .option-item.correct { border-color: #c9ead7; background: #eefaf2; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main style="max-width:1100px;margin:32px auto;padding:16px;">
+    <div class="course-card">
+      <header>
+        <h1>Générateur de Questions Quiz</h1>
+        <p>Générez, validez et régénérez des questions de quiz avec l'aide de l'IA</p>
+      </header>
+
+      <div class="content">
+        <!-- include the same generator UI as teacher page but without global topbar -->
+        <!-- Phase 1: Configuration -->
+        <div id="phase-config" class="section">
+          <div class="section-title">Configurer la génération</div>
+          <div class="form-group grid-2">
+            <div>
+              <label for="moduleId">Module *</label>
+              <select id="moduleId" required>
+                <option value="">-- Sélectionner un module --</option>
+              </select>
+            </div>
+            <div>
+              <label for="subAcquisId">Sous-acquis *</label>
+              <select id="subAcquisId" required disabled>
+                <option value="">-- D'abord sélectionner un module --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group grid-2">
+            <div>
+              <label for="difficulty">Niveau de difficulté</label>
+              <select id="difficulty">
+                <option value="beginner">Débutant</option>
+                <option value="intermediate" selected>Intermédiaire</option>
+                <option value="advanced">Avancé</option>
+              </select>
+            </div>
+            <div>
+              <label for="count">Nombre de questions (1-10)</label>
+              <input type="number" id="count" min="1" max="10" value="5">
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button class="btn-primary" id="btnGenerate">
+              Générer les questions
+            </button>
+          </div>
+
+          <div id="status-message" class="hidden"></div>
+        </div>
+
+        <!-- Phase 2: Review & Validation -->
+        <div id="phase-review" class="section hidden">
+          <div class="section-title">Examiner et approuver les questions</div>
+          <div class="status info" id="review-info">
+            <strong>Instructions:</strong> Sélectionnez les questions que vous souhaitez ajouter au quiz, puis cliquez sur "Valider et enregistrer".
+          </div>
+          <div id="questions-container"></div>
+          <div class="form-group full">
+            <label for="quizTitle">Titre du quiz (optionnel)</label>
+            <input type="text" id="quizTitle" placeholder="ex: Quiz - Boucles for">
+          </div>
+          <div class="button-group">
+            <button class="btn-success" id="btnValidate">Valider et enregistrer</button>
+            <button class="btn-secondary" id="btnRegenerateAll">Régénérer tout</button>
+            <button class="btn-danger" id="btnReject">Annuler</button>
+          </div>
+        </div>
+
+        <!-- Phase 3: Success -->
+        <div id="phase-success" class="section hidden">
+          <div class="status success"><strong>Succès!</strong> Les questions ont été ajoutées au quiz.</div>
+          <div id="success-message"></div>
+          <div class="button-group">
+            <button class="btn-primary" id="btnReset">Générer d'autres questions</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Reuse generator logic by copying essential parts from teacher generator inline script
+    let currentSession = { sessionId: null, moduleId: null, subAcquisId: null, questions: [], selectedIndices: new Set() };
+    let modules = [];
+
+    async function loadModules() {
+      try {
+        const res = await fetch('/api/backoffice/curriculum');
+        const data = await res.json();
+        modules = data.modules || [];
+        populateModuleSelect();
+      } catch (e) { console.error(e); }
+    }
+
+    function populateModuleSelect() {
+      const select = document.getElementById('moduleId');
+      select.innerHTML = '<option value="">-- Sélectionner un module --</option>';
+      modules.forEach(m => { const opt = document.createElement('option'); opt.value = m.id; opt.textContent = `${m.id} - ${m.name || ''}`; select.appendChild(opt); });
+    }
+
+    function updateSubAcquisSelect() {
+      const moduleId = document.getElementById('moduleId').value;
+      const select = document.getElementById('subAcquisId');
+      select.disabled = !moduleId; select.innerHTML = '<option value="">-- Sélectionner --</option>';
+      if (!moduleId) return;
+      const module = modules.find(x => x.id === moduleId); if (!module) return;
+      const list = (module.acquis || []).flatMap(a => a.sousAcquis || []);
+      list.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = `${moduleId}.${s.id} - ${s.name || ''}`; select.appendChild(o); });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadModules();
+      document.getElementById('moduleId').addEventListener('change', updateSubAcquisSelect);
+      document.getElementById('btnGenerate').addEventListener('click', generateQuestions);
+      document.getElementById('btnRegenerateAll').addEventListener('click', regenerateAll);
+      document.getElementById('btnValidate').addEventListener('click', validateQuestions);
+      document.getElementById('btnReject').addEventListener('click', rejectQuestions);
+      document.getElementById('btnReset').addEventListener('click', resetForm);
+    });
+
+    async function generateQuestions() {
+      const moduleId = document.getElementById('moduleId').value;
+      const subAcquisId = document.getElementById('subAcquisId').value;
+      if (!moduleId || !subAcquisId) { alert('Remplissez les champs requis'); return; }
+      document.getElementById('btnGenerate').disabled = true;
+      try {
+        const resp = await fetch('/api/teacher/quizzes/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ moduleId, subAcquisId, difficulty: document.getElementById('difficulty').value, count: parseInt(document.getElementById('count').value||'5',10) }) });
+        const data = await resp.json();
+        currentSession = { sessionId: data.sessionId, moduleId, subAcquisId, questions: data.questions || [], selectedIndices: new Set() };
+        showReviewPhase();
+      } catch (e) { console.error(e); alert('Erreur génération'); }
+      finally { document.getElementById('btnGenerate').disabled = false; }
+    }
+
+    function showReviewPhase() { document.getElementById('phase-config').classList.add('hidden'); document.getElementById('phase-review').classList.remove('hidden'); displayQuestions(); }
+
+    function displayQuestions() {
+      const container = document.getElementById('questions-container'); container.innerHTML = '';
+      currentSession.questions.forEach((q,i) => {
+        const card = document.createElement('div'); card.className = 'question-card';
+        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.addEventListener('change', () => { if(currentSession.selectedIndices.has(i)){ currentSession.selectedIndices.delete(i);}else{ currentSession.selectedIndices.add(i);} displayQuestions(); });
+        const header = document.createElement('div'); header.className = 'question-header'; header.innerHTML = `<div><div class="question-number">Question ${i+1}</div></div>`;
+        header.appendChild(checkbox);
+        card.appendChild(header);
+        const prompt = document.createElement('div'); prompt.className = 'question-prompt'; prompt.textContent = q.prompt || '';
+        card.appendChild(prompt);
+
+        const options = Array.isArray(q.options) ? q.options : [];
+        const correctIndex = typeof q.correctOptionIndex === 'number'
+          ? q.correctOptionIndex
+          : (typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : -1);
+
+        if (options.length > 0) {
+          const list = document.createElement('ul');
+          list.className = 'options-list';
+          options.forEach((optionText, optionIndex) => {
+            const item = document.createElement('li');
+            item.className = `option-item ${optionIndex === correctIndex ? 'correct' : ''}`.trim();
+            item.textContent = optionIndex === correctIndex ? `${optionText} (Réponse correcte)` : optionText;
+            list.appendChild(item);
+          });
+          card.appendChild(list);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    async function regenerateAll() { alert('Régénération globale (utilise endpoint serveur)'); }
+    async function validateQuestions() { alert('Validation (utilise endpoint serveur)'); }
+    async function rejectQuestions() { resetForm(); }
+    function resetForm(){ document.getElementById('phase-config').classList.remove('hidden'); document.getElementById('phase-review').classList.add('hidden'); document.getElementById('phase-success').classList.add('hidden'); }
+  </script>
+</body>
+</html>

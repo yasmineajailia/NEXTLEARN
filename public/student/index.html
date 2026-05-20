@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Espace Étudiant - NextLearn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/student/sidebar.css" />
+    <link rel="stylesheet" href="/student/student.css" />
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <header class="content-header" id="content-header">
+          <p class="eyebrow" id="page-eyebrow">Cours</p>
+          <h1 id="page-title">Mes cours disponibles</h1>
+        </header>
+
+        <section class="view" id="view-dashboard">
+          <article class="card dashboard-intro-card">
+            <h3>Vue globale de progression</h3>
+            <p id="dashboard-summary-line">
+              Suivez vos progrées dans les modules, les leçons, les quiz et les vidéos.
+            </p>
+          </article>
+
+          <div class="dashboard-kpi-grid">
+            <article class="card kpi-card">
+              <p>Leçons terminées</p>
+              <strong id="dash-kpi-lessons">0/0</strong>
+            </article>
+            <article class="card kpi-card">
+              <p>Modules en progression</p>
+              <strong id="dash-kpi-modules">0/0</strong>
+            </article>
+            <article class="card kpi-card">
+              <p>Quiz validés</p>
+              <strong id="dash-kpi-quizzes">0/0</strong>
+            </article>
+            <article class="card kpi-card">
+              <p>Vidéos consultées</p>
+              <strong id="dash-kpi-videos">0/0</strong>
+            </article>
+          </div>
+
+          <div class="dashboard-charts-grid">
+            <article class="card chart-card">
+              <h3>Avancement global</h3>
+              <canvas id="chart-overall-progress" aria-label="Graphique progression globale"></canvas>
+            </article>
+
+            <article class="card chart-card">
+              <h3>Progression par module</h3>
+              <canvas id="chart-module-progress" aria-label="Graphique progression par module"></canvas>
+            </article>
+
+            <article class="card chart-card">
+              <h3>Quiz par module</h3>
+              <canvas id="chart-quiz-progress" aria-label="Graphique quiz par module"></canvas>
+            </article>
+
+            <article class="card chart-card">
+              <h3>Vidéos par module</h3>
+              <canvas id="chart-video-progress" aria-label="Graphique vidéos par module"></canvas>
+            </article>
+          </div>
+        </section>
+
+        <section class="view active" id="view-cours">
+          <div class="grid-two" id="cours-overview">
+            <article class="card course-card">
+              <h3>Programmation en C</h3>
+              <p>
+                Accédez à tous les modules, cours, quiz et ressources de Programmation en C pour
+                suivre votre progression.
+              </p>
+              <button class="action-link" type="button" id="open-c-course-btn">Accéder au cours</button>
+            </article>
+
+            <article class="card stats-card">
+              <h3>Progression rapide</h3>
+              <div class="stat-line">
+                <span>Leçons complétées</span>
+                <strong id="stat-lessons-completed">0</strong>
+              </div>
+              <div class="stat-line">
+                <span>Quiz passés</span>
+                <strong id="stat-quizzes-passed">0</strong>
+              </div>
+              <div class="stat-line">
+                <span>Moyenne quiz</span>
+                <strong id="stat-quiz-average">0.0/20</strong>
+              </div>
+            </article>
+          </div>
+
+          <div class="course-embed" id="course-embed-card" hidden>
+            <div id="course-embed-content" class="course-embed-content" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-calendrier">
+          <article class="card">
+            <div class="calendar-term" id="calendar-list"></div>
+          </article>
+        </section>
+
+        <section class="view" id="view-messages">
+          <article class="card">
+            <h3>Messages des enseignants</h3>
+            <div id="messages-list" class="messages-list"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="/student/sidebar-loader.js"></script>
+    <script src="/student/student.js"></script>
+  </body>
+</html>

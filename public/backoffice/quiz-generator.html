@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Backoffice - Générateur de quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/backoffice/backoffice.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <div class="backoffice-shell">
+      <aside class="sidebar">
+        <div>
+          <div class="brand-line backoffice-brand-line">
+            <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn" />
+            <span class="brand-by">by</span>
+            <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
+          </div>
+
+          <article class="role-box" aria-label="Compte connecte">
+            <label>Connecté en tant que</label>
+            <strong id="sidebar-user-name">Utilisateur</strong>
+            <span id="sidebar-user-role" class="sidebar-role-chip">Enseignant</span>
+          </article>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Sections du back-office">
+          <a href="/backoffice/index.html" class="nav-item">Vue d'ensemble</a>
+          <a href="/backoffice/index.html" class="nav-item">Gestion des modules</a>
+          <a href="/backoffice/index.html" class="nav-item">Gestion des enseignants</a>
+          <a href="/backoffice/index.html" class="nav-item">Ajouter une classe</a>
+          <a href="/backoffice/index.html" class="nav-item">Gérer l'accès aux modules</a>
+          <a href="/backoffice/index.html" class="nav-item">Gestion des étudiants</a>
+          <a href="/backoffice/quiz-generator.html" class="nav-item active">Générer des quiz</a>
+        </nav>
+
+        <a href="/" class="sidebar-home-link">Retour à l'accueil</a>
+      </aside>
+
+      <main class="main-panel">
+        <header class="panel-header">
+          <div>
+            <p class="eyebrow" id="panel-eyebrow">Générateur</p>
+            <h2 id="panel-title">Créer des questions</h2>
+          </div>
+        </header>
+
+        <section class="view active" id="view-quiz-generator-main">
+          <div class="panel-grid">
+            <article class="card wide">
+              <!-- Generator UI (copied from standalone) -->
+              <header>
+                <h1>Générateur de Questions Quiz</h1>
+                <p>Générez, validez et régénérez des questions de quiz avec l'aide de l'IA</p>
+              </header>
+
+              <div class="content">
+                <div id="phase-config" class="section">
+                  <div class="section-title">Configurer la génération</div>
+                  <div class="form-group grid-2">
+                    <div>
+                      <label for="moduleId">Module *</label>
+                      <select id="moduleId" required>
+                        <option value="">-- Sélectionner un module --</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="subAcquisId">Sous-acquis *</label>
+                      <select id="subAcquisId" required disabled>
+                        <option value="">-- D'abord sélectionner un module --</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group grid-2">
+                    <div>
+                      <label for="difficulty">Niveau de difficulté</label>
+                      <select id="difficulty">
+                        <option value="beginner">Débutant</option>
+                        <option value="intermediate" selected>Intermédiaire</option>
+                        <option value="advanced">Avancé</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="count">Nombre de questions (1-10)</label>
+                      <input type="number" id="count" min="1" max="10" value="5">
+                    </div>
+                  </div>
+
+                  <div class="button-group">
+                    <button class="btn-primary" id="btnGenerate">Générer les questions</button>
+                  </div>
+
+                  <div id="status-message" class="hidden"></div>
+                </div>
+
+                <div id="phase-review" class="section hidden">
+                  <div class="section-title">Examiner et approuver les questions</div>
+                  <div class="status info" id="review-info">
+                    <strong>Instructions:</strong> Sélectionnez les questions que vous souhaitez ajouter au quiz, puis cliquez sur "Valider et enregistrer".
+                  </div>
+                  <div id="questions-container"></div>
+                  <div class="form-group full">
+                    <label for="quizTitle">Titre du quiz (optionnel)</label>
+                    <input type="text" id="quizTitle" placeholder="ex: Quiz - Boucles for">
+                  </div>
+                  <div class="button-group">
+                    <button class="btn-success" id="btnValidate">Valider et enregistrer</button>
+                    <button class="btn-secondary" id="btnRegenerateAll">Régénérer tout</button>
+                    <button class="btn-danger" id="btnReject">Annuler</button>
+                  </div>
+                </div>
+
+                <div id="phase-success" class="section hidden">
+                  <div class="status success"><strong>Succès!</strong> Les questions ont été ajoutées au quiz.</div>
+                  <div id="success-message"></div>
+                  <div class="button-group">
+                    <button class="btn-primary" id="btnReset">Générer d'autres questions</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <p id="toast" class="toast" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+
+    <script>
+      // Lightweight generator wiring for backoffice-wrapped page
+      let currentSession = { sessionId: null, moduleId: null, subAcquisId: null, questions: [], selectedIndices: new Set() };
+      let modules = [];
+
+      async function loadModules() {
+        try {
+          const resp = await fetch('/api/backoffice/curriculum');
+          const data = await resp.json();
+          modules = data.modules || [];
+          populateModuleSelect();
+        } catch (e) { console.error(e); }
+      }
+
+      function populateModuleSelect() {
+        const select = document.getElementById('moduleId');
+        select.innerHTML = '<option value="">-- Sélectionner un module --</option>';
+        modules.forEach(m => { const opt = document.createElement('option'); opt.value = m.id; opt.textContent = `${m.id} - ${m.name || ''}`; select.appendChild(opt); });
+      }
+
+      function updateSubAcquisSelect() {
+        const moduleId = document.getElementById('moduleId').value;
+        const select = document.getElementById('subAcquisId');
+        select.disabled = !moduleId; select.innerHTML = '<option value="">-- Sélectionner --</option>';
+        if (!moduleId) return;
+        const module = modules.find(x => x.id === moduleId); if (!module) return;
+        const list = (module.acquis || []).flatMap(a => a.sousAcquis || []);
+        list.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = `${moduleId}.${s.id} - ${s.name || ''}`; select.appendChild(o); });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        loadModules();
+        document.getElementById('moduleId').addEventListener('change', updateSubAcquisSelect);
+        document.getElementById('btnGenerate').addEventListener('click', generateQuestions);
+        document.getElementById('btnRegenerateAll').addEventListener('click', regenerateAll);
+        document.getElementById('btnValidate').addEventListener('click', validateQuestions);
+        document.getElementById('btnReject').addEventListener('click', rejectQuestions);
+        document.getElementById('btnReset').addEventListener('click', resetForm);
+      });
+
+      async function generateQuestions() {
+        const moduleId = document.getElementById('moduleId').value;
+        const subAcquisId = document.getElementById('subAcquisId').value;
+        if (!moduleId || !subAcquisId) { alert('Remplissez les champs requis'); return; }
+        document.getElementById('btnGenerate').disabled = true;
+        try {
+          const resp = await fetch('/api/teacher/quizzes/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ moduleId, subAcquisId, difficulty: document.getElementById('difficulty').value, count: parseInt(document.getElementById('count').value||'5',10) }) });
+          if (!resp.ok) throw new Error('Erreur génération');
+          const data = await resp.json();
+          currentSession = { sessionId: data.sessionId, moduleId, subAcquisId, questions: data.questions || [], selectedIndices: new Set() };
+          showReviewPhase();
+        } catch (e) { console.error(e); alert('Erreur génération'); }
+        finally { document.getElementById('btnGenerate').disabled = false; }
+      }
+
+      function showReviewPhase() { document.getElementById('phase-config').classList.add('hidden'); document.getElementById('phase-review').classList.remove('hidden'); displayQuestions(); }
+
+      function displayQuestions() {
+        const container = document.getElementById('questions-container'); container.innerHTML = '';
+        currentSession.questions.forEach((q,i) => {
+          const card = document.createElement('div'); card.className = 'question-card';
+          const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = currentSession.selectedIndices.has(i);
+          checkbox.addEventListener('change', () => { if(currentSession.selectedIndices.has(i)){ currentSession.selectedIndices.delete(i);}else{ currentSession.selectedIndices.add(i);} displayQuestions(); });
+          const header = document.createElement('div'); header.className = 'question-header'; header.innerHTML = `<div><div class="question-number">Question ${i+1}</div></div>`;
+          header.appendChild(checkbox);
+          card.appendChild(header);
+          const prompt = document.createElement('div'); prompt.className = 'question-prompt'; prompt.textContent = q.prompt || '';
+          card.appendChild(prompt);
+
+          const options = Array.isArray(q.options) ? q.options : [];
+          const correctIndex = typeof q.correctOptionIndex === 'number'
+            ? q.correctOptionIndex
+            : (typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : -1);
+
+          if (options.length > 0) {
+            const list = document.createElement('ul');
+            list.className = 'options-list';
+            options.forEach((optionText, optionIndex) => {
+              const item = document.createElement('li');
+              item.className = `option-item ${optionIndex === correctIndex ? 'correct' : ''}`.trim();
+              item.textContent = optionIndex === correctIndex ? `${optionText} (Réponse correcte)` : optionText;
+              list.appendChild(item);
+            });
+            card.appendChild(list);
+          }
+
+          container.appendChild(card);
+        });
+      }
+
+      async function regenerateAll() { alert('Régénération globale (utilise endpoint serveur)'); }
+      async function validateQuestions() { alert('Validation (utilise endpoint serveur)'); }
+      async function rejectQuestions() { resetForm(); }
+      function resetForm(){ document.getElementById('phase-config').classList.remove('hidden'); document.getElementById('phase-review').classList.add('hidden'); document.getElementById('phase-success').classList.add('hidden'); }
+    </script>
+  </body>
+</html>
