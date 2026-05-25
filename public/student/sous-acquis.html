@@ -28,769 +28,773 @@
         padding-top: 0.5rem;
       }
 
-      .head {
+      /* ── Top bar ── */
+      .top-bar {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: flex-start;
         gap: 1rem;
-        margin-bottom: 1rem;
-        padding: 0 1rem;
-        box-sizing: border-box;
+        margin-bottom: 1.1rem;
       }
 
-      body.sidebar-standalone .page .head {
-        width: calc(100vw - var(--sidebar-width, 0px));
-        margin-left: calc((100% - (100vw - var(--sidebar-width, 0px))) / 2);
-        left: auto;
-      }
-
-      .title-line {
-        margin: 0;
-        font-family: "Space Grotesk", sans-serif;
-        font-size: 1.35rem;
-        letter-spacing: 0.015em;
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
       }
 
       .back-link {
         text-decoration: none;
-        color: #b21f2d;
-        font-weight: 700;
+        color: #374151;
+        font-weight: 600;
         font-size: 0.9rem;
-      }
-
-      .card {
-        background: rgba(255, 255, 255, 0.46);
-        border: 1px solid rgba(35, 48, 74, 0.08);
-        border-radius: 22px;
-        box-shadow: 0 24px 60px rgba(18, 24, 39, 0.08);
-        padding: 1.15rem;
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-      }
-
-      .meta {
-        margin: 0.1rem 0 0.95rem;
-        color: #6b7280;
-        font-size: 0.98rem;
-      }
-
-      .resource-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.7rem;
-      }
-
-      #resource-links {
-        flex: 1;
-      }
-
-      .resource-group {
-        margin-top: 0;
-      }
-
-      .resource-links-wrapper {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 0.85rem;
-        flex-wrap: wrap;
-        margin-bottom: 1rem;
+        gap: 0.35rem;
       }
 
+      .back-link:hover { color: #b21f2d; }
+
+      /* ── Focus mode button ── */
       .focus-mode-btn {
-        border: 1px solid #e1e5ef;
+        border: 1.5px solid #d1d5db;
         border-radius: 999px;
-        padding: 0.5rem 0.9rem;
+        padding: 0.42rem 1rem;
         background: #ffffff;
-        color: #2a3140;
+        color: #374151;
         font: inherit;
-        font-weight: 700;
+        font-size: 0.85rem;
+        font-weight: 600;
         cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: transform 0.2s, box-shadow 0.2s;
       }
+      .focus-mode-btn::before { content: "◎"; font-size: 0.9em; }
+      .focus-mode-btn:hover { box-shadow: 0 4px 10px rgba(0,0,0,.1); transform: translateY(-1px); }
+      .focus-mode-btn.active { background: #1f2430; color: #fff; border-color: #1f2430; }
 
-      .focus-mode-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 14px rgba(18, 24, 39, 0.1);
-      }
-
-      .focus-mode-btn.active {
-        background: #1f2430;
-        color: #ffffff;
-      }
-
-      #video-links {
-        margin-left: auto;
-      }
-
-      .resource-link {
-        border: 1px solid #e1e5ef;
-        border-radius: 999px;
-        padding: 0.48rem 0.95rem;
-        background: #ffffff;
-        color: #2a3140;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      }
-
-      .resource-link.active {
-        background: #fff1f3;
-        border-color: rgba(178, 31, 45, 0.28);
-        box-shadow: 0 8px 16px rgba(178, 31, 45, 0.08);
-      }
-
-      .resource-link:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 14px rgba(18, 24, 39, 0.08);
-      }
-
+      /* ── Vidéo pill button ── */
       .video-button {
-        background: linear-gradient(135deg, #b21f2d 0%, #d33a4b 100%);
+        background: linear-gradient(135deg, #b21f2d 0%, #c93040 100%);
         color: #ffffff;
-        border: 1px solid rgba(178, 31, 45, 0.45);
-        border-radius: 28px;
-        padding: 0.58rem 1.15rem;
+        border: none;
+        border-radius: 999px;
+        padding: 0.48rem 1.1rem;
         font: inherit;
+        font-size: 0.85rem;
         font-weight: 700;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 0.6rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 12px 24px rgba(154, 19, 37, 0.16);
+        gap: 0.5rem;
+        transition: all 0.2s;
+        box-shadow: 0 6px 16px rgba(178,31,45,.28);
       }
-
+      .video-button::before { content: "📹"; font-size: 0.85em; }
       .video-button:hover {
-        background: linear-gradient(135deg, #d33a4b 0%, #b21f2d 100%);
-        box-shadow: 0 6px 16px rgba(178, 31, 45, 0.35);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(178,31,45,.38);
+        transform: translateY(-1px);
+      }
+      .video-links-empty {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #9ca3af;
       }
 
-      .video-button:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 6px rgba(178, 31, 45, 0.25);
-      }
+      /* ── Lesson header ── */
+      .lesson-header { margin-bottom: 1.1rem; }
 
-      .video-button::before {
-        content: "▶";
-        font-size: 0.85em;
-        display: inline-block;
-      }
-
-      .viewer-shell {
-        margin-top: 1.1rem;
-        border: 1px solid #e7e9f2;
-        border-radius: 18px;
-        background: #ffffff;
-        padding: 1rem;
-        box-shadow: 0 12px 26px rgba(19, 24, 44, 0.08);
-      }
-
-      .video-shell {
-        margin-top: 1rem;
-        border: 1px solid #e7e9f2;
-        border-radius: 18px;
-        background: #ffffff;
-        padding: 1rem;
-        box-shadow: 0 12px 26px rgba(19, 24, 44, 0.08);
-      }
-
-      .viewer-title {
-        margin: 0;
+      .title-line {
+        margin: 0 0 0.5rem;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.6rem;
         font-weight: 700;
-        color: #2a3140;
+        color: #111827;
+        letter-spacing: -0.01em;
       }
 
+      /* ── Meta row (inline, with icons) ── */
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 1rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+      .meta-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .meta-item .meta-icon { font-size: 1em; }
+      .meta-item.completed { color: #b21f2d; font-weight: 700; }
+
+      /* ── Layout ── */
+      .lesson-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 1.4rem;
+        align-items: start;
+      }
+      .lesson-content { min-width: 0; }
+      .lesson-chat {
+        position: sticky;
+        top: 1.5rem;
+        align-self: start;
+      }
+
+      /* ── Media stage ── */
+      .media-stage { display: grid; gap: 1rem; }
+
+      /* ── Video thumbnail card ── */
+      .video-thumb-card {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        background: #1a1f2e;
+        position: relative;
+        cursor: pointer;
+        box-shadow: 0 12px 30px rgba(19,24,44,.14);
+      }
+      .video-thumb-inner {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16/9;
+        background: #f0f1f5;
+        overflow: hidden;
+      }
+      .video-thumb-inner img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+      }
+      .video-thumb-placeholder {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg,#e8eaf2,#f4f5fa);
+      }
+      .video-thumb-play {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 62px; height: 62px;
+        border-radius: 50%;
+        background: #b21f2d;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 8px 24px rgba(178,31,45,.45);
+        transition: transform 0.2s, box-shadow 0.2s;
+        z-index: 2;
+      }
+      .video-thumb-card:hover .video-thumb-play {
+        transform: translate(-50%, -50%) scale(1.08);
+        box-shadow: 0 12px 32px rgba(178,31,45,.55);
+      }
+      .video-thumb-play svg { width: 22px; height: 22px; margin-left: 3px; }
+
+      /* ── PDF / iframe viewer (same as before) ── */
+      .viewer-shell {
+        border: 1px solid #e7e9f2;
+        border-radius: 18px;
+        background: #ffffff;
+        padding: 1rem;
+        box-shadow: 0 12px 26px rgba(19,24,44,.08);
+      }
+      .video-shell {
+        border: 1px solid #e7e9f2;
+        border-radius: 18px;
+        background: #ffffff;
+        padding: 1rem;
+        box-shadow: 0 12px 26px rgba(19,24,44,.08);
+      }
       .viewer-toolbar {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 0.75rem;
-        margin-bottom: 0.7rem;
+        gap: .75rem;
+        margin-bottom: .7rem;
       }
-
-      .viewer-controls {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
+      .viewer-title { margin: 0; font-weight: 700; color: #2a3140; }
+      .viewer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
       .viewer-controls button {
-        border: 1px solid #e1e5ef;
-        border-radius: 999px;
-        padding: 0.42rem 0.78rem;
-        background: #ffffff;
-        color: #2a3140;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
+        border: 1px solid #e1e5ef; border-radius: 999px;
+        padding: .42rem .78rem; background: #fff; color: #2a3140;
+        font: inherit; font-weight: 700; cursor: pointer;
       }
-
-      .viewer-controls button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-      }
-
-      .viewer-controls .fullscreen-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-      }
-
-      .viewer-page-indicator {
-        color: #6b7280;
-        font-weight: 700;
-      }
-
+      .viewer-controls button:disabled { opacity: .45; cursor: not-allowed; }
+      .viewer-page-indicator { color: #6b7280; font-weight: 700; }
       .pdf-canvas-wrap {
-        overflow: hidden;
-        border: 0;
-        border-radius: 0;
-        background: #f6f7fb;
-        min-height: 520px;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        padding: 0.75rem;
-        border-radius: 16px;
+        overflow: hidden; border-radius: 0; background: #f6f7fb;
+        min-height: 520px; display: flex; justify-content: center;
+        align-items: flex-start; padding: .75rem; border-radius: 16px;
       }
-
-      .pdf-canvas-wrap canvas {
-        display: block;
-        max-width: 100%;
-        height: auto;
-      }
-
-      .pdf-canvas-wrap:fullscreen,
-      .pdf-canvas-wrap:-webkit-full-screen {
-        width: 100vw;
-        height: 100vh;
-        min-height: 100vh;
-        margin: 0;
-        padding: 0.5rem;
-        border-radius: 0;
-        background: #0d1117;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .pdf-canvas-wrap:fullscreen canvas,
-      .pdf-canvas-wrap:-webkit-full-screen canvas {
-        max-width: 100%;
-        max-height: 100%;
-      }
-
+      .pdf-canvas-wrap canvas { display: block; max-width: 100%; height: auto; }
       .viewer-frame {
-        width: 100%;
-        min-height: 520px;
-        border: 0;
-        border-radius: 16px;
-        background: #f6f7fb;
-        overflow: hidden;
+        width: 100%; min-height: 520px; border: 0;
+        border-radius: 16px; background: #f6f7fb; overflow: hidden;
       }
+      .viewer-video { width: 100%; border-radius: 16px; background: #000; --plyr-color-main: #b21f2d; }
+      .plyr { border-radius: 16px; }
+      .video-note, .viewer-note { margin: .65rem 0 0; color: #6b7280; }
 
-      .viewer-video {
-        width: 100%;
-        border-radius: 16px;
-        background: #000;
-        --plyr-color-main: #b21f2d;
-      }
-
-      .plyr {
-        border-radius: 16px;
-      }
-
-      .video-note {
-        margin: 0.65rem 0 0;
-        color: #6b7280;
-      }
-
-      .viewer-note {
-        margin: 0.65rem 0 0;
-        color: #6b7280;
-      }
-
-      .quiz-cta,
-      .sub-next-cta {
+      /* ── Objectives card ── */
+      .objectives-card {
         margin-top: 1rem;
+        background: #ffffff;
+        border: 1px solid #e7e9f2;
+        border-radius: 18px;
+        padding: 1.2rem 1.3rem 1.3rem;
+        box-shadow: 0 6px 18px rgba(19,24,44,.06);
+      }
+      .objectives-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.6rem;
+      }
+      .objectives-head h2 {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.05rem;
+        color: #111827;
+      }
+      .objectives-text {
+        margin: 0 0 1rem;
+        color: #6b7280;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      /* ── Objectives pills (matching screenshot) ── */
+      .pill-row { display: inline-flex; flex-direction: column; gap: 0.4rem; }
+      .pill {
         display: inline-flex;
         align-items: center;
-        gap: 0.55rem;
-        text-decoration: none;
-        color: #b21f2d;
+        gap: 0.4rem;
+        padding: 0.22rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
         font-weight: 700;
-        font-family: "Space Grotesk", sans-serif;
-        font-size: 0.95rem;
-        line-height: 1;
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+        white-space: nowrap;
       }
-
-      .quiz-cta .arrow,
-      .sub-next-cta .arrow {
-        display: inline-block;
-        font-size: 1rem;
+      .pill-dot {
+        width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
       }
+      .pill.pill-video .pill-dot { background: #ef4444; }
+      .pill.pill-resources .pill-dot { background: #3b82f6; border: 2px solid #3b82f6; }
 
+      /* ── Resource grid ── */
+      .resource-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 0.75rem;
+      }
+      .resource-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid #e7e9f2;
+        border-radius: 14px;
+        padding: 0.75rem 0.9rem;
+        background: #fff;
+        cursor: pointer;
+        text-align: left;
+        transition: transform .2s, box-shadow .2s, border-color .2s;
+        font: inherit;
+      }
+      .resource-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(19,24,44,.1);
+        border-color: #d1d5db;
+      }
+      .resource-card.active {
+        border-color: rgba(178,31,45,.45);
+        box-shadow: 0 8px 20px rgba(178,31,45,.12);
+      }
+      .resource-card-icon {
+        flex-shrink: 0;
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+      }
+      .resource-card-icon.icon-pdf { background: #fce7f3; }
+      .resource-card-icon.icon-zip { background: #ede9fe; }
+      .resource-card-icon.icon-ppt { background: #fef3c7; }
+      .resource-card-icon.icon-video { background: #fee2e2; }
+      .resource-card-icon.icon-default { background: #f3f4f6; }
+      .resource-card-text { display: grid; gap: 0.15rem; min-width: 0; }
+      .resource-card-title {
+        font-weight: 700; color: #111827; font-size: 0.88rem;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .resource-card-meta { font-size: 0.73rem; color: #9ca3af; font-weight: 500; }
+      /* ── Sub-nav row ── */
       .sub-nav-row {
         margin-top: 1rem;
         display: flex;
         flex-wrap: nowrap;
-        gap: 0.75rem;
+        gap: .75rem;
         align-items: center;
       }
-
-      .sub-next-cta {
-        margin-top: 1rem;
-        margin-left: auto;
-        white-space: nowrap;
+      .quiz-cta, .sub-next-cta {
+        display: inline-flex; align-items: center; gap: .5rem;
+        text-decoration: none; color: #b21f2d;
+        font-weight: 700; font-family: "Space Grotesk", sans-serif;
+        font-size: .92rem; white-space: nowrap;
       }
+      .sub-next-cta { margin-left: auto; }
+      .quiz-cta[hidden], .sub-next-cta[hidden] { display: none; }
 
-      body.chatbot-open {
+      /* ════════════════════════════════════════
+         CHAT PANEL — redesigned to match screenshot
+         ════════════════════════════════════════ */
+      .chatbot-panel {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        box-shadow: 0 8px 28px rgba(20,28,45,.1);
+        display: flex;
+        flex-direction: column;
+        height: min(72vh, 620px);
         overflow: hidden;
       }
 
-      .chatbot-reopen-btn {
+      /* Static in sidebar */
+      .lesson-chat .chatbot-panel {
+        position: relative;
+        right: auto; bottom: auto;
+        width: 100%;
+      }
+      .lesson-chat .chatbot-panel.is-fullscreen {
         position: fixed;
-        right: 1rem;
-        bottom: 1rem;
-        z-index: 155;
-        border: 0;
-        border-radius: 999px;
-        padding: 0.72rem 1rem;
-        background:
-          linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02)),
-          linear-gradient(135deg, #c41d38 0%, #9a1325 55%, #6f0e1d 100%);
-        color: #ffffff;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 14px 28px rgba(154, 19, 37, 0.24);
-      }
-
-      .chatbot-reopen-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 18px 32px rgba(154, 19, 37, 0.3);
-      }
-
-      .chatbot-reopen-btn[hidden] {
-        display: none;
-      }
-
-      .chatbot-panel {
-        position: fixed;
-        right: 1rem;
-        bottom: 1rem;
-        z-index: 160;
-        width: min(400px, calc(100vw - 1.5rem));
-        height: min(68vh, 600px);
-        display: flex;
-        flex-direction: column;
-        gap: 0.9rem;
-        padding: 1rem;
-        border: 1px solid rgba(31, 36, 48, 0.09);
-        border-radius: 24px;
-        background:
-          radial-gradient(circle at top right, rgba(154, 19, 37, 0.14), transparent 24%),
-          radial-gradient(circle at bottom left, rgba(196, 29, 56, 0.1), transparent 22%),
-          rgba(255, 255, 255, 0.95);
-        box-shadow:
-          0 28px 60px rgba(20, 28, 45, 0.22),
-          0 0 0 1px rgba(255, 255, 255, 0.45) inset;
-        backdrop-filter: blur(22px) saturate(1.12);
-        -webkit-backdrop-filter: blur(22px) saturate(1.12);
-      }
-
-      .chatbot-panel[hidden] {
-        display: none;
-      }
-
-      .chatbot-panel.is-fullscreen {
         inset: 0;
+        z-index: 9999;
         width: 100vw;
         height: 100vh;
         border-radius: 0;
-        z-index: 9999;
       }
 
+      .chatbot-panel[hidden] { display: none; }
+
+      /* Header */
       .chatbot-panel-header {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.8rem;
-        padding-bottom: 0.1rem;
-      }
-
-      .chatbot-panel-eyebrow {
-        margin: 0;
-        display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        color: #9a1325;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.72rem;
-        font-weight: 700;
+        justify-content: space-between;
+        padding: 0.9rem 1rem 0.8rem;
+        border-bottom: 1px solid #f3f4f6;
+        gap: 0.75rem;
+        flex-shrink: 0;
       }
-
-      .chatbot-panel-eyebrow::before {
-        content: "";
-        width: 0.55rem;
-        height: 0.55rem;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ff7a8a, #c41d38);
-        box-shadow: 0 0 0 4px rgba(154, 19, 37, 0.12);
+      .chatbot-header-left {
+        display: flex; align-items: center; gap: 0.6rem;
       }
-
-      .chatbot-panel-header h2 {
-        margin: 0.2rem 0 0;
+      .chatbot-avatar {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: linear-gradient(135deg, #ef4444, #b21f2d);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem; flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(178,31,45,.3);
+      }
+      .chatbot-panel-title {
         font-family: "Space Grotesk", sans-serif;
-        font-size: 1.08rem;
+        font-weight: 700;
+        font-size: 0.98rem;
+        color: #111827;
+        margin: 0;
       }
-
-      .chatbot-panel-actions {
-        display: inline-flex;
-        gap: 0.35rem;
-      }
-
+      .chatbot-panel-actions { display: flex; gap: 0.3rem; }
       .chatbot-icon-btn {
-        border: 1px solid rgba(31, 36, 48, 0.08);
+        border: none;
         border-radius: 999px;
-        width: auto;
-        min-width: 2.1rem;
-        height: 2.1rem;
-        padding: 0 0.85rem;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 255, 0.98));
-        color: #223047;
+        width: 28px; height: 28px;
+        padding: 0;
+        background: transparent;
+        color: #9ca3af;
         font: inherit;
+        font-size: 1.1rem;
         font-weight: 700;
         cursor: pointer;
-        box-shadow: 0 8px 18px rgba(20, 28, 45, 0.08);
-        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
-        white-space: nowrap;
+        display: flex; align-items: center; justify-content: center;
+        transition: color .15s, background .15s;
       }
+      .chatbot-icon-btn:hover { color: #374151; background: #f3f4f6; }
 
-      .chatbot-scope-btn {
-        min-width: 6.9rem;
-      }
-
-      .chatbot-icon-btn:hover {
-        transform: translateY(-1px);
-        border-color: rgba(154, 19, 37, 0.18);
-        box-shadow: 0 12px 22px rgba(20, 28, 45, 0.1);
-      }
-
-      .chatbot-panel-subtitle {
-        margin: -0.2rem 0 0;
-        color: #5b667c;
-        font-size: 0.93rem;
-        line-height: 1.45;
-      }
-
-      .chatbot-panel-subtitle::before {
-        content: "";
-        display: block;
-        height: 1px;
-        margin-bottom: 0.75rem;
-        background: linear-gradient(90deg, rgba(154, 19, 37, 0.24), rgba(31, 91, 214, 0.08), transparent);
-      }
-
+      /* Thread */
       .chatbot-thread {
         flex: 1;
-        min-height: 0;
-        border: 1px solid rgba(31, 36, 48, 0.08);
-        border-radius: 18px;
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 246, 247, 0.92)),
-          #ffffff;
         overflow-y: auto;
         overflow-x: hidden;
-        padding: 0.8rem;
-        display: grid;
-        gap: 0.6rem;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        padding: 0.9rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
       }
+
+      /* Bubbles */
+      .chatbot-bubble-row {
+        display: flex;
+        gap: 0.55rem;
+        align-items: flex-start;
+      }
+      .chatbot-bubble-row.user { flex-direction: row-reverse; }
+
+      .bubble-avatar {
+        width: 26px; height: 26px; border-radius: 50%;
+        background: linear-gradient(135deg, #ef4444, #b21f2d);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; flex-shrink: 0; margin-top: 2px;
+      }
+      .bubble-body { display: flex; flex-direction: column; gap: 0.2rem; max-width: 82%; }
+      .chatbot-bubble-row.user .bubble-body { align-items: flex-end; }
 
       .chatbot-bubble {
-        display: inline-block;
-        width: fit-content;
-        max-width: 100%;
-        border-radius: 16px;
-        padding: 0.42rem 0.58rem;
-        line-height: 1.25;
+        border-radius: 14px;
+        padding: 0.55rem 0.75rem;
+        font-size: 0.88rem;
+        line-height: 1.45;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-        word-break: break-word;
-        font-size: 0.92rem;
-        box-shadow: 0 10px 24px rgba(20, 28, 45, 0.06);
-        place-self: start start;
       }
-
-      .chatbot-bubble.user {
-        place-self: start end;
-        border: 1px solid rgba(154, 19, 37, 0.16);
-        background:
-          linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
-          linear-gradient(145deg, #ffeff2, #ffe4e9);
-        color: #3a2430;
-      }
-
       .chatbot-bubble.bot {
-        place-self: start start;
-        border: 1px solid rgba(154, 19, 37, 0.14);
-        background:
-          linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08)),
-          linear-gradient(145deg, #fff6f7, #ffeaed);
-        color: #213045;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        color: #1f2937;
+        border-top-left-radius: 4px;
+      }
+      .chatbot-bubble.user {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        border: 1px solid rgba(178,31,45,.18);
+        color: #3b1f22;
+        border-top-right-radius: 4px;
+      }
+      .bubble-time {
+        font-size: 0.72rem;
+        color: #9ca3af;
+        padding: 0 0.25rem;
       }
 
-      .chatbot-form {
-        margin-top: 0;
-        padding: 0.1rem 0.1rem 0;
+      /* Quick suggestions */
+      .chatbot-quick-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        padding: 0.6rem 1rem 0.5rem;
+        border-top: 1px solid #f3f4f6;
+        flex-shrink: 0;
       }
-
-      .chatbot-label {
-        display: block;
-        font-size: 0.82rem;
-        color: #62708b;
-        margin-bottom: 0.35rem;
-        font-weight: 700;
-      }
-
-      .chatbot-input-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 0.6rem;
-      }
-
-      .chatbot-input-row input {
-        width: 100%;
-        border: 1px solid rgba(31, 36, 48, 0.1);
-        border-radius: 14px;
-        padding: 0.72rem 0.82rem;
+      .chatbot-suggestion {
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 0.3rem 0.7rem;
+        background: #f9fafb;
         font: inherit;
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 18px rgba(20, 28, 45, 0.04);
-      }
-
-      .chatbot-input-row input:focus {
-        outline: none;
-        border-color: rgba(154, 19, 37, 0.34);
-        box-shadow: 0 0 0 4px rgba(154, 19, 37, 0.12);
-      }
-
-      .chatbot-input-row button {
-        border: 0;
-        border-radius: 14px;
-        padding: 0.72rem 0.98rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #374151;
         cursor: pointer;
-        color: #ffffff;
+        transition: border-color .15s, color .15s;
+      }
+      .chatbot-suggestion:hover {
+        border-color: rgba(178,31,45,.35);
+        color: #b21f2d;
+        background: #fff;
+      }
+
+      /* Input area */
+      .chatbot-form {
+        padding: 0.65rem 1rem 0.5rem;
+        flex-shrink: 0;
+      }
+      .chatbot-input-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 0.1rem 0.1rem 0.1rem 0.75rem;
+        background: #fff;
+        transition: border-color .2s, box-shadow .2s;
+      }
+      .chatbot-input-row:focus-within {
+        border-color: rgba(178,31,45,.4);
+        box-shadow: 0 0 0 3px rgba(178,31,45,.08);
+      }
+      .chatbot-input-row input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font: inherit;
+        font-size: 0.88rem;
+        color: #1f2937;
+        background: transparent;
+        padding: 0.55rem 0;
+      }
+      .chatbot-input-row input::placeholder { color: #9ca3af; }
+      .chatbot-send-btn {
+        border: none;
+        border-radius: 10px;
+        width: 34px; height: 34px;
+        background: linear-gradient(135deg, #c41d38, #9a1325);
+        color: #fff;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        transition: transform .15s, box-shadow .15s;
+        box-shadow: 0 4px 10px rgba(154,19,37,.3);
+      }
+      .chatbot-send-btn:hover { transform: scale(1.06); box-shadow: 0 6px 14px rgba(154,19,37,.4); }
+      .chatbot-send-btn:disabled { opacity: .6; cursor: not-allowed; }
+      .chatbot-send-btn svg { width: 15px; height: 15px; }
+
+      .chatbot-disclaimer {
+        text-align: center;
+        font-size: 0.72rem;
+        color: #9ca3af;
+        padding: 0 1rem 0.75rem;
+        line-height: 1.4;
+        flex-shrink: 0;
+      }
+
+      /* Reopen btn */
+      .chatbot-reopen-btn {
+        display: block;
+        width: 100%;
+        margin-bottom: .75rem;
+        border: 0;
+        border-radius: 999px;
+        padding: .72rem 1rem;
+        background: linear-gradient(135deg, #c41d38 0%, #9a1325 100%);
+        color: #fff;
         font-family: "Space Grotesk", sans-serif;
-        background:
-          linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02)),
-          linear-gradient(135deg, #c41d38, #9a1325 70%, #6f0e1d);
-        box-shadow:
-          0 10px 22px rgba(154, 19, 37, 0.24),
-          inset 0 1px 0 rgba(255, 255, 255, 0.12);
-        transition: transform 180ms ease, box-shadow 180ms ease;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(154,19,37,.24);
       }
+      .chatbot-reopen-btn[hidden] { display: none; }
 
-      .chatbot-input-row button:hover {
-        transform: translateY(-1px);
-        box-shadow:
-          0 14px 26px rgba(154, 19, 37, 0.28),
-          inset 0 1px 0 rgba(255, 255, 255, 0.16);
-      }
-
-      .chatbot-input-row button:disabled {
-        opacity: 0.72;
-        cursor: not-allowed;
-      }
-
-      @media (max-width: 640px) {
-        .chatbot-panel {
-          right: 0.75rem;
-          left: 0.75rem;
-          bottom: 4.8rem;
-          width: auto;
-          height: min(76vh, 640px);
-        }
-
-        .chatbot-panel.is-fullscreen {
-          inset: 0;
-          width: 100vw;
-          height: 100vh;
-          z-index: 9999;
-        }
-      }
-
-      .sub-next-cta[hidden] {
-        display: none;
-      }
-
-      .quiz-cta {
-        white-space: nowrap;
-      }
-
+      /* Focus mode */
       .reader-focus-target {
-        position: relative;
-        z-index: 300;
-        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.95);
+        position: relative; z-index: 300;
+        box-shadow: 0 0 0 100vmax rgba(0,0,0,.95);
       }
+      body.reader-focus-mode .chatbot-panel { opacity: 0; pointer-events: none; }
+      body.reader-focus-mode .head { display: none; }
+      body.reader-focus-mode .page { padding-top: .75rem; }
 
-      body.reader-focus-mode .chatbot-panel {
-        opacity: 0;
-        pointer-events: none;
+      /* Responsive */
+      @media (max-width: 1100px) {
+        .lesson-layout { grid-template-columns: 1fr; }
+        .lesson-chat { position: static; }
+        .lesson-chat .chatbot-panel { height: auto; min-height: 420px; }
       }
-
-      body.reader-focus-mode .chatbot-reopen-btn {
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      body.reader-focus-mode .head {
-        display: none;
-      }
-
-      body.reader-focus-mode .page {
-        padding-top: 0.75rem;
-      }
-
-      body.reader-focus-mode .course-embed {
-        display: none;
+      @media (max-width: 720px) {
+        .top-bar { flex-direction: column; align-items: flex-start; }
+        .top-actions { width: 100%; }
       }
     </style>
   </head>
   <body>
     <div id="sidebar-slot"></div>
     <main class="page">
-      <div class="head">
-        <p class="title-line" id="title">Sous-acquis</p>
-        <a class="back-link" id="back-to-modules-link" href="/student/programmation-c">Retour aux modules</a>
-      </div>
+      <div class="lesson-layout">
 
-      <p id="meta" class="meta">Chargement...</p>
-
-      <div class="resource-links-wrapper">
-        <div id="resource-links" class="resource-links"></div>
-        <div id="video-links" class="resource-links"></div>
-        <button type="button" id="focus-mode-btn" class="focus-mode-btn" hidden>Mode focus</button>
-      </div>
-
-      <section id="viewer-shell" class="viewer-shell" hidden>
-        <div class="viewer-toolbar">
-          <p class="viewer-title" id="viewer-title"></p>
-          <div class="viewer-controls" id="viewer-controls" hidden>
-            <button type="button" id="prev-page-btn" aria-label="Page precedente">&#8592;</button>
-            <span class="viewer-page-indicator" id="page-indicator">Page 1 / 1</span>
-            <button type="button" id="next-page-btn" aria-label="Page suivante">&#8594;</button>
-            <button type="button" id="fullscreen-btn" class="fullscreen-btn" aria-label="Plein écran PDF">&#x26F6;</button>
+        <!-- ── Left: lesson content ── -->
+        <section class="lesson-content">
+          <div class="top-bar">
+            <a class="back-link" id="back-to-modules-link" href="/student/programmation-c">← Retour aux modules</a>
+            <div class="top-actions">
+              <button type="button" id="focus-mode-btn" class="focus-mode-btn">Mode focus</button>
+              <div id="video-links" class="resource-links"></div>
+            </div>
           </div>
-        </div>
-        <div id="pdf-canvas-wrap" class="pdf-canvas-wrap" hidden>
-          <canvas id="pdf-canvas"></canvas>
-        </div>
-        <iframe id="viewer-frame" class="viewer-frame" title="Apercu support de cours" scrolling="no" hidden></iframe>
-        <p id="viewer-note" class="viewer-note"></p>
-      </section>
 
-      <section id="video-shell" class="video-shell" hidden>
-        <div class="viewer-toolbar">
-          <p class="viewer-title" id="video-title">Aperçu vidéo</p>
-        </div>
-        <video id="viewer-video" class="viewer-video" playsinline></video>
-        <p id="video-note" class="video-note"></p>
-      </section>
+          <header class="lesson-header">
+            <h1 class="title-line" id="title">Sous-acquis</h1>
+            <div id="meta" class="meta"></div>
+          </header>
 
-      <div class="sub-nav-row">
-        <a class="quiz-cta" id="quiz-cta" href="#" hidden>
-          <span class="arrow">&#8595;</span>
-          <span>Repondre au questionnaire</span>
-        </a>
+          <section class="media-stage">
+            <!-- Video thumbnail (shown when videoFiles present before play) -->
+            <div class="video-thumb-card" id="video-thumb" hidden>
+              <div class="video-thumb-inner">
+                <div class="video-thumb-placeholder" id="video-thumb-placeholder">
+                  <!-- replaced with screenshot thumbnail by JS if available -->
+                </div>
+              </div>
+              <div class="video-thumb-play" id="video-thumb-play-btn">
+                <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
 
-        <a class="sub-next-cta" id="next-sub-cta" href="#" hidden>
-          <span>Aller au sous-acquis suivant</span>
-          <span class="arrow">&#8594;</span>
-        </a>
+            <!-- PDF / iframe viewer -->
+            <section id="viewer-shell" class="viewer-shell" hidden>
+              <div class="viewer-toolbar">
+                <p class="viewer-title" id="viewer-title"></p>
+                <div class="viewer-controls" id="viewer-controls" hidden>
+                  <button type="button" id="prev-page-btn" aria-label="Page précédente">&#8592;</button>
+                  <span class="viewer-page-indicator" id="page-indicator">Page 1 / 1</span>
+                  <button type="button" id="next-page-btn" aria-label="Page suivante">&#8594;</button>
+                  <button type="button" id="fullscreen-btn" class="fullscreen-btn" aria-label="Plein écran PDF">&#x26F6;</button>
+                </div>
+              </div>
+              <div id="pdf-canvas-wrap" class="pdf-canvas-wrap" hidden>
+                <canvas id="pdf-canvas"></canvas>
+              </div>
+              <iframe id="viewer-frame" class="viewer-frame" title="Aperçu support de cours" scrolling="no" hidden></iframe>
+              <p id="viewer-note" class="viewer-note"></p>
+            </section>
+
+            <!-- Video player -->
+            <section id="video-shell" class="video-shell" hidden>
+              <div class="viewer-toolbar">
+                <p class="viewer-title" id="video-title">Aperçu vidéo</p>
+              </div>
+              <video id="viewer-video" class="viewer-video" playsinline controls preload="metadata"></video>
+              <p id="video-note" class="video-note"></p>
+            </section>
+          </section>
+
+          <!-- Objectives card -->
+          <section class="objectives-card">
+            <div class="objectives-head">
+              <h2>Objectifs de la session</h2>
+              <div class="pill-row">
+                <span class="pill pill-video"><span class="pill-dot"></span>Video</span>
+                <span class="pill pill-resources"><span class="pill-dot"></span>Resources</span>
+              </div>
+            </div>
+            <p id="objectives-text" class="objectives-text">
+              Dans cette leçon, nous explorerons les mécanismes fondamentaux de la manipulation de fichiers.
+              Vous apprendrez à ouvrir, lire et écrire des flux de données de manière efficace tout en gérant les exceptions courantes.
+            </p>
+            <div id="resource-links" class="resource-grid"></div>
+          </section>
+
+          <div class="sub-nav-row">
+            <a class="quiz-cta" id="quiz-cta" href="#" hidden>
+              <span>&#8595;</span><span>Répondre au questionnaire</span>
+            </a>
+            <a class="sub-next-cta" id="next-sub-cta" href="#" hidden>
+              <span>Aller au sous-acquis suivant</span><span>&#8594;</span>
+            </a>
+          </div>
+        </section>
+
+        <!-- ── Right: chat panel ── -->
+        <aside class="lesson-chat">
+          <button type="button" id="chatbot-reopen-btn" class="chatbot-reopen-btn" hidden>
+            Ouvrir assistant
+          </button>
+
+          <section class="chatbot-panel" id="chatbot-panel" aria-label="Assistant NextLearn">
+            <!-- Header -->
+            <header class="chatbot-panel-header">
+              <div class="chatbot-header-left">
+                <div class="chatbot-avatar"></div>
+                <p class="chatbot-panel-title">Assistant NextLearn</p>
+              </div>
+              <div class="chatbot-panel-actions">
+                <button type="button" id="chatbot-close-btn" class="chatbot-icon-btn" aria-label="Fermer l'assistant">×</button>
+              </div>
+            </header>
+
+            <!-- Thread -->
+            <div id="chatbot-thread" class="chatbot-thread" aria-live="polite"></div>
+
+            <!-- Quick actions -->
+            <div class="chatbot-quick-actions">
+              <button type="button" class="chatbot-suggestion" data-prompt="Explique le mode 'append'">Explique le mode 'append'</button>
+              <button type="button" class="chatbot-suggestion" data-prompt="Erreur de lecture ?">Erreur de lecture ?</button>
+              <button type="button" class="chatbot-suggestion" data-prompt="Quiz rapide">Quiz rapide</button>
+            </div>
+
+            <!-- Input -->
+            <form id="chatbot-form" class="chatbot-form" autocomplete="off">
+              <div class="chatbot-input-row">
+                <input
+                  id="chatbot-input"
+                  name="question"
+                  type="text"
+                  maxlength="280"
+                  placeholder="Posez votre question ici..."
+                  required
+                />
+                <button type="submit" id="chatbot-send-btn" class="chatbot-send-btn" aria-label="Envoyer">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </form>
+
+            <p class="chatbot-disclaimer">L'IA peut générer des erreurs. Vérifiez les informations importantes.</p>
+          </section>
+        </aside>
       </div>
     </main>
-
-    <button type="button" id="chatbot-reopen-btn" class="chatbot-reopen-btn" hidden>
-      Ouvrir assistant
-    </button>
-
-    <section class="chatbot-panel" id="chatbot-panel" hidden aria-label="Assistant NextLearn">
-      <header class="chatbot-panel-header">
-        <div>
-          <p class="chatbot-panel-eyebrow">Assistant NextLearn</p>
-        </div>
-        <div class="chatbot-panel-actions">
-          <button type="button" id="chatbot-expand-btn" class="chatbot-icon-btn" aria-label="Agrandir l'assistant">⤢</button>
-          <button type="button" id="chatbot-close-btn" class="chatbot-icon-btn" aria-label="Fermer l'assistant">×</button>
-        </div>
-      </header>
-
-      <div id="chatbot-thread" class="chatbot-thread" aria-live="polite"></div>
-
-      <form id="chatbot-form" class="chatbot-form" autocomplete="off">
-        <label for="chatbot-input" class="chatbot-label">Votre question</label>
-        <div class="chatbot-input-row">
-          <input
-            id="chatbot-input"
-            name="question"
-            type="text"
-            maxlength="280"
-            placeholder="Exemple: Quel sous-acquis dois-je revoir ?"
-            required
-          />
-          <button type="submit" id="chatbot-send-btn">Envoyer</button>
-        </div>
-      </form>
-    </section>
 
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script src="/student/sidebar-loader.js"></script>
     <script type="module">
       import * as pdfjsLib from "/vendor/pdfjs/pdf.min.mjs";
-      
+
       let plyrInstance = null;
 
-      const title = document.getElementById("title");
-      const meta = document.getElementById("meta");
+      const title         = document.getElementById("title");
+      const meta          = document.getElementById("meta");
       const resourceLinks = document.getElementById("resource-links");
-      const videoLinks = document.getElementById("video-links");
-      const viewerShell = document.getElementById("viewer-shell");
-      const viewerTitle = document.getElementById("viewer-title");
-      const viewerControls = document.getElementById("viewer-controls");
-      const prevPageBtn = document.getElementById("prev-page-btn");
-      const nextPageBtn = document.getElementById("next-page-btn");
+      const videoLinks    = document.getElementById("video-links");
+
+      const viewerShell   = document.getElementById("viewer-shell");
+      const viewerTitle   = document.getElementById("viewer-title");
+      const viewerControls= document.getElementById("viewer-controls");
+      const prevPageBtn   = document.getElementById("prev-page-btn");
+      const nextPageBtn   = document.getElementById("next-page-btn");
       const fullscreenBtn = document.getElementById("fullscreen-btn");
       const pageIndicator = document.getElementById("page-indicator");
       const pdfCanvasWrap = document.getElementById("pdf-canvas-wrap");
-      const pdfCanvas = document.getElementById("pdf-canvas");
-      const viewerFrame = document.getElementById("viewer-frame");
-      const videoShell = document.getElementById("video-shell");
-      const videoTitle = document.getElementById("video-title");
-      const viewerVideo = document.getElementById("viewer-video");
-      const viewerNote = document.getElementById("viewer-note");
-      const videoNote = document.getElementById("video-note");
-      const quizCta = document.getElementById("quiz-cta");
-      const nextSubCta = document.getElementById("next-sub-cta");
-      const chatbotPanel = document.getElementById("chatbot-panel");
-      const chatbotCloseBtn = document.getElementById("chatbot-close-btn");
-      const chatbotExpandBtn = document.getElementById("chatbot-expand-btn");
-      const chatbotThread = document.getElementById("chatbot-thread");
-      const chatbotForm = document.getElementById("chatbot-form");
-      const chatbotInput = document.getElementById("chatbot-input");
-      const chatbotSendBtn = document.getElementById("chatbot-send-btn");
-      const chatbotReopenBtn = document.getElementById("chatbot-reopen-btn");
-      const backToModulesLink = document.getElementById("back-to-modules-link");
-      const focusModeBtn = document.getElementById("focus-mode-btn");
+      const pdfCanvas     = document.getElementById("pdf-canvas");
+      const viewerFrame   = document.getElementById("viewer-frame");
 
-      const params = new URLSearchParams(window.location.search);
-      const moduleId = params.get("moduleId") || "";
-      const subAcquisId = params.get("subAcquisId") || "";
+      const videoShell    = document.getElementById("video-shell");
+      const videoTitle    = document.getElementById("video-title");
+      const viewerVideo   = document.getElementById("viewer-video");
+      const viewerNote    = document.getElementById("viewer-note");
+      const videoNote     = document.getElementById("video-note");
+
+      const videoThumb        = document.getElementById("video-thumb");
+      const videoThumbPlayBtn = document.getElementById("video-thumb-play-btn");
+
+      const quizCta       = document.getElementById("quiz-cta");
+      const nextSubCta    = document.getElementById("next-sub-cta");
+
+      const chatbotPanel      = document.getElementById("chatbot-panel");
+      const chatbotCloseBtn   = document.getElementById("chatbot-close-btn");
+      const chatbotThread     = document.getElementById("chatbot-thread");
+      const chatbotForm       = document.getElementById("chatbot-form");
+      const chatbotInput      = document.getElementById("chatbot-input");
+      const chatbotSendBtn    = document.getElementById("chatbot-send-btn");
+      const chatbotReopenBtn  = document.getElementById("chatbot-reopen-btn");
+      const backToModulesLink = document.getElementById("back-to-modules-link");
+      const focusModeBtn      = document.getElementById("focus-mode-btn");
+      const chatbotSuggestions= Array.from(document.querySelectorAll(".chatbot-suggestion"));
+
+      const params       = new URLSearchParams(window.location.search);
+      const moduleId     = params.get("moduleId") || "";
+      const subAcquisId  = params.get("subAcquisId") || "";
       const isEmbeddedMode = params.get("embedded") === "1";
       const currentUserRaw = localStorage.getItem("nextlearnCurrentUser");
 
@@ -800,545 +804,501 @@
           : "/student/programmation-c";
       }
 
+      chatbotSuggestions.forEach((button) => {
+        button.addEventListener("click", () => {
+          const prompt = String(button.dataset.prompt || button.textContent || "").trim();
+          if (!prompt || !chatbotInput) return;
+          chatbotInput.value = prompt;
+          chatbotInput.focus();
+        });
+      });
+
       function getCurrentIdentifier() {
         if (!currentUserRaw) return "";
         try {
-          const currentUser = JSON.parse(currentUserRaw);
-          return typeof currentUser?.identifier === "string" ? currentUser.identifier : "";
-        } catch (_error) {
-          return "";
-        }
+          const u = JSON.parse(currentUserRaw);
+          return typeof u?.identifier === "string" ? u.identifier : "";
+        } catch { return ""; }
       }
 
       async function markLessonAsViewed() {
         const identifier = getCurrentIdentifier();
         if (!identifier || !moduleId || !subAcquisId) return;
-
         try {
           await fetch("/api/student/progress/lesson-view", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ identifier, moduleId, subAcquisId })
           });
-        } catch (_error) {
-          // Non-blocking for course reading flow.
-        }
+        } catch {}
       }
 
       const pdfState = {
-        pdf: null,
-        pageNumber: 1,
-        pageCount: 0,
-        currentUrl: "",
-        pdfFiles: [],
-        currentFileIndex: -1,
-        renderTask: null,
-        renderRequestId: 0
+        pdf: null, pageNumber: 1, pageCount: 0,
+        currentUrl: "", pdfFiles: [], currentFileIndex: -1,
+        renderTask: null, renderRequestId: 0
       };
 
-      const chatbotState = {
-        bootstrapped: false,
-        fullscreen: false
-      };
-
-      const focusState = {
-        enabled: false,
-        target: null
-      };
+      const chatbotState = { bootstrapped: false };
+      const focusState   = { enabled: false, target: null };
 
       pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs";
 
-      function extensionLabel(filePath) {
-        const lower = filePath.toLowerCase();
-        if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) return "PPT";
-        if (lower.endsWith(".pdf")) return "PDF";
-        if ([".mp4", ".webm", ".ogg", ".mov", ".m4v"].some((ext) => lower.endsWith(ext))) return "VIDEO";
+      /* ── helpers ── */
+      function extensionLabel(f) {
+        const l = f.toLowerCase();
+        if (l.endsWith(".ppt") || l.endsWith(".pptx")) return "PPT";
+        if (l.endsWith(".pdf")) return "PDF";
+        if (l.endsWith(".zip") || l.endsWith(".rar")) return "ZIP";
+        if ([".mp4",".webm",".ogg",".mov",".m4v"].some(e=>l.endsWith(e))) return "VIDEO";
         return "Fichier";
       }
 
-      function isPdfFile(filePath) {
-        return filePath.toLowerCase().endsWith(".pdf");
+      function iconForLabel(label) {
+        const map = { PDF:"", PPT:"", ZIP:"", VIDEO:"" };
+        return map[label] || "📁";
+      }
+      function iconClassForLabel(label) {
+        const map = { PDF:"icon-pdf", PPT:"icon-ppt", ZIP:"icon-zip", VIDEO:"icon-video" };
+        return map[label] || "icon-default";
       }
 
-      function isVideoFile(filePath) {
-        const extensions = [".mp4", ".webm", ".ogg", ".mov", ".m4v"];
-
-        const lower = String(filePath || "").toLowerCase();
-        if (extensions.some((ext) => lower.endsWith(ext))) {
-          return true;
-        }
-
+      function isPdfFile(f)   { return f.toLowerCase().endsWith(".pdf"); }
+      function isVideoFile(f) {
+        const exts = [".mp4",".webm",".ogg",".mov",".m4v"];
+        const l = String(f||"").toLowerCase();
+        if (exts.some(e=>l.endsWith(e))) return true;
         try {
-          const url = new URL(filePath, window.location.origin);
-          const pathname = url.pathname.toLowerCase();
-          return extensions.some((ext) => pathname.endsWith(ext));
-        } catch (_error) {
-          return false;
-        }
+          const u = new URL(f, window.location.origin);
+          return exts.some(e=>u.pathname.toLowerCase().endsWith(e));
+        } catch { return false; }
       }
-
-      function isHttpUrl(value) {
-        return /^https?:\/\//i.test(String(value || "").trim());
-      }
+      function isHttpUrl(v) { return /^https?:\/\//i.test(String(v||"").trim()); }
 
       function extractGoogleDriveFileId(url) {
-        const value = String(url || "").trim();
-        if (!value) return "";
-
-        const fileMatch = value.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
-        if (fileMatch && fileMatch[1]) return fileMatch[1];
-
+        const v = String(url||"").trim();
+        const m = v.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+        if (m) return m[1];
+        try { return new URL(v).searchParams.get("id") || ""; }
+        catch { return ""; }
+      }
+      function toGoogleDrivePreviewUrl(url) {
+        const id = extractGoogleDriveFileId(url);
+        return id ? `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview` : "";
+      }
+      function getFileNameFromPath(f) {
         try {
-          const parsed = new URL(value);
-          const fromQuery = parsed.searchParams.get("id");
-          return fromQuery ? String(fromQuery).trim() : "";
-        } catch (_error) {
-          return "";
+          return decodeURIComponent(new URL(f, window.location.origin).pathname.split("/").pop()) || "Ressource";
+        } catch {
+          return String(f||"").split("/").pop() || "Ressource";
+        }
+      }
+      function getAbsoluteFileUrl(f) {
+        return new URL(f, window.location.origin).toString();
+      }
+
+      function getVideoMimeType(filePath) {
+        const lower = String(filePath || "").toLowerCase();
+        if (lower.endsWith(".webm")) return "video/webm";
+        if (lower.endsWith(".ogg") || lower.endsWith(".ogv")) return "video/ogg";
+        if (lower.endsWith(".mov")) return "video/quicktime";
+        if (lower.endsWith(".m4v")) return "video/x-m4v";
+        return "video/mp4";
+      }
+
+      function setVideoSource(url, mimeType) {
+        if (viewerVideo) {
+          viewerVideo.pause?.();
+          viewerVideo.src = url;
+          viewerVideo.load();
+        }
+
+        const PlyrCtor = window.Plyr;
+        if (typeof PlyrCtor === "function") {
+          if (!plyrInstance) {
+            plyrInstance = new PlyrCtor("#viewer-video", {
+              controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "captions", "fullscreen"],
+              autoplay: false
+            });
+          }
+          plyrInstance.source = {
+            type: "video",
+            sources: [{ src: url, type: mimeType }]
+          };
         }
       }
 
-      function toGoogleDrivePreviewUrl(url) {
-        const fileId = extractGoogleDriveFileId(url);
-        return fileId ? `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview` : "";
+      /* ── Meta chips (icon-prefixed inline) ── */
+      function setMetaItems(items) {
+        if (!meta) return;
+        meta.innerHTML = "";
+        items.filter(Boolean).forEach(({ icon, text, cls }) => {
+          const span = document.createElement("span");
+          span.className = "meta-item" + (cls ? ` ${cls}` : "");
+          span.innerHTML = `<span class="meta-icon">${icon}</span>${text}`;
+          meta.appendChild(span);
+        });
       }
 
-      function buildSubAcquisLink(nextSubAcquisId) {
-        return `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(nextSubAcquisId)}${isEmbeddedMode ? "&embedded=1" : ""}`;
+      /* ── Resource card ── */
+      function buildResourceCard(filePath, sizeLabel) {
+        const label = extensionLabel(filePath);
+        const name  = getFileNameFromPath(filePath);
+        const btn   = document.createElement("button");
+        btn.type = "button";
+        btn.className = "resource-card";
+        btn.dataset.filePath = filePath;
+
+        const icon = document.createElement("span");
+        icon.className = `resource-card-icon ${iconClassForLabel(label)}`;
+        icon.textContent = iconForLabel(label);
+
+        const text = document.createElement("span");
+        text.className = "resource-card-text";
+
+        const t = document.createElement("span");
+        t.className = "resource-card-title";
+        t.textContent = name;
+
+        const m = document.createElement("span");
+        m.className = "resource-card-meta";
+        m.textContent = sizeLabel ? `${sizeLabel} • ${label}` : label;
+
+        text.appendChild(t);
+        text.appendChild(m);
+        btn.appendChild(icon);
+        btn.appendChild(text);
+        btn.addEventListener("click", () => previewCourseFile(filePath));
+        return btn;
+      }
+
+      function buildSubAcquisLink(id) {
+        return `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(id)}${isEmbeddedMode?"&embedded=1":""}`;
       }
 
       async function setupNextSubAcquisLink() {
-        if (!moduleId || !subAcquisId) {
-          nextSubCta.hidden = true;
-          return;
-        }
-
+        if (!moduleId || !subAcquisId) { nextSubCta.hidden = true; return; }
         try {
-          const identifier = encodeURIComponent(getCurrentIdentifier());
-          const response = await fetch(`/api/programmation-c/modules?identifier=${identifier}`);
-          if (!response.ok) throw new Error("failed modules");
-
-          const data = await response.json();
+          const id  = encodeURIComponent(getCurrentIdentifier());
+          const res = await fetch(`/api/programmation-c/modules?identifier=${id}`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
           const modules = Array.isArray(data.modules) ? data.modules : [];
-          const currentModule = modules.find((entry) => String(entry.id) === String(moduleId));
-          const subList = Array.isArray(currentModule?.subAcquis) ? currentModule.subAcquis : [];
-          const currentIndex = subList.findIndex((entry) => String(entry) === String(subAcquisId));
-
-          if (currentIndex >= 0 && currentIndex < subList.length - 1) {
-            const nextSubAcquisId = subList[currentIndex + 1];
-            nextSubCta.href = buildSubAcquisLink(nextSubAcquisId);
+          const mod = modules.find(m => String(m.id) === String(moduleId));
+          const list = Array.isArray(mod?.subAcquis) ? mod.subAcquis : [];
+          const idx  = list.findIndex(s => String(s) === String(subAcquisId));
+          if (idx >= 0 && idx < list.length - 1) {
+            nextSubCta.href = buildSubAcquisLink(list[idx + 1]);
             nextSubCta.hidden = false;
             return;
           }
-
           nextSubCta.hidden = true;
-        } catch (_error) {
-          nextSubCta.hidden = true;
-        }
+        } catch { nextSubCta.hidden = true; }
       }
 
-      function getAbsoluteFileUrl(relativePath) {
-        return new URL(relativePath, window.location.origin).toString();
-      }
-
-      function openChatbotPanel(fullscreen = false) {
+      /* ── Chatbot ── */
+      function openChatbotPanel() {
         if (!chatbotPanel) return;
-
         chatbotPanel.hidden = false;
-        if (chatbotReopenBtn) {
-          chatbotReopenBtn.hidden = true;
-        }
-        document.body.classList.add("chatbot-open");
-        setChatbotFullscreen(fullscreen);
+        chatbotReopenBtn.hidden = true;
         ensureChatbotWelcome();
-
-        window.requestAnimationFrame(() => {
-          chatbotInput?.focus();
-        });
+        window.requestAnimationFrame(() => chatbotInput?.focus());
       }
 
       function closeChatbotPanel() {
         if (!chatbotPanel) return;
-
         chatbotPanel.hidden = true;
-        if (chatbotReopenBtn) {
-          chatbotReopenBtn.hidden = false;
-        }
-        document.body.classList.remove("chatbot-open");
-        setChatbotFullscreen(false);
-      }
-
-      function setChatbotFullscreen(fullscreen) {
-        chatbotState.fullscreen = Boolean(fullscreen);
-        chatbotPanel?.classList.toggle("is-fullscreen", chatbotState.fullscreen);
-
-        if (chatbotExpandBtn) {
-          chatbotExpandBtn.textContent = chatbotState.fullscreen ? "⤡" : "⤢";
-          chatbotExpandBtn.setAttribute(
-            "aria-label",
-            chatbotState.fullscreen ? "Réduire l'assistant" : "Agrandir l'assistant"
-          );
-        }
+        chatbotReopenBtn.hidden = false;
       }
 
       function appendChatMessage(role, text) {
         if (!chatbotThread) return;
+        const row = document.createElement("div");
+        row.className = `chatbot-bubble-row ${role}`;
 
-        const bubble = document.createElement("article");
-        bubble.className = `chatbot-bubble ${role === "user" ? "user" : "bot"}`;
-        bubble.textContent = String(text || "").trim();
-        chatbotThread.appendChild(bubble);
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2,"0") + ":" +
+                        now.getMinutes().toString().padStart(2,"0");
+        const timeLabel = "Maintenant";
+
+        if (role === "bot") {
+          const av = document.createElement("div");
+          av.className = "bubble-avatar";
+          av.textContent = "⚡";
+
+          const body = document.createElement("div");
+          body.className = "bubble-body";
+
+          const bubble = document.createElement("div");
+          bubble.className = "chatbot-bubble bot";
+          bubble.textContent = String(text||"").trim();
+
+          const time = document.createElement("span");
+          time.className = "bubble-time";
+          time.textContent = timeLabel;
+
+          body.appendChild(bubble);
+          body.appendChild(time);
+          row.appendChild(av);
+          row.appendChild(body);
+        } else {
+          const body = document.createElement("div");
+          body.className = "bubble-body";
+
+          const bubble = document.createElement("div");
+          bubble.className = "chatbot-bubble user";
+          bubble.textContent = String(text||"").trim();
+
+          const time = document.createElement("span");
+          time.className = "bubble-time";
+          time.textContent = timeLabel;
+
+          body.appendChild(bubble);
+          body.appendChild(time);
+          row.appendChild(body);
+        }
+
+        chatbotThread.appendChild(row);
         chatbotThread.scrollTop = chatbotThread.scrollHeight;
       }
 
       function ensureChatbotWelcome() {
         if (chatbotState.bootstrapped || !chatbotThread) return;
-
+        const lessonName = title?.textContent || "cette leçon";
         appendChatMessage(
           "bot",
-          `Bonjour 👋 Je suis l'assistant du module ${moduleId || "actuel"}. Je répondrai uniquement avec le contexte de ce module.`
+          `Bonjour 👋 Je suis là pour t'aider à comprendre la leçon sur ${lessonName}. As-tu des questions sur le contenu présenté ?`
         );
-
         chatbotState.bootstrapped = true;
       }
 
       async function submitChatbotQuestion() {
         const question = String(chatbotInput?.value || "").trim();
         if (!question) return;
-
         ensureChatbotWelcome();
         appendChatMessage("user", question);
-
-        if (chatbotInput) {
-          chatbotInput.value = "";
-        }
-
-        if (chatbotSendBtn instanceof HTMLButtonElement) {
-          chatbotSendBtn.disabled = true;
-        }
-
+        if (chatbotInput) chatbotInput.value = "";
+        if (chatbotSendBtn) chatbotSendBtn.disabled = true;
         try {
-          const identifier = getCurrentIdentifier();
-          const body = { 
-            identifier, 
-            message: question,
-            filterToModuleId: moduleId
-          };
-
-          const response = await fetch("/api/student/chatbot", {
+          const res = await fetch("/api/student/chatbot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
+            body: JSON.stringify({ identifier: getCurrentIdentifier(), message: question, filterToModuleId: moduleId })
           });
-
-          const payload = await response.json().catch(() => ({}));
-
-          if (!response.ok) {
-            appendChatMessage("bot", String(payload?.message || "Je n'ai pas pu traiter votre question."));
-            return;
-          }
-
+          const payload = await res.json().catch(()=>({}));
+          if (!res.ok) { appendChatMessage("bot", String(payload?.message || "Je n'ai pas pu traiter votre question.")); return; }
           appendChatMessage("bot", String(payload?.answer || "Je n'ai pas trouvé de réponse pertinente."));
-        } catch (_error) {
-          appendChatMessage("bot", "Une erreur réseau est survenue. Réessayez dans un instant.");
-        } finally {
-          if (chatbotSendBtn instanceof HTMLButtonElement) {
-            chatbotSendBtn.disabled = false;
-          }
-        }
+        } catch { appendChatMessage("bot", "Une erreur réseau est survenue. Réessayez dans un instant."); }
+        finally { if (chatbotSendBtn) chatbotSendBtn.disabled = false; }
       }
 
+      /* ── Focus mode ── */
+      function getFocusTarget() {
+        if (!videoShell.hidden) return videoShell;
+        if (!viewerShell.hidden) return viewerShell;
+        if (!videoThumb.hidden) return videoThumb;
+        return null;
+      }
+      function refreshFocusTarget() {
+        if (!focusState.enabled) { updateFocusBtnState(); return; }
+        const next = getFocusTarget();
+        if (!next) { disableFocusMode(); return; }
+        if (focusState.target !== next) {
+          focusState.target?.classList.remove("reader-focus-target");
+          focusState.target = next;
+          next.classList.add("reader-focus-target");
+        }
+        updateFocusBtnState();
+      }
+      function updateFocusBtnState() {
+        if (!focusModeBtn) return;
+        focusModeBtn.classList.toggle("active", focusState.enabled);
+        focusModeBtn.textContent = focusState.enabled ? "Quitter focus" : "Mode focus";
+      }
+      function disableFocusMode() {
+        focusState.target?.classList.remove("reader-focus-target");
+        focusState.target = null;
+        focusState.enabled = false;
+        document.body.classList.remove("reader-focus-mode");
+        updateFocusBtnState();
+      }
+      function enableFocusMode() {
+        const target = getFocusTarget();
+        if (!target) return;
+        focusState.enabled = true;
+        focusState.target = target;
+        document.body.classList.add("reader-focus-mode");
+        target.classList.add("reader-focus-target");
+        updateFocusBtnState();
+      }
+      function toggleFocusMode() { focusState.enabled ? disableFocusMode() : enableFocusMode(); }
+
+      /* ── PDF rendering ── */
       function setPdfControlsVisible(visible) {
         viewerShell.hidden = !visible;
         viewerControls.hidden = !visible;
         pdfCanvasWrap.hidden = !visible;
         viewerFrame.hidden = visible;
         videoShell.hidden = true;
+        videoThumb.hidden = true;
+        refreshFocusTarget();
+      }
+      function setVideoVisible(visible) {
+        videoShell.hidden = !visible;
+        viewerShell.hidden = visible;
+        videoThumb.hidden = true;
+        if (!visible && plyrInstance) plyrInstance.pause();
         refreshFocusTarget();
       }
 
       async function togglePdfFullscreen() {
         if (!pdfCanvasWrap) return;
-
-        const isFullscreen = document.fullscreenElement === pdfCanvasWrap;
-
         try {
-          if (isFullscreen) {
-            await document.exitFullscreen();
-          } else if (pdfCanvasWrap.requestFullscreen) {
-            await pdfCanvasWrap.requestFullscreen();
-          }
-        } catch (_error) {
-          // Ignore fullscreen errors to keep reading flow intact.
-        }
-      }
-
-      function setVideoVisible(visible) {
-        videoShell.hidden = !visible;
-        viewerShell.hidden = visible;
-        if (!visible && plyrInstance) {
-          plyrInstance.pause();
-        }
-        refreshFocusTarget();
-      }
-
-      function getFocusTarget() {
-        if (!videoShell.hidden) {
-          return videoShell;
-        }
-
-        if (!viewerShell.hidden) {
-          return viewerShell;
-        }
-
-        return null;
-      }
-
-      function setFocusButtonState() {
-        if (!focusModeBtn) {
-          return;
-        }
-
-        const hasTarget = Boolean(getFocusTarget());
-        focusModeBtn.hidden = !hasTarget;
-        focusModeBtn.classList.toggle("active", focusState.enabled);
-        focusModeBtn.textContent = focusState.enabled ? "Quitter focus" : "Mode focus";
-      }
-
-      function disableFocusMode() {
-        if (!focusState.enabled) {
-          setFocusButtonState();
-          return;
-        }
-
-        focusState.target?.classList.remove("reader-focus-target");
-        focusState.target = null;
-        focusState.enabled = false;
-        document.body.classList.remove("reader-focus-mode");
-        setFocusButtonState();
-      }
-
-      function enableFocusMode() {
-        const target = getFocusTarget();
-        if (!target) {
-          return;
-        }
-
-        focusState.enabled = true;
-        focusState.target = target;
-        document.body.classList.add("reader-focus-mode");
-        target.classList.add("reader-focus-target");
-        setFocusButtonState();
-      }
-
-      function toggleFocusMode() {
-        if (focusState.enabled) {
-          disableFocusMode();
-          return;
-        }
-
-        enableFocusMode();
-      }
-
-      function refreshFocusTarget() {
-        if (!focusState.enabled) {
-          setFocusButtonState();
-          return;
-        }
-
-        const nextTarget = getFocusTarget();
-        if (!nextTarget) {
-          disableFocusMode();
-          return;
-        }
-
-        if (focusState.target !== nextTarget) {
-          focusState.target?.classList.remove("reader-focus-target");
-          focusState.target = nextTarget;
-          focusState.target.classList.add("reader-focus-target");
-        }
-
-        setFocusButtonState();
-      }
-
-      function setActiveResourceButton(filePath) {
-        const allButtons = [
-          ...Array.from(resourceLinks.querySelectorAll(".resource-link")),
-          ...Array.from(videoLinks.querySelectorAll(".video-button"))
-        ];
-        allButtons.forEach((button) => {
-          button.classList.toggle("active", button.dataset.filePath === filePath);
-        });
-      }
-
-      function hasPreviousPdfStep() {
-        return pdfState.pageNumber > 1 || pdfState.currentFileIndex > 0;
-      }
-
-      function hasNextPdfStep() {
-        return (
-          pdfState.pageNumber < pdfState.pageCount ||
-          pdfState.currentFileIndex < pdfState.pdfFiles.length - 1
-        );
+          if (document.fullscreenElement === pdfCanvasWrap) await document.exitFullscreen();
+          else if (pdfCanvasWrap.requestFullscreen) await pdfCanvasWrap.requestFullscreen();
+        } catch {}
       }
 
       function updatePdfControls() {
-        const totalFiles = pdfState.pdfFiles.length;
-        const fileIndicator = totalFiles > 1 ? `Fichier ${pdfState.currentFileIndex + 1}/${totalFiles} - ` : "";
-
-        pageIndicator.textContent = `${fileIndicator}Page ${pdfState.pageNumber} / ${
-          pdfState.pageCount || 1
-        }`;
-        prevPageBtn.disabled = !hasPreviousPdfStep();
-        nextPageBtn.disabled = !hasNextPdfStep();
+        const tf = pdfState.pdfFiles.length;
+        const fi = tf > 1 ? `Fichier ${pdfState.currentFileIndex+1}/${tf} - ` : "";
+        pageIndicator.textContent = `${fi}Page ${pdfState.pageNumber} / ${pdfState.pageCount||1}`;
+        prevPageBtn.disabled = !(pdfState.pageNumber > 1 || pdfState.currentFileIndex > 0);
+        nextPageBtn.disabled = !(pdfState.pageNumber < pdfState.pageCount || pdfState.currentFileIndex < pdfState.pdfFiles.length-1);
       }
 
       async function renderPdfPage(pageNumber) {
         if (!pdfState.pdf || !pdfCanvas) return;
-
-        const requestId = ++pdfState.renderRequestId;
-        const previousTask = pdfState.renderTask;
-        if (previousTask) {
-          try {
-            previousTask.cancel();
-          } catch (_error) {
-            // Ignore cancellation failures.
-          }
-        }
-
-        // Wait one frame so the container has final size after layout/fullscreen changes.
-        await new Promise((resolve) => window.requestAnimationFrame(resolve));
-
-        if (requestId !== pdfState.renderRequestId) {
-          return;
-        }
-
+        const rid = ++pdfState.renderRequestId;
+        try { pdfState.renderTask?.cancel(); } catch {}
+        await new Promise(r => window.requestAnimationFrame(r));
+        if (rid !== pdfState.renderRequestId) return;
         const page = await pdfState.pdf.getPage(pageNumber);
-        const viewportBase = page.getViewport({ scale: 1 });
-
-        const isPdfFullscreen =
-          document.fullscreenElement === pdfCanvasWrap ||
-          document.webkitFullscreenElement === pdfCanvasWrap;
-
-        const horizontalPadding = isPdfFullscreen ? 16 : 24;
-        const verticalPadding = isPdfFullscreen ? 16 : 24;
-        const availableWidth = Math.max(280, pdfCanvasWrap.clientWidth - horizontalPadding);
-        const availableHeight = Math.max(280, pdfCanvasWrap.clientHeight - verticalPadding);
-        const widthScale = availableWidth / viewportBase.width;
-        const heightScale = availableHeight / viewportBase.height;
-        const scale = Math.max(0.1, Math.min(widthScale, heightScale));
-        const viewport = page.getViewport({ scale });
-
-        const context = pdfCanvas.getContext("2d");
-        pdfCanvas.width = Math.floor(viewport.width);
-        pdfCanvas.height = Math.floor(viewport.height);
-        pdfCanvas.style.width = `${Math.floor(viewport.width)}px`;
-        pdfCanvas.style.height = `${Math.floor(viewport.height)}px`;
-
-        const renderTask = page.render({ canvasContext: context, viewport });
-        pdfState.renderTask = renderTask;
-
-        try {
-          await renderTask.promise;
-        } catch (error) {
-          if (error?.name === "RenderingCancelledException") {
-            return;
-          }
-          throw error;
-        } finally {
-          if (pdfState.renderTask === renderTask) {
-            pdfState.renderTask = null;
-          }
-        }
-
-        if (requestId !== pdfState.renderRequestId) {
-          return;
-        }
-
+        const vb = page.getViewport({ scale: 1 });
+        const isFS = document.fullscreenElement === pdfCanvasWrap;
+        const aw = Math.max(280, pdfCanvasWrap.clientWidth  - (isFS?16:24));
+        const ah = Math.max(280, pdfCanvasWrap.clientHeight - (isFS?16:24));
+        const scale = Math.max(0.1, Math.min(aw/vb.width, ah/vb.height));
+        const vp = page.getViewport({ scale });
+        const ctx = pdfCanvas.getContext("2d");
+        pdfCanvas.width  = Math.floor(vp.width);
+        pdfCanvas.height = Math.floor(vp.height);
+        pdfCanvas.style.width  = `${Math.floor(vp.width)}px`;
+        pdfCanvas.style.height = `${Math.floor(vp.height)}px`;
+        const task = page.render({ canvasContext: ctx, viewport: vp });
+        pdfState.renderTask = task;
+        try { await task.promise; }
+        catch (e) { if (e?.name === "RenderingCancelledException") return; throw e; }
+        finally { if (pdfState.renderTask === task) pdfState.renderTask = null; }
+        if (rid !== pdfState.renderRequestId) return;
         updatePdfControls();
       }
 
-      async function loadPdfPreview(filePath, options = {}) {
-        const { startAtPage = 1, startAtLastPage = false } = options;
-        const absoluteUrl = getAbsoluteFileUrl(filePath);
-        const fileIndex = pdfState.pdfFiles.indexOf(filePath);
-
-        if (fileIndex >= 0) {
-          pdfState.currentFileIndex = fileIndex;
-        }
-
-        if (pdfState.currentUrl === absoluteUrl && pdfState.pdf) {
-          pdfState.pageNumber = startAtLastPage
-            ? pdfState.pageCount
-            : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
+      async function loadPdfPreview(filePath, opts={}) {
+        const { startAtPage=1, startAtLastPage=false } = opts;
+        const abs = getAbsoluteFileUrl(filePath);
+        const fi = pdfState.pdfFiles.indexOf(filePath);
+        if (fi >= 0) pdfState.currentFileIndex = fi;
+        if (pdfState.currentUrl === abs && pdfState.pdf) {
+          pdfState.pageNumber = startAtLastPage ? pdfState.pageCount : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
           await renderPdfPage(pdfState.pageNumber);
           return;
         }
-
-        pdfState.currentUrl = absoluteUrl;
+        pdfState.currentUrl = abs;
         viewerNote.textContent = "Chargement du PDF page par page...";
         setPdfControlsVisible(true);
-
-        const loadingTask = pdfjsLib.getDocument(absoluteUrl);
-        pdfState.pdf = await loadingTask.promise;
+        const loading = pdfjsLib.getDocument(abs);
+        pdfState.pdf = await loading.promise;
         pdfState.pageCount = pdfState.pdf.numPages;
-        pdfState.pageNumber = startAtLastPage
-          ? pdfState.pageCount
-          : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
-
+        pdfState.pageNumber = startAtLastPage ? pdfState.pageCount : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
         await renderPdfPage(pdfState.pageNumber);
         viewerNote.textContent = "";
       }
 
+      function setActiveResourceButton(filePath) {
+        [...resourceLinks.querySelectorAll(".resource-card"),
+         ...videoLinks.querySelectorAll(".video-button")].forEach(b => {
+          b.classList.toggle("active", b.dataset.filePath === filePath);
+        });
+      }
+
       function previewCourseFile(filePath) {
         const lower = filePath.toLowerCase();
-        viewerShell.hidden = false;
-        viewerTitle.textContent = "";
         setActiveResourceButton(filePath);
 
         if (lower.endsWith(".pdf")) {
+          viewerShell.hidden = false;
+          viewerTitle.textContent = "";
+          videoThumb.hidden = true;
           loadPdfPreview(filePath, { startAtPage: 1 }).catch(() => {
-            viewerNote.textContent = "Impossible de charger le PDF pour un affichage page par page.";
+            viewerNote.textContent = "Impossible de charger le PDF.";
           });
           refreshFocusTarget();
           return;
         }
 
-        setPdfControlsVisible(false);
-        pdfState.currentFileIndex = -1;
-
         if (lower.endsWith(".ppt") || lower.endsWith(".pptx")) {
-          const absoluteUrl = encodeURIComponent(getAbsoluteFileUrl(filePath));
-          viewerFrame.src = `https://view.officeapps.live.com/op/embed.aspx?src=${absoluteUrl}`;
-          viewerNote.textContent =
-            "Apercu PowerPoint via Office Viewer. En local, cela peut echouer si le fichier n'est pas accessible publiquement.";
+          setPdfControlsVisible(false);
+          pdfState.currentFileIndex = -1;
+          viewerShell.hidden = false;
+          viewerTitle.textContent = "";
+          videoThumb.hidden = true;
+          const abs = encodeURIComponent(getAbsoluteFileUrl(filePath));
+          viewerFrame.src = `https://view.officeapps.live.com/op/embed.aspx?src=${abs}`;
+          viewerFrame.hidden = false;
+          viewerNote.textContent = "Aperçu PowerPoint via Office Viewer.";
           refreshFocusTarget();
           return;
         }
 
         if (isVideoFile(filePath)) {
           setPdfControlsVisible(false);
-          setVideoVisible(true);
-          videoTitle.textContent = ``;
-          
-          const videoUrl = getAbsoluteFileUrl(filePath);
-          videoNote.textContent = "";
-          
-          if (!plyrInstance) {
-            plyrInstance = new Plyr('#viewer-video', {
-              controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'fullscreen'],
-              autoplay: false,
-              quality: { default: 720, options: [360, 720, 1080] }
-            });
+
+          if (isHttpUrl(filePath)) {
+            const drivePreview = toGoogleDrivePreviewUrl(filePath);
+            viewerShell.hidden = false;
+            videoShell.hidden = true;
+            videoThumb.hidden = true;
+            viewerFrame.hidden = false;
+            viewerFrame.src = drivePreview || filePath;
+            viewerNote.textContent = drivePreview
+              ? "Aperçu Google Drive chargé."
+              : "Aperçu vidéo chargé.";
+            refreshFocusTarget();
+            return;
           }
-          
-          plyrInstance.source = {
-            type: 'video',
-            sources: [{ src: videoUrl, type: 'video/mp4' }]
+
+          viewerShell.hidden = true;
+          videoShell.hidden = true;
+          videoThumb.hidden = false;
+
+          const startVideoPlayback = () => {
+            videoThumb.hidden = true;
+            setVideoVisible(true);
+            videoTitle.textContent = "";
+            const videoUrl = getAbsoluteFileUrl(filePath);
+            const mimeType = getVideoMimeType(filePath);
+            videoNote.textContent = "";
+            setVideoSource(videoUrl, mimeType);
+
+            if (plyrInstance?.play) {
+              plyrInstance.play().catch(() => {
+                videoNote.textContent = "La vidéo est prête à être lue.";
+              });
+              return;
+            }
+
+            viewerVideo?.play?.().catch(() => {
+              videoNote.textContent = "La vidéo est prête à être lue.";
+            });
           };
-          
-          plyrInstance.play().catch(() => {
-            videoNote.textContent = "La video est prête a etre lue.";
-          });
+
+          if (videoThumbPlayBtn) {
+            videoThumbPlayBtn.onclick = startVideoPlayback;
+          }
+          if (videoThumb) {
+            videoThumb.onclick = startVideoPlayback;
+          }
 
           refreshFocusTarget();
           return;
@@ -1346,58 +1306,64 @@
 
         if (isHttpUrl(filePath)) {
           setPdfControlsVisible(false);
+          videoThumb.hidden = true;
           setVideoVisible(false);
-
-          const drivePreviewUrl = toGoogleDrivePreviewUrl(filePath);
-          if (drivePreviewUrl) {
-            viewerFrame.src = drivePreviewUrl;
-            viewerNote.textContent = "Apercu Google Drive charge.";
-            refreshFocusTarget();
-            return;
-          }
-
-          viewerFrame.src = filePath;
-          viewerNote.textContent = "Ressource externe chargee.";
+          viewerShell.hidden = false;
+          const drive = toGoogleDrivePreviewUrl(filePath);
+          viewerFrame.hidden = false;
+          viewerFrame.src = drive || filePath;
+          viewerNote.textContent = drive ? "Aperçu Google Drive chargé." : "Ressource externe chargée.";
           refreshFocusTarget();
           return;
         }
 
+        setPdfControlsVisible(false);
+        videoThumb.hidden = true;
         setVideoVisible(false);
+        viewerShell.hidden = false;
+        viewerFrame.hidden = false;
         viewerFrame.src = filePath;
-        viewerNote.textContent = "Apercu du fichier.";
+        viewerNote.textContent = "Aperçu du fichier.";
         refreshFocusTarget();
       }
 
+      /* ── Load data ── */
       async function loadData() {
         if (!moduleId || !subAcquisId) {
-          meta.textContent = "Sous-acquis introuvable.";
+          title.textContent = "Sous-acquis introuvable.";
           nextSubCta.hidden = true;
           quizCta.hidden = true;
           videoShell.hidden = true;
-          disableFocusMode();
+          videoThumb.hidden = true;
           return;
         }
 
-        quizCta.href = `/student/questionnaire.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}${isEmbeddedMode ? "&embedded=1" : ""}`;
-        title.textContent = `Module ${moduleId} - Sous-acquis ${subAcquisId}`;
-        meta.textContent = "Chargement du cours...";
+        quizCta.href = `/student/questionnaire.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}${isEmbeddedMode?"&embedded=1":""}`;
+        title.textContent = `Module ${moduleId} – Sous-acquis ${subAcquisId}`;
+        setMetaItems([{ icon: "⏱", text: "Chargement..." }]);
 
         try {
-          const identifier = encodeURIComponent(getCurrentIdentifier());
-          const response = await fetch(
-            `/api/programmation-c/sub-acquis/${encodeURIComponent(moduleId)}/${encodeURIComponent(subAcquisId)}?identifier=${identifier}`
-          );
-          if (!response.ok) throw new Error("failed");
+          const id  = encodeURIComponent(getCurrentIdentifier());
+          const res = await fetch(`/api/programmation-c/sub-acquis/${encodeURIComponent(moduleId)}/${encodeURIComponent(subAcquisId)}?identifier=${id}`);
+          if (!res.ok) throw new Error("failed");
+          const data = await res.json();
 
-          const data = await response.json();
-          const files = Array.isArray(data.courseFiles) ? data.courseFiles : [];
-          const videoFiles = Array.isArray(data.videoFiles) ? data.videoFiles : [];
-          const questions = Array.isArray(data.quizQuestions) ? data.quizQuestions : [];
-          const moduleName = String(data.moduleName || `Module ${moduleId}`);
-          const subAcquisName = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
+          const files      = Array.isArray(data.courseFiles)   ? data.courseFiles   : [];
+          const videoFiles = Array.isArray(data.videoFiles)    ? data.videoFiles    : [];
+          const questions  = Array.isArray(data.quizQuestions) ? data.quizQuestions : [];
+          const modName    = String(data.moduleName   || `Module ${moduleId}`);
+          const subName    = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
+          const duration   = data.duration ? String(data.duration) : null;
+          const progress   = data.progress != null ? `${Math.round(data.progress)}%` : null;
 
-          title.textContent = `${moduleName} - ${subAcquisName}`;
+          title.textContent = `${subName}`;
 
+          const metaItems = [];
+          if (duration) metaItems.push({ icon: "⏱", text: `${duration}` });
+          metaItems.push({ icon: "📋", text: modName });
+          if (progress) metaItems.push({ icon: "✅", text: `Complété à ${progress}`, cls: "completed" });
+
+          setMetaItems(metaItems);
           markLessonAsViewed();
 
           quizCta.hidden = questions.length === 0;
@@ -1405,174 +1371,100 @@
           pdfState.currentFileIndex = -1;
           videoLinks.innerHTML = "";
           videoShell.hidden = true;
-
+          videoThumb.hidden = true;
           resourceLinks.innerHTML = "";
 
           if (videoFiles.length === 0) {
-            videoLinks.innerHTML = "<span>Aucune video disponible pour ce sous-acquis.</span>";
+            videoLinks.innerHTML = `<span class="video-links-empty">Aucune vidéo disponible</span>`;
           } else {
-            videoFiles.forEach((filePath, index) => {
-              const button = document.createElement("button");
-              button.type = "button";
-              button.className = "video-button";
-              button.dataset.filePath = filePath;
-              button.textContent = videoFiles.length === 1 ? "Vidéo" : `Vidéo ${index + 1}`;
-              button.addEventListener("click", () => previewCourseFile(filePath));
-              videoLinks.appendChild(button);
+            videoFiles.forEach((fp, i) => {
+              const btn = document.createElement("button");
+              btn.type = "button";
+              btn.className = "video-button";
+              btn.dataset.filePath = fp;
+              btn.textContent = videoFiles.length === 1 ? "Vidéo" : `Vidéo ${i+1}`;
+              btn.addEventListener("click", () => previewCourseFile(fp));
+              videoLinks.appendChild(btn);
             });
           }
 
-          if (files.length > 0) {
-            previewCourseFile(files[0]);
-          } else if (videoFiles.length > 0) {
-            previewCourseFile(videoFiles[0]);
+          const visibleResourceFiles = files.filter((filePath) => {
+            const lower = String(filePath || "").toLowerCase();
+            return !lower.endsWith(".pdf") && !lower.endsWith(".ppt") && !lower.endsWith(".pptx");
+          });
+
+          if (visibleResourceFiles.length > 0) {
+            const fileSizes = Array.isArray(data.fileSizes) ? data.fileSizes : [];
+            visibleResourceFiles.forEach((fp, i) => {
+              resourceLinks.appendChild(buildResourceCard(fp, fileSizes[i] || null));
+            });
           }
 
-          meta.textContent = "";
-          setFocusButtonState();
-        } catch (_error) {
-          meta.textContent = "Impossible de charger ce sous-acquis.";
+          if (files.length > 0)      previewCourseFile(files[0]);
+          else if (videoFiles.length) previewCourseFile(videoFiles[0]);
+
+          refreshFocusTarget();
+        } catch {
+          title.textContent = "Impossible de charger ce sous-acquis.";
+          setMetaItems([]);
           quizCta.hidden = true;
           videoLinks.innerHTML = "";
           videoShell.hidden = true;
-          disableFocusMode();
+          videoThumb.hidden = true;
         }
       }
 
+      /* ── Events ── */
       nextPageBtn.addEventListener("click", async () => {
-        await goToNextPdfStep();
+        if (!pdfState.pdf) return;
+        if (pdfState.pageNumber < pdfState.pageCount) { pdfState.pageNumber++; await renderPdfPage(pdfState.pageNumber); return; }
+        if (pdfState.currentFileIndex >= 0 && pdfState.currentFileIndex < pdfState.pdfFiles.length-1) {
+          const next = pdfState.pdfFiles[pdfState.currentFileIndex+1];
+          await loadPdfPreview(next, { startAtPage: 1 });
+          setActiveResourceButton(next);
+        }
       });
-
-      async function goToPreviousPdfStep() {
-        if (!pdfState.pdf) return;
-
-        if (pdfState.pageNumber > 1) {
-          pdfState.pageNumber -= 1;
-          await renderPdfPage(pdfState.pageNumber);
-          return;
-        }
-
-        if (pdfState.currentFileIndex > 0) {
-          const previousFilePath = pdfState.pdfFiles[pdfState.currentFileIndex - 1];
-          await loadPdfPreview(previousFilePath, { startAtLastPage: true });
-          setActiveResourceButton(previousFilePath);
-        }
-      }
-
-      async function goToNextPdfStep() {
-        if (!pdfState.pdf) return;
-
-        if (pdfState.pageNumber < pdfState.pageCount) {
-          pdfState.pageNumber += 1;
-          await renderPdfPage(pdfState.pageNumber);
-          return;
-        }
-
-        if (pdfState.currentFileIndex >= 0 && pdfState.currentFileIndex < pdfState.pdfFiles.length - 1) {
-          const nextFilePath = pdfState.pdfFiles[pdfState.currentFileIndex + 1];
-          await loadPdfPreview(nextFilePath, { startAtPage: 1 });
-          setActiveResourceButton(nextFilePath);
-        }
-      }
-
       prevPageBtn.addEventListener("click", async () => {
-        await goToPreviousPdfStep();
+        if (!pdfState.pdf) return;
+        if (pdfState.pageNumber > 1) { pdfState.pageNumber--; await renderPdfPage(pdfState.pageNumber); return; }
+        if (pdfState.currentFileIndex > 0) {
+          const prev = pdfState.pdfFiles[pdfState.currentFileIndex-1];
+          await loadPdfPreview(prev, { startAtLastPage: true });
+          setActiveResourceButton(prev);
+        }
       });
-
-      fullscreenBtn?.addEventListener("click", () => {
-        if (pdfCanvasWrap.hidden) return;
-        togglePdfFullscreen();
-      });
-
+      fullscreenBtn?.addEventListener("click", () => { if (!pdfCanvasWrap.hidden) togglePdfFullscreen(); });
       document.addEventListener("fullscreenchange", () => {
-        if (fullscreenBtn) {
-          fullscreenBtn.setAttribute(
-            "aria-label",
-            document.fullscreenElement === pdfCanvasWrap ? "Quitter le plein écran PDF" : "Plein écran PDF"
-          );
-        }
-
-        if (!pdfCanvasWrap.hidden && pdfState.pdf) {
-          void renderPdfPage(pdfState.pageNumber);
-        }
+        if (fullscreenBtn) fullscreenBtn.setAttribute("aria-label", document.fullscreenElement === pdfCanvasWrap ? "Quitter le plein écran PDF" : "Plein écran PDF");
+        if (!pdfCanvasWrap.hidden && pdfState.pdf) void renderPdfPage(pdfState.pageNumber);
       });
-
       window.addEventListener("resize", () => {
-        if (pdfCanvasWrap.hidden || !pdfState.pdf) {
-          return;
-        }
-
-        void renderPdfPage(pdfState.pageNumber);
+        if (!pdfCanvasWrap.hidden && pdfState.pdf) void renderPdfPage(pdfState.pageNumber);
       });
 
-      chatbotCloseBtn?.addEventListener("click", () => {
-        closeChatbotPanel();
+      chatbotCloseBtn?.addEventListener("click", closeChatbotPanel);
+      chatbotForm?.addEventListener("submit", e => { e.preventDefault(); void submitChatbotQuestion(); });
+      chatbotReopenBtn?.addEventListener("click", () => openChatbotPanel());
+      focusModeBtn?.addEventListener("click", toggleFocusMode);
+
+      document.addEventListener("pointerdown", (e) => {
+        if (!focusState.enabled || !focusState.target) return;
+        if (!focusState.target.contains(e.target) && !focusModeBtn?.contains(e.target)) disableFocusMode();
       });
-
-      chatbotExpandBtn?.addEventListener("click", () => {
-        openChatbotPanel(!chatbotState.fullscreen);
-      });
-
-      chatbotForm?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        void submitChatbotQuestion();
-      });
-
-      chatbotReopenBtn?.addEventListener("click", () => {
-        openChatbotPanel(false);
-      });
-
-      focusModeBtn?.addEventListener("click", () => {
-        toggleFocusMode();
-      });
-
-      document.addEventListener("pointerdown", (event) => {
-        if (!focusState.enabled || !focusState.target) {
-          return;
-        }
-
-        const clickedNode = event.target;
-        const clickedInsideTarget = clickedNode instanceof Node && focusState.target.contains(clickedNode);
-        const clickedFocusButton = clickedNode instanceof Node && focusModeBtn?.contains(clickedNode);
-
-        if (!clickedInsideTarget && !clickedFocusButton) {
-          disableFocusMode();
-        }
-      });
-
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && focusState.enabled) {
-          disableFocusMode();
-        }
-
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && focusState.enabled) disableFocusMode();
         const isPdfVisible = !pdfCanvasWrap.hidden && Boolean(pdfState.pdf);
-        const isPdfFullscreen =
-          document.fullscreenElement === pdfCanvasWrap ||
-          document.webkitFullscreenElement === pdfCanvasWrap;
-
-        if (!isPdfVisible || !isPdfFullscreen) {
-          return;
-        }
-
-        if (event.key === "ArrowLeft") {
-          event.preventDefault();
-          void goToPreviousPdfStep();
-          return;
-        }
-
-        if (event.key === "ArrowRight") {
-          event.preventDefault();
-          void goToNextPdfStep();
-        }
+        const isFS = document.fullscreenElement === pdfCanvasWrap || document.webkitFullscreenElement === pdfCanvasWrap;
+        if (!isPdfVisible || !isFS) return;
+        if (e.key === "ArrowLeft")  { e.preventDefault(); prevPageBtn.click(); }
+        if (e.key === "ArrowRight") { e.preventDefault(); nextPageBtn.click(); }
       });
 
+      /* ── Init ── */
       loadData();
       setupNextSubAcquisLink();
-      setFocusButtonState();
-      chatbotReopenBtn.hidden = true;
-      if (moduleId) {
-        openChatbotPanel(false);
-      }
+      if (moduleId) openChatbotPanel();
     </script>
   </body>
 </html>
+

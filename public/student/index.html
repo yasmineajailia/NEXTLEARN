@@ -3,15 +3,934 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Espace Étudiant - NextLearn</title>
+    <title>Espace Étudiant — NextLearn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/student/sidebar.css" />
     <link rel="stylesheet" href="/student/student.css" />
+    <style>
+      :root {
+        --accent: #c41d38;
+        --accent-dark: #8f1220;
+        --ink: #0d1117;
+        --muted: #6b7280;
+        --surface: #ffffff;
+        --bg: #f5f5f3;
+        --line: #e8e8e6;
+        --serif: 'Space Grotesk', sans-serif;
+        --sans: 'Source Sans 3', 'Segoe UI', sans-serif;
+        --radius: 16px;
+        --radius-sm: 10px;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 15px;
+        color: var(--ink);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── shell ── */
+      .dashboard-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: var(--sidebar-width, 260px) 1fr;
+        transition: grid-template-columns 240ms ease;
+      }
+
+      body.sidebar-collapsed { --sidebar-width: 72px; }
+
+      /* ── content ── */
+      .content {
+        padding: 2.25rem 2.5rem;
+        min-height: 100vh;
+        background: var(--bg);
+      }
+
+      /* ── header ── */
+      .content-header { margin-bottom: 1.75rem; }
+
+      .eyebrow {
+        margin: 0 0 0.3rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .content-header h1 {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--ink);
+      }
+
+      /* ── views ── */
+      .view { display: none; }
+      .view.active { display: block; animation: fadeUp 280ms ease; }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      /* ── base card ── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 1.35rem 1.5rem;
+        transition: box-shadow 200ms ease, transform 200ms ease;
+      }
+
+      .card:hover {
+        box-shadow: 0 6px 28px rgba(0,0,0,0.07);
+        transform: translateY(-2px);
+      }
+
+      .card h3 {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+      }
+
+      .card p {
+        margin: 0.55rem 0 0;
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 0.9rem;
+      }
+
+      /* ── dashboard layout ── */
+
+      /* row 1: intro banner + next-step */
+      .dash-row-1 {
+        display: grid;
+        grid-template-columns: 1fr 300px;
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      /* intro banner */
+      .dashboard-intro-card {
+        background: var(--ink);
+        border-color: transparent;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .dashboard-intro-card::before {
+        content: '';
+        position: absolute;
+        right: -60px; top: -60px;
+        width: 240px; height: 240px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(196,29,56,0.35), transparent 65%);
+        pointer-events: none;
+      }
+
+      .dashboard-intro-card h3 {
+        color: #fff;
+        font-size: 1.15rem;
+        position: relative;
+      }
+
+      .dashboard-intro-card p {
+        color: rgba(255,255,255,0.55);
+        position: relative;
+      }
+
+      /* KPI row inside intro card */
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.65rem;
+        margin-top: 1.25rem;
+        position: relative;
+      }
+
+      .kpi-tile {
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: var(--radius-sm);
+        padding: 0.75rem 0.9rem;
+      }
+
+      .kpi-tile p {
+        margin: 0;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.5);
+      }
+
+      .kpi-tile strong {
+        display: block;
+        margin-top: 0.3rem;
+        font-family: var(--serif);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+      }
+
+      /* next-step card */
+      .next-step-card {
+        border-radius: var(--radius);
+        background: var(--accent);
+        border: none;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 1.35rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .next-step-card::before {
+        content: '';
+        position: absolute;
+        bottom: -30px; left: -30px;
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 70%);
+        pointer-events: none;
+      }
+
+      .next-step-card .ns-eyebrow {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.65);
+        margin: 0 0 0.5rem;
+      }
+
+      .next-step-card h4 {
+        margin: 0;
+        font-family: var(--serif);
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        line-height: 1.4;
+      }
+
+      .next-step-card .ns-meta {
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.7);
+        margin: 0.4rem 0 0;
+      }
+
+      .next-step-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 1.1rem;
+        padding: 0.55rem 1rem;
+        border: 1.5px solid rgba(255,255,255,0.5);
+        border-radius: 8px;
+        background: transparent;
+        color: #fff;
+        font-family: var(--sans);
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.03em;
+        transition: background 160ms ease, border-color 160ms ease;
+        width: fit-content;
+      }
+
+      .next-step-btn:hover {
+        background: rgba(255,255,255,0.15);
+        border-color: rgba(255,255,255,0.8);
+      }
+
+      /* row 2: 3-column top row + full-width videos row */
+      .dash-row-2 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .chart-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 1.35rem 1.5rem;
+        transition: box-shadow 200ms ease, transform 200ms ease;
+        height: 280px;
+      }
+
+      /* videos spans all 3 columns, shorter height */
+      .chart-card.full-row {
+        grid-column: 1 / -1;
+        height: 200px;
+      }
+
+      .chart-card:hover {
+        box-shadow: 0 6px 28px rgba(0,0,0,0.07);
+        transform: translateY(-2px);
+      }
+
+      .chart-card canvas {
+        flex: 1;
+        min-height: 0;
+        width: 100% !important;
+        height: 100% !important;
+        margin-top: 0.85rem;
+      }
+
+      .chart-card.donut { align-items: center; }
+
+      .chart-card.donut canvas {
+        flex: none;
+        width: 160px !important;
+        height: 160px !important;
+        margin-top: 0.85rem;
+      }
+
+      /* row 3: lower cards */
+      .dash-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      /* ── cours view ── */
+      .grid-two {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+
+      .course-card {
+        border-left: 3px solid var(--accent);
+        border-radius: 0 var(--radius) var(--radius) 0;
+      }
+
+      .action-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 1rem;
+        padding: 0.58rem 1.05rem;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #fff;
+        font-family: var(--sans);
+        font-size: 0.84rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 160ms ease, transform 160ms ease;
+      }
+
+      .action-link::after { content: ' →'; }
+
+      .action-link:hover {
+        background: var(--accent-dark);
+        transform: translateY(-1px);
+      }
+
+      .stat-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .stat-line:last-child { border-bottom: 0; }
+
+      .stat-line strong {
+        font-family: var(--serif);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      /* ── course embed ── */
+      .course-embed { margin-top: 1rem; }
+      .course-embed-content { padding: 0.4rem 0; }
+      .course-embed-loading { color: var(--muted); font-size: 0.9rem; }
+
+      .course-modules-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+
+      .course-module {
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .course-module:first-child { padding-top: 0; border-top: 0; }
+
+      .course-module-head { display: flex; align-items: center; gap: 0.9rem; }
+
+      .course-module-thumb {
+        width: 42px; height: 42px;
+        border-radius: var(--radius-sm);
+        background: rgba(196,29,56,0.07);
+        border: 1px solid rgba(196,29,56,0.14);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--serif);
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+
+      .course-module-meta { flex: 1; }
+
+      .course-module-title {
+        margin: 0;
+        font-size: 0.93rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .course-module-subtitle {
+        margin: 0.1rem 0 0;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .course-progress-bar {
+        width: 100px; height: 4px;
+        background: var(--line);
+        border-radius: 999px;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .course-progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 999px;
+        width: 0%;
+        transition: width 600ms ease;
+      }
+
+      .course-sub-list {
+        margin: 0.8rem 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 0.45rem;
+      }
+
+      .course-sub-entry {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: #fafaf8;
+        transition: border-color 150ms ease, background 150ms ease;
+      }
+
+      .course-sub-entry:hover { border-color: #d4d4d2; background: #fff; }
+
+      .course-sub-link {
+        font-size: 0.84rem;
+        font-weight: 500;
+        color: var(--ink);
+        text-decoration: none;
+        line-height: 1.35;
+      }
+
+      .course-sub-link:hover { color: var(--accent); }
+
+      /* ── quiz bubbles ── */
+      .quiz-bubble {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0.18rem 0.58rem;
+        font-size: 0.71rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--muted);
+        background: #f0f0ee;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .quiz-bubble.is-green  { background: #eaf7ef; border-color: #a8dbb8; color: #166534; }
+      .quiz-bubble.is-orange { background: #fef9ec; border-color: #f3d39a; color: #7c4a00; }
+      .quiz-bubble.is-red    { background: #fef2f2; border-color: #fbb0b0; color: #8b1c1c; }
+      .quiz-bubble.is-gray   { background: #f3f4f6; border-color: #d1d5db; color: #6b7280; }
+
+      /* ── calendar ── */
+      .calendar-term {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        align-items: start;
+        margin-top: 1rem;
+      }
+
+      .calendar-empty {
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-sm);
+        border: 1px dashed var(--line);
+        color: var(--muted);
+        font-size: 0.87rem;
+      }
+
+      .calendar-month {
+        border: 1px solid var(--line);
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 1rem;
+        opacity: 0;
+        transform: translateY(8px);
+        animation: fadeUp 360ms cubic-bezier(0.2,0.7,0.2,1) forwards;
+        animation-delay: var(--month-delay, 0ms);
+      }
+
+      .calendar-month h4 {
+        margin: 0 0 0.65rem;
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--ink);
+      }
+
+      .calendar-weeks { display: grid; gap: 0.4rem; }
+
+      .calendar-week {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        padding: 0.45rem 0.6rem;
+        background: #fafaf8;
+        opacity: 0;
+        transform: translateY(4px);
+        animation: fadeUp 300ms ease forwards;
+        animation-delay: calc(var(--month-delay, 0ms) + var(--week-delay, 0ms));
+        transition: box-shadow 160ms ease;
+      }
+
+      .calendar-week:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+      .calendar-week-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.4rem;
+        margin-bottom: 0.3rem;
+      }
+
+      .calendar-week-label {
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .calendar-week-range { font-size: 0.71rem; color: var(--muted); }
+
+      .calendar-week-items { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+
+      .calendar-chip-shell { position: relative; display: inline-flex; }
+
+      .calendar-sub-id {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(196,29,56,0.28);
+        color: var(--accent);
+        background: rgba(196,29,56,0.05);
+        border-radius: 999px;
+        padding: 0.1rem 0.45rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: help;
+        transition: background 140ms ease;
+      }
+
+      .calendar-sub-id:hover { background: rgba(196,29,56,0.1); }
+
+      .calendar-sub-id.is-locked {
+        border-color: var(--line);
+        color: #9ca3af;
+        background: #f4f4f2;
+      }
+
+      .calendar-popover {
+        position: absolute;
+        left: 50%;
+        top: calc(100% + 8px);
+        transform: translate(-50%, 4px);
+        min-width: 200px;
+        max-width: 280px;
+        z-index: 20;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0.7rem 0.85rem;
+        background: var(--surface);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.11);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 150ms ease, transform 150ms ease;
+      }
+
+      .calendar-chip-shell:hover .calendar-popover,
+      .calendar-chip-shell:focus-within .calendar-popover {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        pointer-events: auto;
+      }
+
+      .calendar-popover-title { margin: 0; font-size: 0.83rem; font-weight: 600; color: var(--ink); line-height: 1.4; }
+      .calendar-popover-status { margin: 0.28rem 0 0; font-size: 0.74rem; font-weight: 600; }
+      .calendar-popover-status.is-available { color: #166534; }
+      .calendar-popover-status.is-unavailable { color: var(--accent); }
+
+      .calendar-popover-action {
+        display: inline-flex;
+        margin-top: 0.5rem;
+        padding: 0.25rem 0.55rem;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 140ms ease;
+      }
+
+      .calendar-popover-action:hover { background: #ebebea; }
+
+      .calendar-popover-action.disabled {
+        color: var(--muted);
+        cursor: not-allowed;
+        background: #f3f4f6;
+        border-color: #e5e7eb;
+      }
+
+      /* ── messages ── */
+      .messages-list { display: grid; gap: 0.6rem; margin-top: 0.75rem; }
+
+      .message-item {
+        padding: 0.85rem 1rem;
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 0 12px 12px 0;
+        background: var(--surface);
+      }
+
+      .message-item h4 {
+        margin: 0;
+        font-family: var(--sans);
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .message-item p { margin: 0.28rem 0 0; font-size: 0.83rem; color: var(--muted); line-height: 1.5; }
+      .message-meta { margin-top: 0.35rem; font-size: 0.74rem; color: #9ca3af; }
+
+      /* ── upcoming list ── */
+      .upcoming-list { list-style: none; padding: 0; margin: 0.75rem 0 0; display: grid; gap: 0.5rem; }
+
+      .upcoming-item {
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-start;
+        padding: 0.7rem 0.85rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: #fafaf8;
+      }
+
+      .upcoming-date {
+        text-align: center;
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 0.88rem;
+        color: var(--accent);
+        min-width: 50px;
+      }
+
+      /* ── recommendation tags ── */
+      .recommendation-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.7rem; }
+
+      .recommendation-tag {
+        padding: 0.4rem 0.7rem;
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--ink);
+        transition: border-color 140ms ease, background 140ms ease;
+      }
+
+      .recommendation-tag:hover { border-color: #d4d4d2; background: #f8f8f6; }
+
+      /* ── chatbot launcher ── */
+      .chatbot-launcher {
+        position: fixed;
+        right: 1.25rem; bottom: 1.25rem;
+        z-index: 160;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.78rem 1.15rem;
+        background: var(--ink);
+        color: #fff;
+        font-family: var(--sans);
+        font-size: 0.87rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 8px 26px rgba(0,0,0,0.2);
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .chatbot-launcher:hover {
+        background: #1e2a38;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 34px rgba(0,0,0,0.26);
+      }
+
+      .chatbot-launcher-icon {
+        width: 1.75rem; height: 1.75rem;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+      }
+
+      /* ── chatbot panel ── */
+      .chatbot-panel {
+        position: fixed;
+        right: 1.25rem; bottom: 5rem;
+        z-index: 170;
+        width: min(420px, calc(100vw - 1.5rem));
+        height: min(75vh, 650px);
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        padding: 1.1rem;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: var(--surface);
+        box-shadow: 0 22px 56px rgba(0,0,0,0.14);
+      }
+
+      .chatbot-panel.is-expanded {
+        width: min(660px, calc(100vw - 1.5rem));
+        height: min(82vh, 760px);
+      }
+
+      .chatbot-panel.is-fullscreen {
+        top: 0; right: 0; bottom: 0; left: var(--sidebar-width, 260px);
+        width: auto; height: auto;
+        border-radius: 0;
+        z-index: 9999;
+      }
+
+      .chatbot-panel[hidden] { display: none; }
+
+      .chatbot-panel-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.8rem;
+      }
+
+      .chatbot-panel-eyebrow {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .chatbot-panel-eyebrow::before {
+        content: '';
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+
+      .chatbot-panel-header h2 {
+        margin: 0.2rem 0 0;
+        font-family: var(--serif);
+        font-weight: 700;
+        font-size: 1.02rem;
+        color: var(--ink);
+      }
+
+      .chatbot-panel-actions { display: flex; gap: 0.3rem; }
+
+      .chatbot-icon-btn {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        height: 1.9rem;
+        padding: 0 0.78rem;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 0.76rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 140ms ease, border-color 140ms ease;
+      }
+
+      .chatbot-icon-btn:hover { background: #ebebea; }
+
+      .chatbot-icon-btn[aria-pressed="true"] {
+        background: rgba(196,29,56,0.07);
+        border-color: rgba(196,29,56,0.22);
+        color: var(--accent);
+      }
+
+      .chatbot-panel-subtitle {
+        margin: 0;
+        font-size: 0.83rem;
+        color: var(--muted);
+        line-height: 1.5;
+        padding-top: 0.55rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .chatbot-thread {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        display: grid;
+        gap: 0.5rem;
+        padding: 0.15rem 0;
+        align-content: start;
+      }
+
+      .chatbot-bubble {
+        width: fit-content;
+        max-width: 88%;
+        border-radius: 14px;
+        padding: 0.52rem 0.72rem;
+        font-size: 0.87rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .chatbot-bubble.user {
+        place-self: start end;
+        background: var(--ink);
+        color: #fff;
+        border-radius: 14px 14px 2px 14px;
+      }
+
+      .chatbot-bubble.bot {
+        place-self: start start;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        color: var(--ink);
+        border-radius: 14px 14px 14px 2px;
+      }
+
+      .chatbot-form { padding-top: 0.5rem; border-top: 1px solid var(--line); }
+
+      .chatbot-label {
+        display: block;
+        font-size: 0.73rem;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 0.38rem;
+        letter-spacing: 0.02em;
+      }
+
+      .chatbot-input-row { display: grid; grid-template-columns: 1fr auto; gap: 0.45rem; }
+
+      .chatbot-input-row input {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        padding: 0.62rem 0.82rem;
+        font-family: var(--sans);
+        font-size: 0.87rem;
+        color: var(--ink);
+        background: var(--bg);
+        transition: border-color 140ms ease, box-shadow 140ms ease;
+      }
+
+      .chatbot-input-row input:focus {
+        outline: none;
+        border-color: rgba(196,29,56,0.38);
+        box-shadow: 0 0 0 3px rgba(196,29,56,0.09);
+        background: var(--surface);
+      }
+
+      .chatbot-input-row button {
+        border: 0;
+        border-radius: var(--radius-sm);
+        padding: 0.62rem 1rem;
+        background: var(--accent);
+        color: #fff;
+        font-family: var(--sans);
+        font-size: 0.84rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 150ms ease, transform 150ms ease;
+      }
+
+      .chatbot-input-row button:hover { background: var(--accent-dark); transform: translateY(-1px); }
+      .chatbot-input-row button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+      /* ── responsive ── */
+      @media (max-width: 980px) {
+        .dashboard-shell { grid-template-columns: 1fr; }
+        .dash-row-1, .dash-row-2, .dash-row-3, .grid-two { grid-template-columns: 1fr; }
+        .chart-card.full-row { grid-column: auto; height: 220px; }
+        .kpi-row { grid-template-columns: repeat(2, 1fr); }
+        .content { padding: 1.5rem; }
+        .chart-card { height: 240px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation: none !important; transition: none !important; }
+      }
+    </style>
   </head>
   <body>
     <div class="dashboard-shell">
@@ -23,64 +942,89 @@
           <h1 id="page-title">Mes cours disponibles</h1>
         </header>
 
+        <!-- ── dashboard ── -->
         <section class="view" id="view-dashboard">
-          <article class="card dashboard-intro-card">
-            <h3>Vue globale de progression</h3>
-            <p id="dashboard-summary-line">
-              Suivez vos progrées dans les modules, les leçons, les quiz et les vidéos.
-            </p>
-          </article>
 
-          <div class="dashboard-kpi-grid">
-            <article class="card kpi-card">
-              <p>Leçons terminées</p>
-              <strong id="dash-kpi-lessons">0/0</strong>
+          <!-- row 1: intro + next step -->
+          <div class="dash-row-1">
+            <article class="card dashboard-intro-card">
+              <div>
+                <h3>Vue globale de progression</h3>
+                <p id="dashboard-summary-line">Suivez vos progrès dans les modules, les leçons, les quiz et les vidéos.</p>
+              </div>
+              <div class="kpi-row">
+                <div class="kpi-tile">
+                  <p>Leçons</p>
+                  <strong id="dash-kpi-lessons">0/0</strong>
+                </div>
+                <div class="kpi-tile">
+                  <p>Modules</p>
+                  <strong id="dash-kpi-modules">0/0</strong>
+                </div>
+                <div class="kpi-tile">
+                  <p>Quiz</p>
+                  <strong id="dash-kpi-quizzes">0/0</strong>
+                </div>
+                <div class="kpi-tile">
+                  <p>Vidéos</p>
+                  <strong id="dash-kpi-videos">0/0</strong>
+                </div>
+              </div>
             </article>
-            <article class="card kpi-card">
-              <p>Modules en progression</p>
-              <strong id="dash-kpi-modules">0/0</strong>
-            </article>
-            <article class="card kpi-card">
-              <p>Quiz validés</p>
-              <strong id="dash-kpi-quizzes">0/0</strong>
-            </article>
-            <article class="card kpi-card">
-              <p>Vidéos consultées</p>
-              <strong id="dash-kpi-videos">0/0</strong>
-            </article>
+
+            <div class="next-step-card">
+              <div>
+                <p class="ns-eyebrow">Prochaine étape</p>
+                <h4 id="next-step-module">Commencez un module pour voir votre prochaine étape.</h4>
+                <p class="ns-meta" id="next-step-meta"></p>
+              </div>
+              <button class="next-step-btn" id="next-step-cta" type="button">Reprendre le cours →</button>
+            </div>
           </div>
 
-          <div class="dashboard-charts-grid">
-            <article class="card chart-card">
+          <!-- row 2: 4 charts in a true 2×2 grid -->
+          <div class="dash-row-2">
+            <article class="card chart-card donut">
               <h3>Avancement global</h3>
-              <canvas id="chart-overall-progress" aria-label="Graphique progression globale"></canvas>
+              <canvas id="chart-overall-progress" aria-label="Avancement global"></canvas>
             </article>
 
             <article class="card chart-card">
               <h3>Progression par module</h3>
-              <canvas id="chart-module-progress" aria-label="Graphique progression par module"></canvas>
+              <canvas id="chart-module-progress" aria-label="Progression par module"></canvas>
             </article>
 
             <article class="card chart-card">
               <h3>Quiz par module</h3>
-              <canvas id="chart-quiz-progress" aria-label="Graphique quiz par module"></canvas>
+              <canvas id="chart-quiz-progress" aria-label="Quiz par module"></canvas>
             </article>
 
-            <article class="card chart-card">
-              <h3>Vidéos par module</h3>
-              <canvas id="chart-video-progress" aria-label="Graphique vidéos par module"></canvas>
+            <!-- Videos chart removed per request -->
+          </div>
+
+          <!-- row 3: upcoming + recommendations -->
+          <div class="dash-row-3">
+            <article class="card">
+              <h3>Échéances à venir</h3>
+              <ul id="upcoming-list" class="upcoming-list"></ul>
+            </article>
+
+            <article class="card">
+              <h3>Recommandations</h3>
+              <p style="margin-top:0.4rem">Basé sur vos derniers résultats, nous vous suggérons de revoir :</p>
+              <div id="recommendations-list" class="recommendation-tags"></div>
+              <p id="recommendations-note" style="margin-top:0.8rem;font-size:0.88rem"></p>
             </article>
           </div>
+
         </section>
 
+        <!-- ── cours ── -->
         <section class="view active" id="view-cours">
           <div class="grid-two" id="cours-overview">
             <article class="card course-card">
               <h3>Programmation en C</h3>
-              <p>
-                Accédez à tous les modules, cours, quiz et ressources de Programmation en C pour
-                suivre votre progression.
-              </p>
+              <p>Accédez à tous les modules, cours, quiz et ressources de Programmation en C pour suivre votre progression.</p>
               <button class="action-link" type="button" id="open-c-course-btn">Accéder au cours</button>
             </article>
 
@@ -106,12 +1050,15 @@
           </div>
         </section>
 
+        <!-- ── calendrier ── -->
         <section class="view" id="view-calendrier">
           <article class="card">
+            <h3>Calendrier des activités</h3>
             <div class="calendar-term" id="calendar-list"></div>
           </article>
         </section>
 
+        <!-- ── messages ── -->
         <section class="view" id="view-messages">
           <article class="card">
             <h3>Messages des enseignants</h3>

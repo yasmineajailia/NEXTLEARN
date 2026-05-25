@@ -361,12 +361,6 @@
         border-color: #d5d8e6;
       }
 
-      /* Active / in-progress card */
-      .lesson-card.is-active {
-        border-color: #b21f2d;
-        border-width: 1.5px;
-      }
-
       /* Locked card */
       .lesson-card.is-locked {
         background: #fafafa;
@@ -379,22 +373,7 @@
         color: #b0b5c0;
       }
 
-      /* "EN COURS" badge pinned top-center */
-      .en-cours-badge {
-        position: absolute;
-        top: -11px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #b21f2d;
-        color: #fff;
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        padding: 0.2rem 0.65rem;
-        border-radius: 999px;
-        white-space: nowrap;
-        z-index: 2;
-      }
+      /* "EN COURS" badge removed - UI simplified */
 
       /* Card top row: badge + status icon */
       .lesson-card-top {
@@ -439,7 +418,7 @@
       .status-icon.done    { color: #b21f2d; }
       .status-icon.pending { color: #d1d5db; }
       .status-icon.locked  { color: #d1d5db; font-size: 1rem; }
-      .status-icon.active  { color: #b21f2d; opacity: 0.45; }
+      
 
       /* Title + description */
       .lesson-title {
@@ -759,9 +738,6 @@
             const list = document.createElement("ul");
             list.className = "lessons-grid";
 
-            /* find first incomplete for "active" highlighting */
-            let activeFound = false;
-
             subItems.forEach((subItem, sIdx) => {
               const lessonKey   = buildLessonKey(moduleData.id, subItem.id);
               const isDone      = completedSet.has(lessonKey);
@@ -770,10 +746,6 @@
               const contentType = guessContentType(subItem);
               const isLocked    = false; /* Adjust if you have lock logic */
 
-              /* mark first non-done as active */
-              let isActive = false;
-              if (!isDone && !isLocked && !activeFound) { isActive = true; activeFound = true; }
-
               const quizHref   = `/student/questionnaire.html?moduleId=${encodeURIComponent(moduleData.id)}&subAcquisId=${encodeURIComponent(subItem.id)}${isEmbeddedMode ? "&embedded=1" : ""}`;
               const lessonHref = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleData.id)}&subAcquisId=${encodeURIComponent(subItem.id)}${isEmbeddedMode ? "&embedded=1" : ""}`;
 
@@ -781,7 +753,6 @@
               let statusIcon = "", statusClass = "";
               if (isLocked) { statusIcon = "🔒"; statusClass = "locked"; }
               else if (isDone) { statusIcon = "✔"; statusClass = "done"; }
-              else if (isActive) { statusIcon = "○"; statusClass = "active"; }
               else { statusIcon = "○"; statusClass = "pending"; }
 
               /* Score display */
@@ -813,9 +784,8 @@
               }
 
               const li = document.createElement("li");
-              li.className = `lesson-card${isActive ? " is-active" : ""}${isLocked ? " is-locked" : ""}`;
+              li.className = `lesson-card${isLocked ? " is-locked" : ""}`;
               li.innerHTML = `
-                ${isActive ? '<span class="en-cours-badge">EN COURS</span>' : ""}
                 <div class="lesson-card-top">
                   <span class="content-type-badge ${TYPE_CLASSES[contentType]}">${TYPE_LABELS[contentType]}</span>
                   <span class="status-icon ${statusClass}" aria-hidden="true">${statusIcon}</span>

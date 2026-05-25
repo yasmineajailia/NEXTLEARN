@@ -19,7 +19,7 @@
       "title": "Décrire la structure d’un programme C",
       "related_to": ["5.3", "6.1"],
       "depends_on": [],
-      "unlocks": []
+      "unlocks": ["5.3", "6.1"]
     },
     "1.3": {
       "id": "1.3",

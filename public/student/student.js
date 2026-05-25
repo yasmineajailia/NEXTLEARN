@@ -53,9 +53,16 @@ function buildDom() {
     dashKpiQuizzes: document.getElementById("dash-kpi-quizzes"),
     dashKpiVideos: document.getElementById("dash-kpi-videos"),
     chartOverall: document.getElementById("chart-overall-progress"),
-    chartModules: document.getElementById("chart-module-progress"),
+    chartWeekly: document.getElementById("chart-weekly-activity"),
+    chartModuleProgress: document.getElementById("chart-module-progress"),
+    chartSkillRadar: document.getElementById("chart-skill-radar"),
     chartQuizzes: document.getElementById("chart-quiz-progress"),
-    chartVideos: document.getElementById("chart-video-progress"),
+    nextStepModule: document.getElementById("next-step-module"),
+    nextStepMeta: document.getElementById("next-step-meta"),
+    nextStepCta: document.getElementById("next-step-cta"),
+    upcomingList: document.getElementById("upcoming-list"),
+    recommendationsList: document.getElementById("recommendations-list"),
+    recommendationsNote: document.getElementById("recommendations-note"),
     chatbotLauncher: document.getElementById("chatbot-launcher"),
     chatbotSidebarBtn: document.getElementById("chatbot-sidebar-btn"),
     chatbotPanel: document.getElementById("chatbot-panel"),
@@ -72,8 +79,8 @@ function buildDom() {
 const dashboardCharts = {
   overall: null,
   modules: null,
-  quizzes: null,
-  videos: null
+  radar: null,
+  quizzes: null
 };
 
 let dashboardRefreshTimer = null;
@@ -1195,6 +1202,8 @@ function renderDashboardCharts(metrics) {
         ]
       },
       options: {
+        aspectRatio: 1,
+        maintainAspectRatio: true,
         plugins: {
           legend: {
             position: "bottom",
@@ -1205,8 +1214,9 @@ function renderDashboardCharts(metrics) {
     });
   }
 
-  if (dom.chartModules) {
-    dashboardCharts.modules = new chartFactory(dom.chartModules, {
+  if (dom.chartModuleProgress) {
+    // Module progress bar chart
+    dashboardCharts.modules = new chartFactory(dom.chartModuleProgress, {
       type: "bar",
       data: {
         labels: moduleLabels,
@@ -1220,6 +1230,8 @@ function renderDashboardCharts(metrics) {
         ]
       },
       options: {
+        aspectRatio: 1.8,
+        maintainAspectRatio: true,
         scales: {
           y: {
             beginAtZero: true,
@@ -1232,6 +1244,43 @@ function renderDashboardCharts(metrics) {
         },
         plugins: {
           legend: { display: false }
+        }
+      }
+    });
+  }
+
+  if (dom.chartSkillRadar) {
+    // Skill radar showing per-module lesson completion percentages
+    dashboardCharts.radar = new chartFactory(dom.chartSkillRadar, {
+      type: "radar",
+      data: {
+        labels: moduleLabels,
+        datasets: [
+          {
+            label: "Leçons complétées (%)",
+            data: metrics.moduleRows.map((row) => row.lessonPercent),
+            backgroundColor: "rgba(201, 21, 42, 0.18)",
+            borderColor: "rgba(201, 21, 42, 0.95)",
+            pointBackgroundColor: "#c9152a",
+            pointRadius: 4,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        aspectRatio: 1,
+        maintainAspectRatio: true,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 100,
+            grid: { color: 'rgba(74,82,99,0.06)' },
+            angleLines: { color: 'rgba(74,82,99,0.06)' },
+            ticks: { color: chartTickColor(), backdropColor: 'transparent' }
+          }
+        },
+        plugins: {
+          legend: { position: 'top', labels: { color: chartTickColor() } }
         }
       }
     });
@@ -1255,6 +1304,8 @@ function renderDashboardCharts(metrics) {
         ]
       },
       options: {
+        aspectRatio: 1.8,
+        maintainAspectRatio: true,
         scales: {
           y: {
             beginAtZero: true,
@@ -1264,38 +1315,6 @@ function renderDashboardCharts(metrics) {
           x: {
             ticks: { color: chartTickColor() }
           }
-        }
-      }
-    });
-  }
-
-  if (dom.chartVideos) {
-    dashboardCharts.videos = new chartFactory(dom.chartVideos, {
-      type: "bar",
-      data: {
-        labels: moduleLabels,
-        datasets: [
-          {
-            label: "Vidéos consultées (%)",
-            data: metrics.moduleRows.map((row) => row.videoPercent),
-            backgroundColor: "rgba(14, 165, 233, 0.85)",
-            borderRadius: 8
-          }
-        ]
-      },
-      options: {
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: { color: chartTickColor() }
-          },
-          x: {
-            ticks: { color: chartTickColor() }
-          }
-        },
-        plugins: {
-          legend: { display: false }
         }
       }
     });
@@ -1317,6 +1336,96 @@ function renderStudentDashboard(metrics) {
   }
 
   renderDashboardCharts(metrics);
+}
+
+function renderNextStep(modules = [], stats = null) {
+  if (!dom.nextStepModule || !dom.nextStepMeta || !dom.nextStepCta) return;
+
+  const completedKeys = Array.isArray(stats?.completedLessonKeys) ? stats.completedLessonKeys : [];
+  const completedSet = new Set(completedKeys.filter(k => typeof k === 'string'));
+
+  for (const moduleData of modules) {
+    const moduleId = String(moduleData?.id || "");
+    const subItems = Array.isArray(moduleData?.subAcquisDetails)
+      ? moduleData.subAcquisDetails
+      : Array.isArray(moduleData?.subAcquis)
+        ? moduleData.subAcquis.map(id => ({ id, name: `Sous-acquis ${id}` }))
+        : [];
+
+    for (const sub of subItems) {
+      const key = `${moduleId}::${sub.id}`;
+      if (!completedSet.has(key)) {
+        dom.nextStepModule.textContent = `${moduleData.name || `Module ${moduleId}`} — ${sub.name || sub.id}`;
+        const mins = sub.durationMinutes || sub.duration || null;
+        dom.nextStepMeta.textContent = mins ? `Temps restant: ${mins} min` : "Temps estimé: —";
+        dom.nextStepCta.onclick = () => {
+          window.location.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(String(sub.id || ""))}`;
+        };
+        return;
+      }
+    }
+  }
+
+  dom.nextStepModule.textContent = "Aucun cours en attente — félicitations !";
+  dom.nextStepMeta.textContent = "Vous avez complété tous les sous-acquis disponibles.";
+  dom.nextStepCta.onclick = () => { window.location.href = '/student/programmation-c.html'; };
+}
+
+function renderUpcoming(calendar = []) {
+  if (!dom.upcomingList) return;
+  const items = Array.isArray(calendar) ? calendar.slice().sort((a,b)=> new Date(String(a.unlockAt)).getTime() - new Date(String(b.unlockAt)).getTime()) : [];
+  const next = items.slice(0,4);
+  if (!next.length) {
+    dom.upcomingList.innerHTML = '<li class="calendar-empty">Aucune échéance à venir.</li>';
+    return;
+  }
+
+  dom.upcomingList.innerHTML = next.map(entry=>{
+    const date = entry?.unlockAt ? new Date(String(entry.unlockAt)) : null;
+    const day = date ? String(date.getDate()).padStart(2,'0') : '--';
+    const month = date ? date.toLocaleString('fr-FR',{month:'short'}) : '';
+    const title = entry?.subAcquisName || `Sous-acquis ${entry?.subAcquisId || ''}`;
+    const moduleName = entry?.moduleName || `Module ${entry?.moduleId || ''}`;
+    return `
+      <li class="upcoming-item">
+        <div class="upcoming-date"><div>${day}</div><div style="font-size:0.7rem;margin-top:3px">${month}</div></div>
+        <div style="flex:1">
+          <div style="font-weight:700">${htmlEscape(title)}</div>
+          <div style="font-size:0.86rem;color:var(--muted);margin-top:4px">${htmlEscape(moduleName)}</div>
+        </div>
+      </li>
+    `;
+  }).join('');
+}
+
+function renderRecommendations(metrics, modules = []) {
+  if (!dom.recommendationsList || !dom.recommendationsNote) return;
+
+  const rows = Array.isArray(metrics?.moduleRows) ? metrics.moduleRows : [];
+  if (!rows.length) {
+    dom.recommendationsList.innerHTML = '';
+    dom.recommendationsNote.textContent = '';
+    return;
+  }
+
+  // pick two modules with lowest lessonPercent (need review)
+  const sorted = rows.slice().sort((a,b)=> (a.lessonPercent || 0) - (b.lessonPercent || 0));
+  const picks = sorted.slice(0,2);
+
+  // map id -> name from modules list
+  const nameById = new Map();
+  (Array.isArray(modules)?modules:[]).forEach(m=> nameById.set(String(m.id), m.name || `Module ${m.id}`));
+
+  dom.recommendationsList.innerHTML = picks.map(r => {
+    const name = nameById.get(String(r.id)) || `Module ${r.id}`;
+    return `<div class="recommendation-tag">${htmlEscape(name)}<div style="font-size:0.72rem;color:var(--muted);margin-top:4px">Module ${htmlEscape(String(r.id))}</div></div>`;
+  }).join('');
+
+  if (picks.length) {
+    dom.recommendationsNote.textContent = `Astuce : un focus de 20 min sur ${nameById.get(String(picks[0].id)) || 'ce module'} peut améliorer votre score.`;
+  } else {
+    dom.recommendationsNote.textContent = '';
+  }
 }
 
 function renderStats(stats) {
@@ -1354,6 +1463,11 @@ async function loadDashboardData() {
     metrics.totals.quizzesPassed = Number(stats.quizzesPassed) || 0;
     metrics.percentages.quizzes = toPercent(metrics.totals.quizzesPassed, metrics.totals.quizzes);
   }
+
+  // Render additional UI blocks
+  renderNextStep(modules, stats);
+  renderUpcoming(calendarPayload.calendar || []);
+  renderRecommendations(metrics, normalizedOverview.length ? normalizedOverview : modules);
 
   renderStudentDashboard(metrics);
 }

@@ -1538,6 +1538,50 @@ function populateClassSelects() {
   syncScheduleFormDefaults();
 }
 
+function isAdminUser() {
+  return String(backofficeUser?.role || "enseignant").toLowerCase() === "admin";
+}
+
+function normalizeName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getTeacherScope() {
+  if (isAdminUser()) {
+    return { teacherId: "", teacherName: "" };
+  }
+
+  const teacherId = String(backofficeUser?.id || "").trim();
+  const teacherName = String(backofficeUser?.fullName || backofficeUser?.name || "").trim();
+  return { teacherId, teacherName };
+}
+
+function getScopedClasses() {
+  if (isAdminUser()) {
+    return state.classes;
+  }
+
+  const { teacherId, teacherName } = getTeacherScope();
+  const normalizedTeacherName = normalizeName(teacherName);
+
+  return state.classes.filter((room) => {
+    if (!room) return false;
+    if (teacherId && String(room.teacherId || "") === teacherId) return true;
+    if (normalizedTeacherName && normalizeName(room.teacherName) === normalizedTeacherName) return true;
+    return false;
+  });
+}
+
+function getScopedStudents() {
+  const scopedClasses = getScopedClasses();
+  if (isAdminUser()) {
+    return state.students;
+  }
+
+  const classIds = new Set(scopedClasses.map((room) => room.id));
+  return state.students.filter((student) => classIds.has(student.classId));
+}
+
 function getTeacherNameByClass(room) {
   if (!room) return "Enseignant non assigné";
   if (room.teacherId) {
@@ -1548,14 +1592,14 @@ function getTeacherNameByClass(room) {
 }
 
 function populateOverviewFilters() {
-  const classes = state.classes.map((room) => ({ id: room.id, name: room.name }));
+  const classes = getScopedClasses().map((room) => ({ id: room.id, name: room.name }));
   setOptions(dom.overviewClassFilter, classes, true);
   populateOverviewStudentFilter();
 }
 
 function populateOverviewStudentFilter() {
   const classFilter = dom.overviewClassFilter.value;
-  const filtered = state.students.filter((student) => {
+  const filtered = getScopedStudents().filter((student) => {
     if (classFilter === "all") return true;
     return student.classId === classFilter;
   });
@@ -1568,7 +1612,7 @@ function getFilteredStudents() {
   const classFilter = dom.overviewClassFilter.value;
   const studentFilter = dom.overviewStudentFilter.value;
 
-  return state.students.filter((student) => {
+  return getScopedStudents().filter((student) => {
     const classMatch = classFilter === "all" || student.classId === classFilter;
     const studentMatch = studentFilter === "all" || student.id === studentFilter;
     return classMatch && studentMatch;
@@ -1622,6 +1666,7 @@ function renderOverviewGraphs(filteredStudents, totals, curriculum) {
   const quizPercent = percentage(totals.quizzes, quizzesTarget);
 
   const classBars = state.classes
+    .filter((room) => getScopedClasses().some((allowed) => allowed.id === room.id))
     .map((room) => {
       const classStudents = filteredStudents.filter((student) => student.classId === room.id);
       if (!classStudents.length) return null;
@@ -1688,7 +1733,7 @@ function classCountFromFiltered(filteredStudents) {
 }
 
 function renderClassSummaryTable(filteredStudents) {
-  const grouped = state.classes
+  const grouped = getScopedClasses()
     .map((room) => {
       const students = filteredStudents.filter((item) => item.classId === room.id);
       const avgGrade = students.length

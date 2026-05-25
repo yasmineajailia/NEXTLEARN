@@ -1,13 +1,13 @@
 :root {
-  --bg: #f6f7fb;
+  --bg: #f4f6fb;
   --surface: #ffffff;
-  --ink: #1f2430;
+  --ink: #0f1724;
   --muted: #6b7280;
-  --line: #e7e9f2;
-  --accent: #b21f2d;
+  --line: #e9eef8;
+  --accent: #c41d38;
   --accent-dark: #8f1220;
+  --accent-gradient: linear-gradient(135deg,#c41d38 0%,#a61b2f 55%);
   --sidebar: #ffffff;
-  --sidebar-width: 260px;
 }
 
 * {
@@ -33,119 +33,9 @@ body.chatbot-open {
   transition: grid-template-columns 220ms ease;
 }
 
-body.sidebar-collapsed {
-  --sidebar-width: 24px;
-}
-
-body.sidebar-collapsed .sidebar {
-  padding: 0;
-  background: transparent;
-  border: none;
-}
-
-body.sidebar-collapsed .sidebar > div {
-  display: none !important;
-}
-
-body.sidebar-collapsed .sidebar-toggle {
-  margin: 0;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 .dashboard-shell.course-focus #content-header,
 .dashboard-shell.course-focus #cours-overview {
   display: none;
-}
-
-body.sidebar-collapsed .sidebar-toggle::before {
-  content: "▶";
-}
-
-.sidebar-toggle:hover {
-  background: #f2f5fb;
-}
-
-.logo-nextlearn {
-  height: 30px;
-  width: auto;
-}
-
-.brand-by {
-  font-size: 0.75rem;
-  color: #7a8395;
-}
-
-.logo-esprit {
-  height: 22px;
-  width: auto;
-}
-
-.student-card {
-  margin-top: 1.25rem;
-  padding: 0.9rem;
-  border-radius: 14px;
-  background: #fff6f7;
-  border: 1px solid #f3cfd4;
-}
-
-.card-label {
-  margin: 0;
-  color: #b21e2f;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.student-card h2 {
-  margin: 0.35rem 0 0;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 1.15rem;
-}
-
-.student-id {
-  margin: 0.25rem 0 0;
-  color: #5e6676;
-  font-size: 0.9rem;
-}
-
-.side-nav {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.nav-item {
-  border: 0;
-  text-align: left;
-  border-radius: 11px;
-  padding: 0.65rem 0.85rem;
-  cursor: pointer;
-  background: #f5f6fb;
-  color: #2a3140;
-  font-family: "Space Grotesk", sans-serif;
-  font-weight: 500;
-  transition: transform 180ms ease, background 180ms ease;
-}
-
-.nav-item:hover {
-  transform: translateY(-1px);
-  background: #eceff4;
-}
-
-.nav-item.active {
-  background: #fff1f3;
-  color: var(--accent);
-  border-left: 3px solid var(--accent);
-  padding-left: 0.68rem;
-}
-
-.nav-item.logout {
-  margin-top: 0.4rem;
-  background: #fff0f2;
-  color: var(--accent);
 }
 
 .chatbot-launcher {
@@ -374,17 +264,17 @@ body.sidebar-collapsed .sidebar-toggle::before {
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(19, 24, 44, 0.08);
-  padding: 1.1rem;
+  border: 1px solid rgba(21, 32, 64, 0.04);
+  border-radius: 14px;
+  box-shadow: 0 6px 22px rgba(16, 24, 40, 0.06);
+  padding: 1.15rem;
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 32px rgba(19, 24, 44, 0.12);
-  border-color: #dde2ee;
+  transform: translateY(-4px);
+  box-shadow: 0 22px 40px rgba(16, 24, 40, 0.12);
+  border-color: rgba(21, 32, 64, 0.06);
 }
 
 .card h3 {
@@ -402,15 +292,15 @@ body.sidebar-collapsed .sidebar-toggle::before {
 .dashboard-intro-card {
   position: relative;
   overflow: hidden;
-  background: #ffffff;
-  border-color: #efe3e6;
+  background: linear-gradient(160deg, rgba(241,244,250,0.85), #ffffff 60%);
+  border-color: rgba(196,29,56,0.06);
 }
 
 .dashboard-intro-card::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top right, rgba(178, 31, 45, 0.08), transparent 55%);
+  background: radial-gradient(circle at top right, rgba(196, 29, 56, 0.08), transparent 55%);
   pointer-events: none;
 }
 
@@ -435,38 +325,41 @@ body.sidebar-collapsed .sidebar-toggle::before {
   width: 130px;
   height: 130px;
   right: -45px;
-  top: -60px;
-  border-radius: 999px;
-  background: radial-gradient(circle at center, rgba(201, 21, 42, 0.14), rgba(201, 21, 42, 0));
-  pointer-events: none;
-  z-index: -1;
-}
+  .kpi-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: linear-gradient(180deg, #ffffff, rgba(250,250,252,0.96));
+    border-color: rgba(31,41,55,0.04);
+    padding: 1rem;
+  }
 
-.kpi-card p {
-  margin: 0;
-  font-size: 0.85rem;
-}
+  .kpi-card::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    right: -40px;
+    top: -48px;
+    border-radius: 999px;
+    background: radial-gradient(circle at center, rgba(196, 29, 56, 0.12), rgba(196, 29, 56, 0));
+    pointer-events: none;
+    z-index: -1;
+  }
 
-.kpi-card strong {
-  margin-top: 0.35rem;
-  display: block;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 1.42rem;
-  color: #202534;
-}
+  .kpi-card p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
 
-.dashboard-charts-grid {
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.chart-card {
-  min-height: 320px;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
+  .kpi-card strong {
+    margin-top: 0.35rem;
+    display: block;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 1.48rem;
+    color: var(--ink);
+  }
   border-color: #e2e8f4;
 }
 
@@ -955,92 +848,7 @@ body.sidebar-collapsed .sidebar-toggle::before {
   margin-top: 0.75rem;
   display: grid;
   gap: 0.65rem;
-
-.sidebar-toggle:hover {
-  background: #f2f5fb;
 }
-
-.logo-nextlearn {
-  height: 30px;
-  width: auto;
-}
-
-.brand-by {
-  font-size: 0.75rem;
-  color: #7a8395;
-}
-
-.logo-esprit {
-  height: 22px;
-  width: auto;
-}
-
-.student-card {
-  margin-top: 1.25rem;
-  padding: 0.9rem;
-  border-radius: 14px;
-  background: #fff6f7;
-  border: 1px solid #f3cfd4;
-}
-
-.card-label {
-  margin: 0;
-  color: #b21e2f;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.student-card h2 {
-  margin: 0.35rem 0 0;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 1.15rem;
-}
-
-.student-id {
-  margin: 0.25rem 0 0;
-  color: #5e6676;
-  font-size: 0.9rem;
-}
-
-.side-nav {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.nav-item {
-  border: 0;
-  text-align: left;
-  border-radius: 11px;
-  padding: 0.65rem 0.85rem;
-  cursor: pointer;
-  background: #f5f6fb;
-  color: #2a3140;
-  font-family: "Space Grotesk", sans-serif;
-  font-weight: 500;
-  transition: transform 180ms ease, background 180ms ease;
-}
-
-.nav-item:hover {
-  transform: translateY(-1px);
-  background: #eceff4;
-}
-
-.nav-item.active {
-  background: #fff1f3;
-  color: var(--accent);
-  border-left: 3px solid var(--accent);
-  padding-left: 0.68rem;
-}
-
-.nav-item.logout {
-  margin-top: 0.4rem;
-  background: #fff0f2;
-  color: var(--accent);
-}
-
 .chatbot-launcher {
   position: fixed;
   right: 1rem;
@@ -1356,18 +1164,30 @@ body.sidebar-collapsed .sidebar-toggle::before {
 }
 
 .chart-card {
-  min-height: 320px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-color: #e2e8f4;
+  background: linear-gradient(180deg,#ffffff,#fbfdff);
+  border-color: rgba(31,41,55,0.04);
 }
 
+
+/* Let Chart.js control canvas size; avoid forcing aspect-ratios in CSS. */
 .chart-card canvas {
   margin-top: 0.75rem;
   width: 100% !important;
-  height: 240px !important;
+  height: auto !important;
+  max-width: 100%;
   filter: saturate(1.04);
+}
+
+/* Compact donut wrapper: limit width and center; Chart.js will set height based on aspectRatio option */
+.chart-card.compact { text-align: center; }
+.chart-card.compact canvas, #chart-overall-progress { max-width: 160px; margin: 0.6rem auto; }
+
+/* Slightly larger charts keep proportion but reduced max height */
+.chart-card.large canvas {
+  max-height: 300px;
 }
 
 .action-link {
@@ -1988,10 +1808,6 @@ body.sidebar-collapsed .sidebar-toggle::before {
 }
 
 @media (max-width: 980px) {
-  :root {
-    --sidebar-width: 1fr;
-  }
-
   .dashboard-shell {
     grid-template-columns: 1fr;
   }

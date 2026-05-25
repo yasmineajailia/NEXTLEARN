@@ -118,9 +118,7 @@
         cursor: pointer;
       }
 
-      .quiz-retry[hidden] {
-        display: none;
-      }
+      .quiz-retry[hidden] { display: none; }
 
       .quiz-result {
         margin-top: 0.7rem;
@@ -128,6 +126,105 @@
         color: #182235;
       }
 
+      /* ── recommendations panel ── */
+      .rec-panel {
+        margin-top: 1.25rem;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        display: none; /* shown by JS */
+      }
+
+      .rec-panel.rec-forward {
+        background: #edf7f0;
+        border: 1px solid #b6dfc5;
+      }
+
+      .rec-panel.rec-remediation {
+        background: #fff5f5;
+        border: 1px solid #f5c0c0;
+      }
+
+      .rec-panel-title {
+        margin: 0 0 0.25rem;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      .rec-panel.rec-forward .rec-panel-title  { color: #145c30; }
+      .rec-panel.rec-remediation .rec-panel-title { color: #8b1c1c; }
+
+      .rec-panel-subtitle {
+        margin: 0 0 0.75rem;
+        font-size: 0.85rem;
+        color: #4f5971;
+      }
+
+      .rec-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .rec-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.6rem 0.85rem;
+        border-radius: 9px;
+        background: #fff;
+        border: 1px solid #e2e8f5;
+      }
+
+      .rec-item-info { display: flex; flex-direction: column; gap: 0.1rem; }
+
+      .rec-item-id {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #8a96aa;
+      }
+
+      .rec-item-title {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #182235;
+        line-height: 1.35;
+      }
+
+      .rec-item-link {
+        flex-shrink: 0;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: 0;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .rec-forward .rec-item-link {
+        background: #1a7a40;
+        color: #fff;
+      }
+
+      .rec-remediation .rec-item-link {
+        background: #c41d38;
+        color: #fff;
+      }
+
+      .rec-empty {
+        font-size: 0.88rem;
+        color: #4f5971;
+        margin: 0;
+      }
     </style>
   </head>
   <body>
@@ -143,47 +240,157 @@
         <form id="quiz-form" class="quiz-form"></form>
         <p id="quiz-result" class="quiz-result"></p>
         <button id="quiz-retry" type="button" class="quiz-retry" hidden>Reprendre le quiz</button>
+
+        <!-- recommendations injected here after submit -->
+        <div id="rec-panel" class="rec-panel">
+          <p class="rec-panel-title" id="rec-panel-title"></p>
+          <p class="rec-panel-subtitle" id="rec-panel-subtitle"></p>
+          <ul class="rec-list" id="rec-list"></ul>
+          <p class="rec-empty" id="rec-empty" hidden></p>
+        </div>
       </section>
     </main>
 
     <script>
-      const title = document.getElementById("title");
-      const backLink = document.getElementById("back-link");
-      const meta = document.getElementById("meta");
-      const quizForm = document.getElementById("quiz-form");
+      const title     = document.getElementById("title");
+      const backLink  = document.getElementById("back-link");
+      const meta      = document.getElementById("meta");
+      const quizForm  = document.getElementById("quiz-form");
       const quizResult = document.getElementById("quiz-result");
       const quizRetry = document.getElementById("quiz-retry");
+      const recPanel  = document.getElementById("rec-panel");
+      const recPanelTitle    = document.getElementById("rec-panel-title");
+      const recPanelSubtitle = document.getElementById("rec-panel-subtitle");
+      const recList   = document.getElementById("rec-list");
+      const recEmpty  = document.getElementById("rec-empty");
 
-      const params = new URLSearchParams(window.location.search);
-      const moduleId = params.get("moduleId") || "";
-      const subAcquisId = params.get("subAcquisId") || "";
+      const params       = new URLSearchParams(window.location.search);
+      const moduleId     = params.get("moduleId") || "";
+      const subAcquisId  = params.get("subAcquisId") || "";
       const isEmbeddedMode = params.get("embedded") === "1";
 
-      function normalizeOptionText(value) {
-        return String(value ?? "")
-          .replace(/\s+/g, " ")
-          .trim()
-          .toLowerCase();
+      // cache the graph once fetched
+      let skillGraph = null;
+
+      async function fetchSkillGraph() {
+        if (skillGraph) return skillGraph;
+        try {
+          const res = await fetch("/graph.json");
+          if (!res.ok) throw new Error("graph fetch failed");
+          const data = await res.json();
+          // support both shapes: raw map or { sub_skills: {...} }
+          skillGraph = data.sub_skills ?? data;
+          return skillGraph;
+        } catch (_err) {
+          return {};
+        }
       }
 
       function getCurrentIdentifier() {
-        const currentUserRaw = localStorage.getItem("nextlearnCurrentUser");
-        if (!currentUserRaw) return "";
-
         try {
-          const currentUser = JSON.parse(currentUserRaw);
-          return typeof currentUser?.identifier === "string" ? currentUser.identifier : "";
-        } catch (_error) {
-          return "";
-        }
+          const raw = localStorage.getItem("nextlearnCurrentUser");
+          if (!raw) return "";
+          const u = JSON.parse(raw);
+          return typeof u?.identifier === "string" ? u.identifier : "";
+        } catch (_e) { return ""; }
       }
+
+      function normalizeOptionText(value) {
+        return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+      }
+
+      function buildSubAcquisUrl(mId, sId) {
+        const base = `/student/sous-acquis.html?moduleId=${encodeURIComponent(mId)}&subAcquisId=${encodeURIComponent(sId)}`;
+        return isEmbeddedMode ? base + "&embedded=1" : base;
+      }
+
+      // ── recommendation rendering ──────────────────────────────────────────
+
+      async function showRecommendations(score) {
+        const graph = await fetchSkillGraph();
+        const node  = graph[subAcquisId];
+
+        const passed = score > 60;
+
+        // passed  → recommend unlocks (move forward)
+        // failed  → recommend depends_on (go back, 2 levels deep)
+        let ids = [];
+
+        if (passed) {
+          ids = (node?.unlocks ?? [])
+            .map(id => id.trim())
+            .filter(id => graph[id]); // only known skills
+        } else {
+          // 2 levels deep on depends_on
+          const level1 = (node?.depends_on ?? [])
+            .map(id => id.trim())
+            .filter(id => graph[id]);
+
+          const level2 = level1.flatMap(id =>
+            (graph[id]?.depends_on ?? [])
+              .map(d => d.trim())
+              .filter(d => graph[d] && !level1.includes(d))
+          );
+
+          // deduplicate, level1 first
+          ids = [...new Set([...level1, ...level2])];
+        }
+
+        // build panel
+        recPanel.className = `rec-panel ${passed ? "rec-forward" : "rec-remediation"}`;
+        recPanel.style.display = "block";
+
+        if (passed) {
+          recPanelTitle.textContent    = "Bien joué ! Voici ce que vous pouvez apprendre ensuite";
+          recPanelSubtitle.textContent = "Ces sous-acquis sont débloqués grâce à votre réussite.";
+        } else {
+          recPanelTitle.textContent    = "Pas encore — révisez ces prérequis d'abord";
+          recPanelSubtitle.textContent = "Ces sous-acquis sont nécessaires pour maîtriser celui-ci.";
+        }
+
+        recList.innerHTML = "";
+
+        if (ids.length === 0) {
+          recEmpty.hidden = false;
+          recEmpty.textContent = passed
+            ? "Aucun sous-acquis supplémentaire à débloquer pour le moment."
+            : "Aucun prérequis trouvé pour ce sous-acquis.";
+          return;
+        }
+
+        recEmpty.hidden = true;
+
+        ids.forEach(id => {
+          const skillNode = graph[id];
+          const skillTitle = skillNode?.title ?? id;
+
+          // derive moduleId from the skill id (e.g. "3.2" → "3")
+          const skillModuleId = id.split(".")[0];
+
+          const li = document.createElement("li");
+          li.className = "rec-item";
+          li.innerHTML = `
+            <div class="rec-item-info">
+              <span class="rec-item-id">Sous-acquis ${id}</span>
+              <span class="rec-item-title">${skillTitle}</span>
+            </div>
+            <a class="rec-item-link"
+               href="${buildSubAcquisUrl(skillModuleId, id)}">
+              ${passed ? "Commencer →" : "Réviser →"}
+            </a>
+          `;
+          recList.appendChild(li);
+        });
+      }
+
+      // ── quiz submit ───────────────────────────────────────────────────────
 
       async function submitQuiz(event) {
         event.preventDefault();
 
         const questionBoxes = Array.from(quizForm.querySelectorAll(".question-box"));
-        const answers = questionBoxes.map((box, questionIndex) => {
-          const selected = box.querySelector(`input[name='q-${questionIndex}']:checked`);
+        const answers = questionBoxes.map((box, qi) => {
+          const selected = box.querySelector(`input[name='q-${qi}']:checked`);
           return selected ? Number(selected.value) : -1;
         });
 
@@ -192,10 +399,7 @@
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              answers,
-              identifier: getCurrentIdentifier()
-            })
+            body: JSON.stringify({ answers, identifier: getCurrentIdentifier() })
           }
         );
 
@@ -205,26 +409,22 @@
         }
 
         const result = await response.json();
-        const summary = `Resultat: ${result.correct}/${result.total} - Score ${result.score}%`;
+        const summary = `Résultat : ${result.correct}/${result.total} — Score ${result.score}%`;
 
+        // colour the labels
         if (Array.isArray(result.review)) {
-          questionBoxes.forEach((box, questionIndex) => {
-            const review = result.review[questionIndex];
+          questionBoxes.forEach((box, qi) => {
+            const review = result.review[qi];
             if (!review) return;
-            const correctIndex =
-              typeof review.correctOptionIndex === "number" ? review.correctOptionIndex : null;
+            const correctIndex = typeof review.correctOptionIndex === "number"
+              ? review.correctOptionIndex : null;
             const selectedIndex = Number(review.selectedIndex);
 
-            const labels = Array.from(box.querySelectorAll("label"));
-            labels.forEach((label) => {
+            Array.from(box.querySelectorAll("label")).forEach(label => {
               const input = label.querySelector("input");
               const optionIndex = input ? Number(input.value) : -1;
-
               label.classList.remove("answer-correct", "answer-wrong");
-
-              if (correctIndex === null || !Number.isFinite(optionIndex)) {
-                return;
-              }
+              if (correctIndex === null || !Number.isFinite(optionIndex)) return;
 
               if (optionIndex === selectedIndex && selectedIndex === correctIndex) {
                 label.classList.add("answer-correct");
@@ -235,30 +435,31 @@
           });
         }
 
-        if (result.passed) {
-          const bannerMessage = `${summary}. Bravo, toutes les reponses sont correctes.`;
-          quizResult.textContent = bannerMessage;
-        } else {
-          const bannerMessage = `${summary}. Corrigez les erreurs puis recommencez.`;
-          quizResult.textContent = bannerMessage;
-        }
+        quizResult.textContent = result.passed
+          ? `${summary}. Bravo, toutes les réponses sont correctes !`
+          : `${summary}. Corrigez les erreurs puis revalidez.`;
 
         quizRetry.hidden = false;
+
+        // show skill recommendations based on score
+        await showRecommendations(result.score);
       }
+
+      // ── quiz reset ────────────────────────────────────────────────────────
 
       function resetQuiz() {
-        const checkedInputs = quizForm.querySelectorAll("input[type='radio']:checked");
-        checkedInputs.forEach((input) => {
-          input.checked = false;
-        });
-
-        quizForm.querySelectorAll("label").forEach((label) => {
-          label.classList.remove("answer-correct", "answer-wrong");
-        });
-
+        quizForm.querySelectorAll("input[type='radio']:checked")
+          .forEach(input => { input.checked = false; });
+        quizForm.querySelectorAll("label")
+          .forEach(label => label.classList.remove("answer-correct", "answer-wrong"));
         quizResult.textContent = "";
         quizRetry.hidden = true;
+        recPanel.style.display = "none";
+        recList.innerHTML = "";
+        recEmpty.hidden = true;
       }
+
+      // ── load questions ────────────────────────────────────────────────────
 
       async function loadQuestions() {
         if (!moduleId || !subAcquisId) {
@@ -266,78 +467,67 @@
           return;
         }
 
-        title.textContent = `Questionnaire - Module ${moduleId} / Sous-acquis ${subAcquisId}`;
+        title.textContent = `Questionnaire — Module ${moduleId} / Sous-acquis ${subAcquisId}`;
         backLink.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}${isEmbeddedMode ? "&embedded=1" : ""}`;
+
+        // prefetch graph in the background so it's ready when quiz is submitted
+        fetchSkillGraph();
 
         try {
           const identifier = encodeURIComponent(getCurrentIdentifier());
-          const response = await fetch(
+          const res = await fetch(
             `/api/programmation-c/sub-acquis/${encodeURIComponent(moduleId)}/${encodeURIComponent(subAcquisId)}?identifier=${identifier}`
           );
-          if (!response.ok) throw new Error("failed");
+          if (!res.ok) throw new Error("failed");
 
-          const data = await response.json();
-          const questions = Array.isArray(data.quizQuestions) ? data.quizQuestions : [];
-          const moduleName = String(data.moduleName || `Module ${moduleId}`);
-          const subAcquisName = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
-          title.textContent = `Questionnaire - ${moduleName} / ${subAcquisName}`;
+          const data = await res.json();
+          const questions   = Array.isArray(data.quizQuestions) ? data.quizQuestions : [];
+          const moduleName  = String(data.moduleName  || `Module ${moduleId}`);
+          const subName     = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
+
+          title.textContent = `Questionnaire — ${moduleName} / ${subName}`;
           quizForm.innerHTML = "";
           quizResult.textContent = "";
           quizRetry.hidden = true;
 
           if (questions.length === 0) {
             meta.textContent = "Aucun questionnaire disponible pour ce sous-acquis.";
-            quizForm.innerHTML = "";
-            quizRetry.hidden = true;
             return;
           }
 
-          questions.forEach((question, questionIndex) => {
+          questions.forEach((question, qi) => {
             const wrapper = document.createElement("div");
             wrapper.className = "question-box";
 
             const seenOptions = new Set();
-            const optionsHtml = question.options
-              .map((option, optionIndex) => {
-                const normalized = normalizeOptionText(option);
-                if (!normalized || seenOptions.has(normalized)) {
-                  return "";
-                }
-                seenOptions.add(normalized);
-                return `
-                  <label>
-                    <input type="radio" name="q-${questionIndex}" value="${optionIndex}" required />
-                    ${option}
-                  </label>
-                `;
-              })
-              .filter(Boolean)
-              .join("");
+            const optionsHtml = question.options.map((option, oi) => {
+              const normalized = normalizeOptionText(option);
+              if (!normalized || seenOptions.has(normalized)) return "";
+              seenOptions.add(normalized);
+              return `<label>
+                <input type="radio" name="q-${qi}" value="${oi}" required />
+                ${option}
+              </label>`;
+            }).filter(Boolean).join("");
 
-            wrapper.innerHTML = `
-              <p>Q${questionIndex + 1}. ${question.prompt}</p>
-              ${optionsHtml}
-            `;
-
+            wrapper.innerHTML = `<p>Q${qi + 1}. ${question.prompt}</p>${optionsHtml}`;
             quizForm.appendChild(wrapper);
           });
 
-          const submitButton = document.createElement("button");
-          submitButton.type = "submit";
-          submitButton.className = "quiz-submit";
-          submitButton.textContent = "Valider le questionnaire";
-          quizForm.appendChild(submitButton);
+          const submitBtn = document.createElement("button");
+          submitBtn.type = "submit";
+          submitBtn.className = "quiz-submit";
+          submitBtn.textContent = "Valider le questionnaire";
+          quizForm.appendChild(submitBtn);
 
-          meta.textContent = `${questions.length} question(s) a repondre.`;
-        } catch (_error) {
+          meta.textContent = `${questions.length} question(s) à répondre.`;
+        } catch (_err) {
           meta.textContent = "Impossible de charger le questionnaire.";
         }
       }
 
       quizForm.addEventListener("submit", submitQuiz);
-      quizRetry.addEventListener("click", () => {
-        resetQuiz();
-      });
+      quizRetry.addEventListener("click", resetQuiz);
       loadQuestions();
     </script>
     <script src="/student/sidebar-loader.js"></script>

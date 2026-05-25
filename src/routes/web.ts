@@ -17,16 +17,19 @@ import { CurriculumModule } from "../models/CurriculumModule";
 import { StudentChatbotVector } from "../models/StudentChatbotVector";
 import { StudentRemediationQuiz } from "../models/StudentRemediationQuiz";
 import { hashPassword } from "../utils/password";
+import { Recommender, type ChapterScoreEntry, type RecommendOptions, type ScoreEntry, type SkillsJson } from "../services/recommendation/skill-recommender.js";
 import { env } from "../config/env";
 
 const webRouter = Router();
 const publicRoot = path.join(process.cwd(), "public");
 const supportRoot = path.join(process.cwd(), "content", "Support_Cours_Préparation");
 const generatedQuizzesRoot = path.join(publicRoot, "generated-quizzes");
+const recommendationGraphPath = path.join(process.cwd(), "graph.json");
 const supportPublicPrefix = "/Support_Cours_Préparation/";
 const execFileAsync = promisify(execFile);
 const curriculumMediaBucketName = "curriculum-media";
 const courseContentSnippetCache = new Map<string, string[]>();
+let recommendationGraphCache: SkillsJson | null = null;
 
 type QuizQuestion = {
   prompt: string;
@@ -102,6 +105,16 @@ type CurriculumNamesData = {
   subAcquisById: Record<string, string>;
 };
 
+type RecommendationGraphNode = {
+  title?: string;
+  depends_on?: string[];
+  unlocks?: string[];
+};
+
+type RecommendationGraphPayload = {
+  sub_skills?: Record<string, RecommendationGraphNode>;
+};
+
 // Teacher Quiz Generation Session Storage
 type TeacherGeneratedQuestion = {
   prompt: string;
@@ -155,6 +168,93 @@ function getCurriculumMediaBucket() {
 
 function buildMediaPublicUrl(fileId: string, filename: string): string {
   return `/api/media/${encodeURIComponent(fileId)}/${encodeURIComponent(filename)}`;
+}
+
+function normalizeRecommendationGraph(payload: unknown): SkillsJson | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const graphPayload = payload as RecommendationGraphPayload;
+  const subSkills = graphPayload.sub_skills;
+  if (!subSkills || typeof subSkills !== "object") {
+    return null;
+  }
+
+  const normalized: SkillsJson = {};
+  for (const [id, node] of Object.entries(subSkills)) {
+    if (!node || typeof node !== "object") {
+      continue;
+    }
+
+    normalized[id] = {
+      title: String(node.title || id),
+      depends_on: Array.isArray(node.depends_on)
+        ? node.depends_on.filter((dep): dep is string => typeof dep === "string")
+        : [],
+      unlocks: Array.isArray(node.unlocks)
+        ? node.unlocks.filter((unlockId): unlockId is string => typeof unlockId === "string")
+        : []
+    };
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
+}
+
+async function loadRecommendationGraph(): Promise<SkillsJson | null> {
+  if (recommendationGraphCache) {
+    return recommendationGraphCache;
+  }
+
+  try {
+    const raw = await fs.readFile(recommendationGraphPath, "utf8");
+    const parsed = JSON.parse(raw) as unknown;
+    const graph = normalizeRecommendationGraph(parsed);
+    recommendationGraphCache = graph;
+    return graph;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function pickRecommendationMode(body: any): "recommend" | "remediation" | "revisit" | "snapshot" | "report" {
+  const mode = typeof body?.mode === "string" ? body.mode.trim().toLowerCase() : "";
+  if (mode === "recommend" || mode === "remediation" || mode === "revisit" || mode === "snapshot" || mode === "report") {
+    return mode;
+  }
+
+  return "snapshot";
+}
+
+function parseCompletedIds(body: any): string[] {
+  return Array.isArray(body?.completedIds)
+    ? body.completedIds
+        .filter((id: unknown): id is string => typeof id === "string" && Boolean(id.trim()))
+        .map((id: string) => id.trim())
+    : [];
+}
+
+function parseSubSkillScores(body: any): ScoreEntry[] {
+  return Array.isArray(body?.subSkillScores)
+    ? body.subSkillScores
+        .filter((entry: any) => typeof entry?.subSkillId === "string" && Number.isFinite(Number(entry?.score)))
+        .map((entry: any) => ({
+          subSkillId: String(entry.subSkillId).trim(),
+          score: Number(entry.score)
+        }))
+    : [];
+}
+
+function parseSkillScores(body: any): ChapterScoreEntry[] {
+  return Array.isArray(body?.skillScores)
+    ? body.skillScores
+        .filter((entry: any) => typeof entry?.chapterId === "string" || typeof entry?.chapterId === "number")
+        .filter((entry: any) => Number.isFinite(Number(entry?.score)))
+        .map((entry: any) => ({
+          chapterId: String(entry.chapterId).trim(),
+          score: Number(entry.score)
+        }))
+    : [];
 }
 
 function inferContentType(filename: string): string {
@@ -2159,6 +2259,65 @@ webRouter.get("/api/health", (_req, res) => {
     status: "ok",
     service: "nextlearn-web"
   });
+});
+
+webRouter.post("/api/recommendations", async (req, res) => {
+  try {
+    const graph = await loadRecommendationGraph();
+    if (!graph) {
+      return res.status(500).json({ message: "Unable to load graph.json" });
+    }
+
+    const recommender = new Recommender(graph);
+    recommender.setCompleted(parseCompletedIds(req.body));
+    recommender.loadSubSkillScores(parseSubSkillScores(req.body));
+    recommender.loadSkillScores(parseSkillScores(req.body));
+
+    const mode = pickRecommendationMode(req.body);
+    const limit = Number.isFinite(Number(req.body?.limit)) ? Math.max(1, Number(req.body.limit)) : undefined;
+    const sortBy = req.body?.sortBy === "unlocks" || req.body?.sortBy === "id" ? req.body.sortBy : "readiness";
+    const includePartial = req.body?.includePartial !== false;
+    const skillId = typeof req.body?.skillId === "string" ? req.body.skillId.trim() : "";
+
+    let result: unknown;
+    if (mode === "recommend") {
+      const options: RecommendOptions = { sortBy, limit, includePartial };
+      result = recommender.recommend(options);
+    } else if (mode === "remediation") {
+      result = recommender.remediation({ limit });
+    } else if (mode === "revisit") {
+      result = recommender.revisit({ limit });
+    } else if (mode === "report") {
+      result = recommender.skillScoreReport();
+    } else {
+      result = recommender.snapshot();
+    }
+
+    const response: Record<string, unknown> = {
+      mode,
+      result
+    };
+
+    if (skillId) {
+      response.skill = graph[skillId]
+        ? {
+            id: skillId,
+            title: graph[skillId].title,
+            status: recommender.status(skillId),
+            readiness: recommender.readiness(skillId),
+            readinessPct: Math.round(recommender.readiness(skillId) * 100),
+            prerequisiteProgress: recommender.prerequisiteProgress(skillId),
+            unlockImpact: recommender.unlockImpact(skillId),
+            isWeak: recommender.isWeak(skillId)
+          }
+        : null;
+    }
+
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error("Failed to compute recommendations:", error);
+    return res.status(500).json({ message: "Unable to compute recommendations" });
+  }
 });
 
 // Main page endpoint.
@@ -4625,6 +4784,20 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
       StudentProfile.find().sort({ fullName: 1 }).lean()
     ]);
 
+    const identifiers = students
+      .map((student) => String(student.identifier || "").trim())
+      .filter(Boolean);
+
+    const users = identifiers.length
+      ? await User.find({ identifier: { $in: identifiers } })
+          .select({ identifier: 1, progress: 1 })
+          .lean()
+      : [];
+
+    const userByIdentifier = new Map(
+      users.map((user) => [String((user as any).identifier || "").trim(), user])
+    );
+
     res.status(200).json({
       teachers: teachers.map((teacher) => ({
         id: String(teacher._id),
@@ -4642,16 +4815,22 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
         scheduleStartDate: toIsoDateOrNull(room.scheduleStartDate),
         accessScheduleBySubAcquis: toScheduleIsoRecord((room as any).accessScheduleBySubAcquis)
       })),
-      students: students.map((student) => ({
-        id: String(student._id),
-        fullName: student.fullName,
-        identifier: student.identifier,
-        email: student.email || "",
-        classId: student.classId ? String(student.classId) : "",
-        lessonsCompleted: Number(student.lessonsCompleted || 0),
-        quizzesTaken: Number(student.quizzesTaken || 0),
-        averageQuizGrade: Number(student.averageQuizGrade || 0)
-      }))
+      students: students.map((student) => {
+        const identifier = String(student.identifier || "").trim();
+        const user = identifier ? userByIdentifier.get(identifier) : null;
+        const stats = user ? computeStudentProgress((user as any).progress) : null;
+
+        return {
+          id: String(student._id),
+          fullName: student.fullName,
+          identifier,
+          email: student.email || "",
+          classId: student.classId ? String(student.classId) : "",
+          lessonsCompleted: stats?.lessonsCompleted ?? Number(student.lessonsCompleted || 0),
+          quizzesTaken: stats?.quizzesPassed ?? Number(student.quizzesTaken || 0),
+          averageQuizGrade: stats?.averageQuizScoreOn20 ?? Number(student.averageQuizGrade || 0)
+        };
+      })
     });
   } catch (error) {
     console.error("Failed to load backoffice organization:", error);

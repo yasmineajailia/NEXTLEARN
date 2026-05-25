@@ -9,43 +9,185 @@
       body {
         padding: 1.5rem;
       }
+
       .test-shell {
-        max-width: 980px;
+        max-width: 1220px;
         margin: 0 auto;
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(207, 31, 46, 0.18);
-        border-radius: 18px;
-        padding: 1.2rem 1.4rem;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(207, 31, 46, 0.16);
+        border-radius: 20px;
+        padding: 1.25rem;
         box-shadow: var(--shadow-soft);
       }
-      .test-grid {
+
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .hero h2 {
+        margin: 0.1rem 0 0;
+      }
+
+      .hero p {
+        margin: 0.2rem 0 0;
+        color: var(--muted);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(207, 31, 46, 0.08);
+        color: #a51321;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .layout {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1.3fr 0.9fr;
         gap: 1rem;
       }
-      .test-actions {
+
+      .stack {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .panel-title {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.8rem;
+      }
+
+      .panel-title h3 {
+        margin: 0;
+      }
+
+      .panel-title small {
+        color: var(--muted);
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.9rem;
+      }
+
+      .toolbar {
         display: flex;
         flex-wrap: wrap;
         gap: 0.6rem;
-        margin-top: 0.9rem;
       }
+
+      .skill-list {
+        border: 1px solid rgba(207, 31, 46, 0.14);
+        border-radius: 14px;
+        background: #fff;
+        max-height: 430px;
+        overflow: auto;
+      }
+
+      .skill-list-header,
+      .skill-row {
+        display: grid;
+        grid-template-columns: 34px 120px 1fr 90px;
+        gap: 0.6rem;
+        align-items: center;
+      }
+
+      .skill-list-header {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 1;
+        padding: 0.7rem 0.8rem;
+        border-bottom: 1px solid rgba(207, 31, 46, 0.12);
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .skill-row {
+        padding: 0.75rem 0.8rem;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+      }
+
+      .skill-row:nth-child(even) {
+        background: #fff9fa;
+      }
+
+      .skill-row input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #cf1f2e;
+      }
+
+      .skill-id {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.9rem;
+        color: #9a1f2a;
+      }
+
+      .skill-title {
+        color: #1f2937;
+      }
+
+      .skill-score {
+        width: 100%;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid rgba(207, 31, 46, 0.15);
+        border-radius: 10px;
+        background: #fff;
+      }
+
       .output {
         margin-top: 1rem;
-        padding: 0.9rem;
+        padding: 0.95rem;
         background: #fff8f9;
         border: 1px solid #f0d7da;
-        border-radius: 12px;
+        border-radius: 14px;
         font-size: 0.92rem;
         white-space: pre-wrap;
+        overflow: auto;
+        min-height: 220px;
       }
-      .inline-help {
+
+      .muted {
         color: var(--muted);
-        font-size: 0.85rem;
-        margin-top: 0.25rem;
+        font-size: 0.88rem;
       }
-      @media (max-width: 760px) {
-        .test-grid {
+
+      .help-box {
+        margin-top: 0.8rem;
+        padding: 0.8rem 0.9rem;
+        border-radius: 12px;
+        border: 1px dashed rgba(207, 31, 46, 0.18);
+        background: rgba(207, 31, 46, 0.04);
+      }
+
+      @media (max-width: 1060px) {
+        .layout {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .grid-2,
+        .skill-list-header,
+        .skill-row {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          flex-direction: column;
         }
       }
     </style>
@@ -55,39 +197,127 @@
     <div class="ambient ambient-b"></div>
 
     <main class="test-shell">
-      <header class="panel-header">
+      <header class="hero">
         <div>
           <p class="eyebrow">Recommendation Test</p>
-          <h2>Graph-based sub-skill recommendations</h2>
+          <h2>Build a test case with selected sub-skills</h2>
+          <p>Load the graph, pick sub-skills, assign scores, and run the recommender.</p>
         </div>
+        <span class="badge" id="graphStatus">Graph not loaded</span>
       </header>
 
-      <section class="card" style="margin-top: 1rem;">
-        <div class="section-title">Test inputs</div>
-        <div class="test-grid">
-          <label>
-            Sub-skill
-            <select id="skillId"></select>
-          </label>
-          <label>
-            Score
-            <input type="number" id="score" min="0" max="100" value="45" />
-          </label>
-          <label>
-            Average
-            <input type="number" id="avg" min="0" max="100" value="60" />
-          </label>
-          <label>
-            Max remediation depth
-            <input type="number" id="depth" min="1" max="5" value="2" />
-          </label>
-        </div>
-        <div class="test-actions">
-          <button class="btn-primary" id="btnRun" type="button">Run recommendation</button>
-        </div>
-        <div id="status" class="form-hint"></div>
-        <pre id="output" class="output"></pre>
-      </section>
+      <div class="layout">
+        <section class="stack">
+          <article class="card">
+            <div class="panel-title">
+              <div>
+                <h3>Skill selection</h3>
+                <small>Search, check, and score the sub-skills you want to test.</small>
+              </div>
+              <div class="toolbar">
+                <button class="btn-secondary" id="btnLoadGraph" type="button">Load graph</button>
+                <button class="btn-secondary" id="btnSelectVisible" type="button">Select visible</button>
+                <button class="btn-secondary" id="btnClearSelection" type="button">Clear</button>
+              </div>
+            </div>
+
+            <label>
+              Search sub-skills
+              <input id="searchSkills" type="search" placeholder="Filter by id or title" />
+            </label>
+
+            <div class="help-box">
+              <div class="muted">Checked skills are sent as completed IDs. Scores entered in the last column are sent as sub-skill scores.</div>
+            </div>
+
+            <div class="skill-list" id="skillList">
+              <div class="skill-list-header">
+                <span></span>
+                <span>Sub-skill</span>
+                <span>Title</span>
+                <span>Score</span>
+              </div>
+              <div class="skill-row muted">Load the graph to see sub-skills.</div>
+            </div>
+          </article>
+        </section>
+
+        <section class="stack">
+          <article class="card">
+            <div class="panel-title">
+              <div>
+                <h3>Test settings</h3>
+                <small>Controls for the recommendation endpoint.</small>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                Mode
+                <select id="mode">
+                  <option value="recommend">recommend</option>
+                  <option value="remediation">remediation</option>
+                  <option value="revisit">revisit</option>
+                  <option value="snapshot">snapshot</option>
+                  <option value="report">report</option>
+                </select>
+              </label>
+
+              <label>
+                Limit
+                <input id="limit" type="number" min="1" placeholder="10" />
+              </label>
+
+              <label>
+                Sort by
+                <select id="sortBy">
+                  <option value="readiness">readiness</option>
+                  <option value="unlocks">unlocks</option>
+                  <option value="id">id</option>
+                </select>
+              </label>
+
+              <label style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem;">
+                <input id="includePartial" type="checkbox" checked />
+                <span>Include partial</span>
+              </label>
+            </div>
+
+            <div class="grid-2" style="margin-top: 0.8rem;">
+              <label>
+                Skill ID preview
+                <input id="skillId" type="text" placeholder="Optional detail skill id" />
+              </label>
+
+              <label>
+                Chapter / skill scores JSON
+                <textarea id="skillScores" rows="3" placeholder='[{"chapterId":"1","score":78}]'></textarea>
+              </label>
+            </div>
+
+            <label style="margin-top: 0.8rem;">
+              Completed IDs (extra manual entries)
+              <textarea id="completedIds" rows="3" placeholder="1.1.1, 1.1.2"></textarea>
+            </label>
+
+            <div class="test-actions">
+              <button class="btn-primary" id="btnRun" type="button">Run recommendation</button>
+            </div>
+
+            <div id="status" class="form-hint"></div>
+          </article>
+
+          <article class="card">
+            <div class="panel-title">
+              <div>
+                <h3>Response</h3>
+                <small>JSON returned by <code>/api/recommendations</code>.</small>
+              </div>
+            </div>
+            <pre id="output" class="output"></pre>
+          </article>
+        </section>
+      </div>
     </main>
 
     <script src="/recommendation-test.js"></script>
