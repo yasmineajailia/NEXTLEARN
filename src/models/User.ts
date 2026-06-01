@@ -17,6 +17,13 @@ type UserData = {
       score: number;
       submittedAt?: Date;
     }>;
+    selfEvaluationResults?: Array<{
+      moduleId: string;
+      acquisId: string;
+      score: number;
+      passed: boolean;
+      submittedAt?: Date;
+    }>;
   };
 };
 
@@ -73,6 +80,18 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
             moduleId: { type: String, required: true },
             subAcquisId: { type: String, required: true },
             score: { type: Number, required: true },
+            submittedAt: { type: Date, default: Date.now }
+          }
+        ],
+        default: []
+      },
+      selfEvaluationResults: {
+        type: [
+          {
+            moduleId: { type: String, required: true },
+            acquisId: { type: String, required: true },
+            score: { type: Number, required: true },
+            passed: { type: Boolean, required: true },
             submittedAt: { type: Date, default: Date.now }
           }
         ],

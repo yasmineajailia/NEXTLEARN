@@ -30,6 +30,7 @@ const execFileAsync = promisify(execFile);
 const curriculumMediaBucketName = "curriculum-media";
 const courseContentSnippetCache = new Map<string, string[]>();
 let recommendationGraphCache: SkillsJson | null = null;
+const SELF_EVALUATION_PASS_SCORE = 60;
 
 type QuizQuestion = {
   prompt: string;
@@ -113,6 +114,14 @@ type RecommendationGraphNode = {
 
 type RecommendationGraphPayload = {
   sub_skills?: Record<string, RecommendationGraphNode>;
+};
+
+type SelfEvaluationResult = {
+  moduleId: string;
+  acquisId: string;
+  score: number;
+  passed: boolean;
+  submittedAt?: Date;
 };
 
 // Teacher Quiz Generation Session Storage
@@ -2250,6 +2259,164 @@ async function readPersistedSubAcquisResources(moduleId: string, subAcquisId: st
   };
 }
 
+function makeSelfEvaluationKey(moduleId: string, acquisId: string): string {
+  return `${moduleId}::${acquisId}`;
+}
+
+function collectAcquisQuizQuestions(acquis: CurriculumAcquis): QuizQuestion[] {
+  const questions: QuizQuestion[] = [];
+  const subAcquisList = Array.isArray(acquis.sousAcquis) ? acquis.sousAcquis : [];
+
+  subAcquisList.forEach((subAcquis) => {
+    const quizzes = Array.isArray(subAcquis.quizzes) ? subAcquis.quizzes : [];
+    quizzes.forEach((quiz) => {
+      const quizQuestions = Array.isArray(quiz.questions) ? quiz.questions : [];
+      quizQuestions.forEach((question) => {
+        const prompt = String(question.prompt || "").trim();
+        const options = Array.isArray(question.options)
+          ? question.options.map((option) => String(option || "").trim()).filter(Boolean)
+          : [];
+
+        if (!prompt || options.length < 2) {
+          return;
+        }
+
+        questions.push({
+          prompt,
+          options,
+          correctOptionIndex:
+            typeof question.correctAnswerIndex === "number" ? question.correctAnswerIndex : null
+        });
+      });
+    });
+  });
+
+  return questions;
+}
+
+function extractSelfEvaluationResults(user: { progress?: { selfEvaluationResults?: SelfEvaluationResult[] } } | null) {
+  const resultMap = new Map<string, SelfEvaluationResult>();
+  const stored = user?.progress?.selfEvaluationResults;
+  if (!Array.isArray(stored)) {
+    return resultMap;
+  }
+
+  stored.forEach((entry) => {
+    const moduleId = String(entry?.moduleId || "").trim();
+    const acquisId = String(entry?.acquisId || "").trim();
+    if (!moduleId || !acquisId) {
+      return;
+    }
+
+    resultMap.set(makeSelfEvaluationKey(moduleId, acquisId), {
+      moduleId,
+      acquisId,
+      score: Number.isFinite(Number(entry?.score)) ? Number(entry?.score) : 0,
+      passed: Boolean(entry?.passed),
+      submittedAt: entry?.submittedAt ? new Date(entry.submittedAt) : undefined
+    });
+  });
+
+  return resultMap;
+}
+
+function buildSelfEvaluationOverview(
+  modules: CurriculumModuleDoc[],
+  resultsMap: Map<string, SelfEvaluationResult>
+) {
+  return modules
+    .map((moduleDoc) => {
+      const moduleId = String(moduleDoc.id || "").trim();
+      if (!moduleId) {
+        return null;
+      }
+
+      const acquisList = Array.isArray(moduleDoc.acquis) ? moduleDoc.acquis : [];
+      const availableAcquis = acquisList
+        .map((acquis) => {
+          const acquisId = String(acquis.id || "").trim();
+          if (!acquisId) {
+            return null;
+          }
+
+          const questions = collectAcquisQuizQuestions(acquis);
+          if (!questions.length) {
+            return null;
+          }
+
+          const key = makeSelfEvaluationKey(moduleId, acquisId);
+          const result = resultsMap.get(key);
+
+          return {
+            acquisId,
+            acquisName: acquis.name || acquisId,
+            questionCount: questions.length,
+            isPassed: Boolean(result?.passed),
+            lastScore: typeof result?.score === "number" ? result.score : null,
+            lastSubmittedAt: result?.submittedAt || null
+          };
+        })
+        .filter(Boolean) as Array<{
+        acquisId: string;
+        acquisName: string;
+        questionCount: number;
+        isPassed: boolean;
+        lastScore: number | null;
+        lastSubmittedAt: Date | null;
+      }>;
+
+      if (!availableAcquis.length) {
+        return null;
+      }
+
+      let canUnlock = true;
+      const acquis = availableAcquis.map((entry) => {
+        const isUnlocked = canUnlock;
+        canUnlock = isUnlocked && entry.isPassed;
+        return { ...entry, isUnlocked };
+      });
+
+      return {
+        moduleId,
+        moduleName: moduleDoc.name || moduleId,
+        acquis
+      };
+    })
+    .filter(Boolean) as Array<{
+    moduleId: string;
+    moduleName: string;
+    acquis: Array<{
+      acquisId: string;
+      acquisName: string;
+      questionCount: number;
+      isPassed: boolean;
+      isUnlocked: boolean;
+      lastScore: number | null;
+      lastSubmittedAt: Date | null;
+    }>;
+  }>;
+}
+
+function scoreSelfEvaluationQuestions(questions: QuizQuestion[], answers: Array<number | null>) {
+  let correctCount = 0;
+  let totalCount = 0;
+
+  questions.forEach((question, index) => {
+    if (typeof question.correctOptionIndex !== "number") {
+      return;
+    }
+
+    totalCount += 1;
+    const answer = Number.isFinite(Number(answers[index])) ? Number(answers[index]) : null;
+    if (answer !== null && answer === question.correctOptionIndex) {
+      correctCount += 1;
+    }
+  });
+
+  const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+  return { score, correctCount, totalCount };
+}
+
 // Include authentication routes
 webRouter.use(authRouter);
 
@@ -2693,6 +2860,191 @@ webRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", async (r
   } catch (error) {
     console.error("Failed to read sub-acquis resources:", error);
     res.status(404).json({ message: "Sous-acquis introuvable" });
+  }
+});
+
+webRouter.get("/api/student/self-evaluation/overview", async (req, res) => {
+  try {
+    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    if (!identifier) {
+      return res.status(400).json({ message: "Identifiant requis" });
+    }
+
+    const [modules, user] = await Promise.all([
+      readPersistedCurriculumModules(),
+      User.findOne({ identifier }).select({ progress: 1 }).lean()
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const resultsMap = extractSelfEvaluationResults(user);
+    const overview = buildSelfEvaluationOverview(modules, resultsMap);
+
+    res.status(200).json({
+      passScore: SELF_EVALUATION_PASS_SCORE,
+      modules: overview
+    });
+  } catch (error) {
+    console.error("Failed to build self-evaluation overview:", error);
+    res.status(500).json({ message: "Impossible de charger les quiz" });
+  }
+});
+
+webRouter.get("/api/student/self-evaluation/quiz", async (req, res) => {
+  try {
+    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    const moduleId = typeof req.query?.moduleId === "string" ? req.query.moduleId.trim() : "";
+    const acquisId = typeof req.query?.acquisId === "string" ? req.query.acquisId.trim() : "";
+
+    if (!identifier || !moduleId || !acquisId) {
+      return res.status(400).json({ message: "Identifiant, moduleId et acquisId requis" });
+    }
+
+    const [modules, user] = await Promise.all([
+      readPersistedCurriculumModules(),
+      User.findOne({ identifier }).select({ progress: 1 }).lean()
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const resultsMap = extractSelfEvaluationResults(user);
+    const overview = buildSelfEvaluationOverview(modules, resultsMap);
+    const moduleOverview = overview.find((entry) => entry.moduleId === moduleId);
+    const acquisOverview = moduleOverview?.acquis.find((entry) => entry.acquisId === acquisId);
+
+    if (!acquisOverview) {
+      return res.status(404).json({ message: "Quiz introuvable" });
+    }
+
+    if (!acquisOverview.isUnlocked) {
+      return res.status(403).json({ message: "Quiz verrouille" });
+    }
+
+    const moduleDoc = modules.find((entry) => String(entry.id) === moduleId);
+    const acquisDoc = moduleDoc?.acquis.find((entry) => String(entry.id) === acquisId);
+    if (!moduleDoc || !acquisDoc) {
+      return res.status(404).json({ message: "Quiz introuvable" });
+    }
+
+    const quizQuestions = collectAcquisQuizQuestions(acquisDoc);
+    if (!quizQuestions.length) {
+      return res.status(404).json({ message: "Quiz introuvable" });
+    }
+
+    res.status(200).json({
+      moduleId,
+      acquisId,
+      moduleName: moduleDoc.name || moduleDoc.id,
+      acquisName: acquisDoc.name || acquisDoc.id,
+      quizQuestions: quizQuestions.map((question) => ({
+        prompt: question.prompt,
+        options: question.options
+      })),
+      quizQuestionCount: quizQuestions.length
+    });
+  } catch (error) {
+    console.error("Failed to load self-evaluation quiz:", error);
+    res.status(500).json({ message: "Impossible de charger le quiz" });
+  }
+});
+
+webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
+  try {
+    const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+    const moduleId = typeof req.body?.moduleId === "string" ? req.body.moduleId.trim() : "";
+    const acquisId = typeof req.body?.acquisId === "string" ? req.body.acquisId.trim() : "";
+    const answers = Array.isArray(req.body?.answers)
+      ? req.body.answers.map((answer: unknown) =>
+          Number.isFinite(Number(answer)) ? Number(answer) : null
+        )
+      : [];
+
+    if (!identifier || !moduleId || !acquisId) {
+      return res.status(400).json({ message: "Identifiant, moduleId et acquisId requis" });
+    }
+
+    const [modules, user] = await Promise.all([
+      readPersistedCurriculumModules(),
+      User.findOne({ identifier })
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const resultsMap = extractSelfEvaluationResults(user);
+    const overview = buildSelfEvaluationOverview(modules, resultsMap);
+    const moduleOverview = overview.find((entry) => entry.moduleId === moduleId);
+    const acquisOverview = moduleOverview?.acquis.find((entry) => entry.acquisId === acquisId);
+
+    if (!acquisOverview) {
+      return res.status(404).json({ message: "Quiz introuvable" });
+    }
+
+    if (!acquisOverview.isUnlocked) {
+      return res.status(403).json({ message: "Quiz verrouille" });
+    }
+
+    const moduleDoc = modules.find((entry) => String(entry.id) === moduleId);
+    const acquisDoc = moduleDoc?.acquis.find((entry) => String(entry.id) === acquisId);
+    if (!moduleDoc || !acquisDoc) {
+      return res.status(404).json({ message: "Quiz introuvable" });
+    }
+
+    const quizQuestions = collectAcquisQuizQuestions(acquisDoc);
+    if (!quizQuestions.length) {
+      return res.status(404).json({ message: "Quiz introuvable" });
+    }
+
+    const { score, correctCount, totalCount } = scoreSelfEvaluationQuestions(quizQuestions, answers);
+    const passed = score >= SELF_EVALUATION_PASS_SCORE;
+
+    const progress = user.progress || { completedLessonKeys: [], quizResults: [], selfEvaluationResults: [] };
+    const currentResults = Array.isArray(progress.selfEvaluationResults)
+      ? [...progress.selfEvaluationResults]
+      : [];
+
+    const existingIndex = currentResults.findIndex(
+      (entry) => entry.moduleId === moduleId && entry.acquisId === acquisId
+    );
+
+    const updatedEntry = {
+      moduleId,
+      acquisId,
+      score,
+      passed,
+      submittedAt: new Date()
+    };
+
+    if (existingIndex >= 0) {
+      currentResults[existingIndex] = updatedEntry;
+    } else {
+      currentResults.push(updatedEntry);
+    }
+
+    user.progress = {
+      ...progress,
+      selfEvaluationResults: currentResults
+    };
+
+    await user.save();
+
+    res.status(200).json({
+      moduleId,
+      acquisId,
+      score,
+      passed,
+      correctCount,
+      totalCount,
+      passScore: SELF_EVALUATION_PASS_SCORE
+    });
+  } catch (error) {
+    console.error("Failed to submit self-evaluation quiz:", error);
+    res.status(500).json({ message: "Impossible de soumettre le quiz" });
   }
 });
 
