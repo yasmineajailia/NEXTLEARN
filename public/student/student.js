@@ -142,7 +142,12 @@ function renderProfile() {
 function bindEvents() {
   dom.navItems.forEach((button) => {
     button.addEventListener("click", () => {
-      switchView(button.dataset.view || "cours");
+      const viewKey = button.dataset.view || "cours";
+      if (viewKey === "self-eval") {
+        window.location.href = "/student/self-evaluation.html";
+        return;
+      }
+      switchView(viewKey);
     });
   });
 
@@ -355,6 +360,11 @@ function applyPreferredView() {
   const params = new URLSearchParams(window.location.search);
   const urlView = params.get("view");
   let preferredView = urlView;
+
+  if (preferredView === "self-eval") {
+    window.location.href = "/student/self-evaluation.html";
+    return;
+  }
 
   if (!preferredView) {
     try {

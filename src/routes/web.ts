@@ -2324,6 +2324,8 @@ function buildSelfEvaluationOverview(
   modules: CurriculumModuleDoc[],
   resultsMap: Map<string, SelfEvaluationResult>
 ) {
+  let canUnlockNext = true;
+
   return modules
     .map((moduleDoc) => {
       const moduleId = String(moduleDoc.id || "").trim();
@@ -2369,10 +2371,9 @@ function buildSelfEvaluationOverview(
         return null;
       }
 
-      let canUnlock = true;
       const acquis = availableAcquis.map((entry) => {
-        const isUnlocked = canUnlock;
-        canUnlock = isUnlocked && entry.isPassed;
+        const isUnlocked = canUnlockNext;
+        canUnlockNext = isUnlocked && entry.isPassed;
         return { ...entry, isUnlocked };
       });
 
@@ -2942,9 +2943,11 @@ webRouter.get("/api/student/self-evaluation/quiz", async (req, res) => {
       acquisName: acquisDoc.name || acquisDoc.id,
       quizQuestions: quizQuestions.map((question) => ({
         prompt: question.prompt,
-        options: question.options
+        options: question.options,
+        correctOptionIndex: question.correctOptionIndex
       })),
-      quizQuestionCount: quizQuestions.length
+      quizQuestionCount: quizQuestions.length,
+      passScore: SELF_EVALUATION_PASS_SCORE
     });
   } catch (error) {
     console.error("Failed to load self-evaluation quiz:", error);
@@ -2957,6 +2960,7 @@ webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
     const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
     const moduleId = typeof req.body?.moduleId === "string" ? req.body.moduleId.trim() : "";
     const acquisId = typeof req.body?.acquisId === "string" ? req.body.acquisId.trim() : "";
+    const timeSpent = typeof req.body?.timeSpent === "number" ? req.body.timeSpent : 0;
     const answers = Array.isArray(req.body?.answers)
       ? req.body.answers.map((answer: unknown) =>
           Number.isFinite(Number(answer)) ? Number(answer) : null
@@ -3002,8 +3006,10 @@ webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
 
     const { score, correctCount, totalCount } = scoreSelfEvaluationQuestions(quizQuestions, answers);
     const passed = score >= SELF_EVALUATION_PASS_SCORE;
+    const xpEarned = passed ? Math.floor(score + timeSpent) : 0;
 
-    const progress = user.progress || { completedLessonKeys: [], quizResults: [], selfEvaluationResults: [] };
+    const progress = user.progress || { xp: 0, completedLessonKeys: [], quizResults: [], selfEvaluationResults: [] };
+    progress.xp = (progress.xp || 0) + xpEarned;
     const currentResults = Array.isArray(progress.selfEvaluationResults)
       ? [...progress.selfEvaluationResults]
       : [];
@@ -3017,6 +3023,8 @@ webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
       acquisId,
       score,
       passed,
+      timeSpent,
+      xpEarned,
       submittedAt: new Date()
     };
 
@@ -3033,6 +3041,10 @@ webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
 
     await user.save();
 
+    if (xpEarned > 0) {
+      await StudentProfile.updateOne({ identifier }, { $inc: { xp: xpEarned } });
+    }
+
     res.status(200).json({
       moduleId,
       acquisId,
@@ -3040,7 +3052,9 @@ webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
       passed,
       correctCount,
       totalCount,
-      passScore: SELF_EVALUATION_PASS_SCORE
+      passScore: SELF_EVALUATION_PASS_SCORE,
+      xpEarned,
+      totalXp: progress.xp
     });
   } catch (error) {
     console.error("Failed to submit self-evaluation quiz:", error);

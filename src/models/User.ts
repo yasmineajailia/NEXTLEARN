@@ -9,6 +9,7 @@ type UserData = {
   passwordResetTokenHash?: string | null;
   passwordResetExpiresAt?: Date | null;
   progress?: {
+    xp?: number;
     completedLessonKeys?: string[];
     quizResults?: Array<{
       lessonKey: string;
@@ -22,6 +23,8 @@ type UserData = {
       acquisId: string;
       score: number;
       passed: boolean;
+      timeSpent?: number;
+      xpEarned?: number;
       submittedAt?: Date;
     }>;
   };
@@ -69,6 +72,10 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
       default: null
     },
     progress: {
+      xp: {
+        type: Number,
+        default: 0
+      },
       completedLessonKeys: {
         type: [String],
         default: []
@@ -92,6 +99,8 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
             acquisId: { type: String, required: true },
             score: { type: Number, required: true },
             passed: { type: Boolean, required: true },
+            timeSpent: { type: Number, default: 0 },
+            xpEarned: { type: Number, default: 0 },
             submittedAt: { type: Date, default: Date.now }
           }
         ],

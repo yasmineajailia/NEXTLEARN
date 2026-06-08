@@ -44,11 +44,31 @@
         min-height: 100vh;
       }
 
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 0.85rem;
+      }
+
+      .breadcrumb a {
+        text-decoration: none;
+        color: #1f2937;
+        font-weight: 600;
+      }
+
+      .crumb-current {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
       .page-header {
         display: flex;
         flex-direction: column;
         gap: 0.35rem;
-        margin-bottom: 1.75rem;
+        margin-bottom: 1.5rem;
       }
 
       .eyebrow {
@@ -94,218 +114,276 @@
         font-size: 1.2rem;
       }
 
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .panel-subtitle {
+        margin: 0.15rem 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+
+      .panel-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .ghost-btn {
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #1f2937;
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        font: inherit;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .ghost-btn.active {
+        background: #fff1f2;
+        color: var(--accent);
+        border-color: #f2c9ce;
+      }
+
       .panel-note {
         margin: 0 0 1.2rem;
         color: var(--muted);
         font-size: 0.9rem;
       }
 
-      .module-group {
+      .acquis-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+      }
+
+      .module-section {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
       }
 
-      .module-title {
-        margin: 1.1rem 0 0.4rem;
-        font-size: 0.95rem;
+      .module-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .module-label {
+        margin: 0;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #1f2937;
+      }
+
+      .module-badge {
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #6b7280;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        background: #fff2f3;
+        color: var(--accent);
       }
 
-      .module-items {
+      .module-cards {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.85rem;
       }
 
-      .acquis-item {
-        border: 1px solid var(--border);
-        background: #fbfbfe;
-        border-radius: 14px;
-        padding: 0.85rem 1rem;
-        text-align: left;
+      .acquis-card {
+        position: relative;
+        border-radius: 16px;
+        border: 1px solid #f1d6da;
+        background: #fffafa;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
         display: flex;
         flex-direction: column;
-        gap: 0.45rem;
-        cursor: pointer;
-        transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+        gap: 0.8rem;
       }
 
-      .acquis-item:hover {
-        transform: translateY(-2px);
-        border-color: #cbd5f5;
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+      .acquis-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #b21f2d;
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
       }
 
-      .acquis-item.active {
-        border-color: rgba(178, 31, 45, 0.45);
-        background: var(--accent-soft);
+      .acquis-card.locked {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        box-shadow: none;
+        opacity: 0.7;
       }
 
-      .acquis-item.locked {
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .acquis-top {
+      .acquis-card-top {
         display: flex;
-        justify-content: space-between;
-        gap: 0.75rem;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .acquis-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: #ffe4e8;
+        color: var(--accent);
+        display: flex;
         align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.95rem;
+        flex-shrink: 0;
       }
 
-      .acquis-name {
+      .acquis-body {
+        flex: 1;
+      }
+
+      .acquis-kicker {
         margin: 0;
+        font-size: 0.7rem;
         font-weight: 700;
-        font-size: 0.98rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #9aa3b2;
+      }
+
+      .acquis-title {
+        margin: 0.2rem 0 0.45rem;
+        font-size: 1rem;
+        font-weight: 700;
         color: #1f2937;
       }
 
       .acquis-meta {
-        margin: 0;
+        display: flex;
+        gap: 1rem;
         color: var(--muted);
-        font-size: 0.82rem;
+        font-size: 0.85rem;
       }
 
-      .status-badge {
-        font-size: 0.7rem;
+      .status-pill {
+        margin-left: auto;
+        font-size: 0.68rem;
         font-weight: 700;
-        padding: 0.25rem 0.6rem;
-        border-radius: 999px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        align-self: flex-start;
       }
 
-      .status-badge.ready {
-        background: #e0f2fe;
-        color: #0369a1;
+      .status-pill.unlocked {
+        background: #fbe8ea;
+        color: #b21f2d;
       }
 
-      .status-badge.locked {
-        background: #f1f5f9;
+      .status-pill.locked {
+        background: #eef2f7;
         color: #64748b;
       }
 
-      .status-badge.passed {
+      .status-pill.passed {
         background: #dcfce7;
         color: #15803d;
       }
 
-      .acquis-score {
-        margin: 0;
-        font-size: 0.8rem;
-        color: #475569;
-      }
-
-      .quiz-empty {
-        padding: 2.5rem 1rem;
-        text-align: center;
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
-
-      .quiz-title {
-        margin: 0 0 0.2rem;
-        font-family: "Space Grotesk", sans-serif;
-      }
-
-      .quiz-meta {
-        margin: 0 0 1.25rem;
-        color: var(--muted);
-        font-size: 0.88rem;
-      }
-
-      .quiz-form {
+      .acquis-actions {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
         gap: 1rem;
       }
 
-      .question {
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 0.85rem 1rem;
-        background: #fff;
-      }
-
-      .question legend {
-        font-weight: 700;
-        font-size: 0.95rem;
-        margin-bottom: 0.7rem;
-      }
-
-      .option {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        font-size: 0.9rem;
-        color: #1f2937;
-        margin-bottom: 0.5rem;
-      }
-
-      .option:last-child {
-        margin-bottom: 0;
-      }
-
-      .option input {
-        accent-color: var(--accent);
-      }
-
-      .quiz-actions {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-top: 1rem;
-      }
-
-      .primary-btn,
-      .secondary-btn {
-        border: 0;
-        border-radius: 999px;
-        font-family: "Space Grotesk", sans-serif;
+      .acquis-score {
+        margin: 0;
+        font-size: 0.82rem;
+        color: #6b7280;
         font-weight: 600;
-        font-size: 0.9rem;
-        padding: 0.6rem 1.3rem;
+      }
+
+      .primary-action {
+        border: 0;
+        border-radius: 10px;
+        padding: 0.55rem 1rem;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #ffffff;
+        background: var(--accent);
+        box-shadow: 0 10px 18px rgba(178, 31, 45, 0.2);
         cursor: pointer;
       }
 
-      .primary-btn {
-        background: var(--accent);
-        color: #fff;
-        box-shadow: 0 8px 20px rgba(178, 31, 45, 0.25);
-      }
-
-      .primary-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+      .primary-action:disabled {
+        background: #e2e8f0;
+        color: #94a3b8;
         box-shadow: none;
+        cursor: not-allowed;
       }
 
-      .secondary-btn {
-        background: #f1f5f9;
-        color: #1f2937;
-      }
-
-      .quiz-result {
-        margin-top: 1rem;
+      .lock-note {
+        font-size: 0.82rem;
+        color: #94a3b8;
         font-weight: 600;
       }
 
-      .quiz-result.pass {
-        color: var(--success);
+      .info-stack {
+        display: grid;
+        gap: 0.85rem;
       }
 
-      .quiz-result.fail {
-        color: var(--warning);
+      .info-item {
+        display: flex;
+        gap: 0.85rem;
+        align-items: flex-start;
+        background: #f5f7ff;
+        border: 1px solid #e1e7ff;
+        border-radius: 16px;
+        padding: 0.85rem 1rem;
       }
 
-      .empty-state {
+      .info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: #ffdce2;
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .info-title {
+        margin: 0 0 0.2rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .info-text {
         margin: 0;
+        font-size: 0.85rem;
         color: var(--muted);
-        font-size: 0.95rem;
       }
 
       @media (max-width: 1100px) {
@@ -331,30 +409,57 @@
   <body>
     <div id="sidebar-slot"></div>
     <main class="page">
+      <nav class="breadcrumb">
+        <a href="/student/">Quiz</a>
+        <span>></span>
+        <span class="crumb-current">Auto-évaluation</span>
+      </nav>
       <header class="page-header">
-        <p class="eyebrow">Auto-evaluation</p>
         <h1>Quiz par acquis</h1>
-        <p class="subtitle">Passe chaque quiz pour debloquer le suivant.</p>
+        <p class="subtitle">Passe chaque quiz pour debloquer le suivant et valider tes competences.</p>
       </header>
 
       <div class="layout">
         <section class="panel">
-          <h2>Parcours</h2>
+          <div class="panel-head">
+            <div>
+              <h2>Parcours d'apprentissage</h2>
+              <p class="panel-subtitle">Progression structurée par module</p>
+            </div>
+            <div class="panel-actions">
+              <button class="ghost-btn active" type="button">Tout voir</button>
+              <button class="ghost-btn" type="button">Filtrer</button>
+            </div>
+          </div>
           <p class="panel-note" id="overview-note">Chargement des quiz...</p>
-          <div id="acquis-list"></div>
+          <div id="acquis-list" class="acquis-list"></div>
         </section>
 
         <section class="panel">
-          <div id="quiz-empty" class="quiz-empty">Selectionne un acquis pour commencer.</div>
-          <div id="quiz-card" hidden>
-            <h2 class="quiz-title" id="quiz-title"></h2>
-            <p class="quiz-meta" id="quiz-meta"></p>
-            <form class="quiz-form" id="quiz-form"></form>
-            <div class="quiz-actions">
-              <button class="primary-btn" id="quiz-submit" type="button">Valider</button>
-              <button class="secondary-btn" id="quiz-retry" type="button" hidden>Reprendre</button>
+          <h2>Comment ca marche</h2>
+          <p class="panel-subtitle">Regles d'évaluation académique</p>
+          <div class="info-stack">
+            <div class="info-item">
+              <div class="info-icon">30s</div>
+              <div>
+                <p class="info-title">30 secondes par question</p>
+                <p class="info-text">Si le temps est écoulé sans reponse, la question est comptée comme fausse.</p>
+              </div>
             </div>
-            <p class="quiz-result" id="quiz-result"></p>
+            <div class="info-item">
+              <div class="info-icon">OK</div>
+              <div>
+                <p class="info-title">Correction immediate</p>
+                <p class="info-text">La bonne reponse est affichée après chaque question pour vous aidez à progresser.</p>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-icon">LOCK</div>
+              <div>
+                <p class="info-title">Deblocage progressif</p>
+                <p class="info-text">Réussis un quiz pour debloquer le suivant dans le parcours.</p>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -364,20 +469,9 @@
     <script>
       const overviewNote = document.getElementById("overview-note");
       const acquisList = document.getElementById("acquis-list");
-      const quizEmpty = document.getElementById("quiz-empty");
-      const quizCard = document.getElementById("quiz-card");
-      const quizTitle = document.getElementById("quiz-title");
-      const quizMeta = document.getElementById("quiz-meta");
-      const quizForm = document.getElementById("quiz-form");
-      const quizSubmit = document.getElementById("quiz-submit");
-      const quizRetry = document.getElementById("quiz-retry");
-      const quizResult = document.getElementById("quiz-result");
-
       const state = {
         identifier: "",
-        overview: null,
-        activeKey: "",
-        activeQuiz: null
+        overview: null
       };
 
       function getCurrentUser() {
@@ -393,25 +487,6 @@
         overviewNote.textContent = message;
       }
 
-      function makeKey(moduleId, acquisId) {
-        return `${moduleId}::${acquisId}`;
-      }
-
-      function clearQuiz() {
-        quizForm.innerHTML = "";
-        quizResult.textContent = "";
-        quizResult.className = "quiz-result";
-        quizRetry.hidden = true;
-        state.activeQuiz = null;
-      }
-
-      function setActiveItem(key) {
-        const items = Array.from(document.querySelectorAll(".acquis-item"));
-        items.forEach((item) => {
-          item.classList.toggle("active", item.dataset.key === key);
-        });
-      }
-
       function renderOverview(overview) {
         acquisList.innerHTML = "";
 
@@ -421,87 +496,121 @@
           return;
         }
 
-        setOverviewNote("Choisis un acquis debloque pour commencer.");
+        setOverviewNote("Selectionne un quiz debloque pour commencer.");
 
-        overview.modules.forEach((module) => {
-          const moduleGroup = document.createElement("div");
-          moduleGroup.className = "module-group";
+        overview.modules.forEach((module, moduleIndex) => {
+          const section = document.createElement("section");
+          section.className = "module-section";
 
-          const title = document.createElement("p");
-          title.className = "module-title";
-          title.textContent = module.moduleName || `Module ${module.moduleId}`;
-          moduleGroup.appendChild(title);
+          const header = document.createElement("div");
+          header.className = "module-header";
 
-          const items = document.createElement("div");
-          items.className = "module-items";
+          const label = document.createElement("p");
+          label.className = "module-label";
+          label.textContent = module.moduleName || `Module ${module.moduleId}`;
+
+          const badge = document.createElement("span");
+          badge.className = "module-badge";
+          badge.textContent = `Module ${moduleIndex + 1}`;
+
+          header.appendChild(label);
+          header.appendChild(badge);
+
+          const cards = document.createElement("div");
+          cards.className = "module-cards";
 
           module.acquis.forEach((acquis) => {
-            const item = document.createElement("button");
-            item.type = "button";
-            item.className = "acquis-item";
-            item.dataset.key = makeKey(module.moduleId, acquis.acquisId);
-            item.dataset.moduleId = module.moduleId;
-            item.dataset.acquisId = acquis.acquisId;
+            const statusLabel = acquis.isPassed
+              ? "Reussi"
+              : acquis.isUnlocked
+                ? "Debloque"
+                : "Verrouille";
+            const statusClass = acquis.isPassed ? "passed" : acquis.isUnlocked ? "unlocked" : "locked";
 
-            if (!acquis.isUnlocked) {
-              item.classList.add("locked");
-              item.disabled = true;
-            }
-
-            if (state.activeKey && state.activeKey === item.dataset.key) {
-              item.classList.add("active");
-            }
-
-            let statusLabel = "Verrouille";
-            let statusClass = "locked";
-            if (acquis.isPassed) {
-              statusLabel = "Reussi";
-              statusClass = "passed";
-            } else if (acquis.isUnlocked) {
-              statusLabel = "Debloque";
-              statusClass = "ready";
-            }
+            const card = document.createElement("article");
+            card.className = `acquis-card ${acquis.isUnlocked ? "unlocked" : "locked"}${
+              acquis.isPassed ? " passed" : ""
+            }`;
 
             const top = document.createElement("div");
-            top.className = "acquis-top";
+            top.className = "acquis-card-top";
 
-            const textWrap = document.createElement("div");
-            const name = document.createElement("p");
-            name.className = "acquis-name";
-            name.textContent = acquis.acquisName || `Acquis ${acquis.acquisId}`;
+            const icon = document.createElement("div");
+            icon.className = "acquis-icon";
+            icon.textContent = acquis.isPassed ? "OK" : "Q";
 
-            const meta = document.createElement("p");
+            const body = document.createElement("div");
+            body.className = "acquis-body";
+
+            const rawTitle = String(acquis.acquisName || "").trim();
+            const isGenericTitle = rawTitle.toLowerCase() === "sous-acquis du module";
+            if (rawTitle && !isGenericTitle) {
+              const title = document.createElement("h3");
+              title.className = "acquis-title";
+              title.textContent = rawTitle;
+              body.appendChild(title);
+            }
+
+            const meta = document.createElement("div");
             meta.className = "acquis-meta";
-            meta.textContent = `${acquis.questionCount} questions`;
+            const questions = document.createElement("span");
+            questions.textContent = `${acquis.questionCount} questions`;
+            meta.appendChild(questions);
 
-            textWrap.appendChild(name);
-            textWrap.appendChild(meta);
+            if (Number.isFinite(Number(acquis.questionCount))) {
+              const estimatedMinutes = Math.max(5, Math.round(Number(acquis.questionCount) * 0.5));
+              const time = document.createElement("span");
+              time.textContent = `${estimatedMinutes} min`;
+              meta.appendChild(time);
+            }
 
-            const badge = document.createElement("span");
-            badge.className = `status-badge ${statusClass}`;
-            badge.textContent = statusLabel;
+            body.appendChild(meta);
 
-            top.appendChild(textWrap);
-            top.appendChild(badge);
+            const status = document.createElement("span");
+            status.className = `status-pill ${statusClass}`;
+            status.textContent = statusLabel;
 
-            item.appendChild(top);
+            top.appendChild(icon);
+            top.appendChild(body);
+            top.appendChild(status);
+
+            const actions = document.createElement("div");
+            actions.className = "acquis-actions";
 
             if (typeof acquis.lastScore === "number") {
               const score = document.createElement("p");
               score.className = "acquis-score";
               score.textContent = `Dernier score: ${Math.round(acquis.lastScore)}%`;
-              item.appendChild(score);
+              actions.appendChild(score);
             }
 
-            item.addEventListener("click", () => {
-              loadQuiz(module.moduleId, acquis.acquisId);
-            });
+            if (acquis.isUnlocked) {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "primary-action";
+              button.textContent = acquis.isPassed ? "Reprendre le quiz" : "Commencer le quiz";
+              button.addEventListener("click", () => {
+                const targetUrl = `/student/self-evaluation-quiz.html?moduleId=${encodeURIComponent(
+                  module.moduleId
+                )}&acquisId=${encodeURIComponent(acquis.acquisId)}`;
+                window.location.href = targetUrl;
+              });
+              actions.appendChild(button);
+            } else {
+              const lockNote = document.createElement("span");
+              lockNote.className = "lock-note";
+              lockNote.textContent = "Verrouille. Termine le quiz precedent.";
+              actions.appendChild(lockNote);
+            }
 
-            items.appendChild(item);
+            card.appendChild(top);
+            card.appendChild(actions);
+            cards.appendChild(card);
           });
 
-          moduleGroup.appendChild(items);
-          acquisList.appendChild(moduleGroup);
+          section.appendChild(header);
+          section.appendChild(cards);
+          acquisList.appendChild(section);
         });
       }
 
@@ -520,116 +629,6 @@
         renderOverview(data);
       }
 
-      async function loadQuiz(moduleId, acquisId) {
-        clearQuiz();
-        quizEmpty.hidden = true;
-        quizCard.hidden = false;
-        quizTitle.textContent = "Chargement...";
-        quizMeta.textContent = "";
-        quizSubmit.disabled = true;
-
-        const response = await fetch(
-          `/api/student/self-evaluation/quiz?identifier=${encodeURIComponent(state.identifier)}&moduleId=${encodeURIComponent(
-            moduleId
-          )}&acquisId=${encodeURIComponent(acquisId)}`
-        );
-
-        if (!response.ok) {
-          quizTitle.textContent = "Quiz indisponible";
-          quizMeta.textContent = "Ce quiz est verrouille ou indisponible.";
-          quizSubmit.disabled = true;
-          return;
-        }
-
-        const data = await response.json();
-        state.activeKey = makeKey(moduleId, acquisId);
-        state.activeQuiz = data;
-        setActiveItem(state.activeKey);
-
-        quizTitle.textContent = data.acquisName || "Auto-evaluation";
-        quizMeta.textContent = `${data.quizQuestions.length} questions - ${data.moduleName || ""}`;
-
-        data.quizQuestions.forEach((question, index) => {
-          const fieldset = document.createElement("fieldset");
-          fieldset.className = "question";
-
-          const legend = document.createElement("legend");
-          legend.textContent = `Q${index + 1}. ${question.prompt}`;
-          fieldset.appendChild(legend);
-
-          question.options.forEach((option, optIndex) => {
-            const label = document.createElement("label");
-            label.className = "option";
-
-            const input = document.createElement("input");
-            input.type = "radio";
-            input.name = `q${index}`;
-            input.value = String(optIndex);
-
-            const span = document.createElement("span");
-            span.textContent = option;
-
-            label.appendChild(input);
-            label.appendChild(span);
-            fieldset.appendChild(label);
-          });
-
-          quizForm.appendChild(fieldset);
-        });
-
-        quizSubmit.disabled = false;
-      }
-
-      async function submitQuiz() {
-        if (!state.activeQuiz) {
-          return;
-        }
-
-        quizSubmit.disabled = true;
-        quizRetry.hidden = true;
-        quizResult.textContent = "";
-        quizResult.className = "quiz-result";
-
-        const answers = state.activeQuiz.quizQuestions.map((_, index) => {
-          const selected = quizForm.querySelector(`input[name="q${index}"]:checked`);
-          return selected ? Number(selected.value) : null;
-        });
-
-        const response = await fetch("/api/student/self-evaluation/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            identifier: state.identifier,
-            moduleId: state.activeQuiz.moduleId,
-            acquisId: state.activeQuiz.acquisId,
-            answers
-          })
-        });
-
-        const payload = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          quizSubmit.disabled = false;
-          quizResult.textContent = payload.message || "Impossible de soumettre le quiz.";
-          quizResult.classList.add("fail");
-          return;
-        }
-
-        const score = Number(payload.score || 0);
-        const passed = Boolean(payload.passed);
-        quizResult.textContent = passed
-          ? `Bravo, quiz reussi avec ${score}%.`
-          : `Score: ${score}%. Reessaie pour debloquer le prochain.`;
-        quizResult.classList.add(passed ? "pass" : "fail");
-        quizRetry.hidden = false;
-        quizSubmit.disabled = false;
-
-        await loadOverview();
-        setActiveItem(state.activeKey);
-      }
-
       async function bootstrap() {
         const user = getCurrentUser();
         if (!user || !user.identifier) {
@@ -640,13 +639,6 @@
         state.identifier = user.identifier;
         await loadOverview();
       }
-
-      quizSubmit.addEventListener("click", submitQuiz);
-      quizRetry.addEventListener("click", () => {
-        if (state.activeQuiz) {
-          loadQuiz(state.activeQuiz.moduleId, state.activeQuiz.acquisId);
-        }
-      });
 
       bootstrap();
     </script>

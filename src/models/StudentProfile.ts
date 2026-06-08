@@ -37,6 +37,10 @@ const studentProfileSchema = new mongoose.Schema(
     averageQuizGrade: {
       type: Number,
       default: 0
+    },
+    xp: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }
