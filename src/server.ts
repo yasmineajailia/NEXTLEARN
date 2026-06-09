@@ -3,6 +3,7 @@ import path from "node:path";
 import mongoose from "mongoose";
 import { env } from "./config/env";
 import { webRouter } from "./routes/web";
+import { MLPredictorService } from "./services/MLPredictorService";
 
 // App bootstrap.
 // Express serves static files from public/ and API/page routes from webRouter.
@@ -42,6 +43,11 @@ async function startServer() {
 
     await mongoose.connect(env.mongodbUri);
     console.log("Connected to MongoDB");
+
+    // Train the ML model asynchronously – does not block startup.
+    void MLPredictorService.initialize().catch((err) =>
+      console.error("[ML] Failed to initialize ML predictor:", err)
+    );
 
     app.listen(env.port, () => {
       // Startup log helps confirm active environment and server port.

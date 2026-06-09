@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import crypto from "node:crypto";
 import nodemailer, { type Transporter } from "nodemailer";
 import { User } from "../models/User";
+import { StudentProfile } from "../models/StudentProfile";
 import { Teacher } from "../models/Teacher";
 import { env } from "../config/env";
 import { comparePassword } from "../utils/password";
@@ -145,6 +146,12 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
 
+      // Track login count and last login date for ML features
+      void StudentProfile.findOneAndUpdate(
+        { identifier: user.identifier },
+        { $inc: { loginCount: 1 }, $set: { lastLoginDate: new Date() } }
+      ).catch(() => {});
+
       return res.status(200).json({
         message: "Connexion réussie",
         user: {
@@ -185,6 +192,12 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Email ou mot de passe incorrect" });
     }
+
+    // Track login count and last login date for ML features
+    void StudentProfile.findOneAndUpdate(
+      { identifier: user.identifier },
+      { $inc: { loginCount: 1 }, $set: { lastLoginDate: new Date() } }
+    ).catch(() => {});
 
     return res.status(200).json({
       message: "Connexion réussie",

@@ -10,6 +10,15 @@
       <p class="card-label">Etudiant</p>
       <h2 id="student-name">Nom de l'etudiant</h2>
       <p id="student-identifier" class="student-id">Id: --</p>
+      <div class="xp-bar-container" style="margin-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sidebar-accent); font-weight: 700; margin-bottom: 0.3rem;">
+          <span>Niveau <span id="student-level">1</span></span>
+          <span id="student-xp">0 XP</span>
+        </div>
+        <div style="height: 6px; background: rgba(178, 31, 45, 0.15); border-radius: 999px; overflow: hidden;">
+          <div id="student-xp-fill" style="height: 100%; width: 0%; background: var(--sidebar-accent); transition: width 0.4s ease;"></div>
+        </div>
+      </div>
     </article>
 
     <nav class="side-nav" aria-label="Navigation etudiant">

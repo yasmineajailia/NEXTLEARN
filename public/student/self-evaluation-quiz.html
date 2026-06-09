@@ -334,6 +334,7 @@
       <section class="card summary" id="summary-card" hidden>
         <h2>Resultat final</h2>
         <p class="score-line" id="summary-score"></p>
+        <p id="summary-xp" style="font-weight: 700; color: var(--accent); margin: 0.5rem 0; font-size: 1.1rem;"></p>
         <p id="summary-detail"></p>
         <div class="actions">
           <button class="secondary-btn" id="retry-btn" type="button">Recommencer</button>
@@ -355,6 +356,7 @@
       const quizCard = document.getElementById("quiz-card");
       const summaryCard = document.getElementById("summary-card");
       const summaryScore = document.getElementById("summary-score");
+      const summaryXp = document.getElementById("summary-xp");
       const summaryDetail = document.getElementById("summary-detail");
       const retryBtn = document.getElementById("retry-btn");
 
@@ -367,6 +369,7 @@
         answers: [],
         timerId: null,
         timeLeft: 30,
+        totalTimeSpent: 0,
         locked: false
       };
 
@@ -519,11 +522,13 @@
 
       function handleAnswerSelection(selectedIndex) {
         stopTimer();
+        state.totalTimeSpent += (30 - state.timeLeft);
         state.answers[state.currentIndex] = selectedIndex;
         revealAnswer(selectedIndex, false);
       }
 
       function handleTimeExpired() {
+        state.totalTimeSpent += 30;
         state.answers[state.currentIndex] = null;
         revealAnswer(null, true);
       }
@@ -555,6 +560,7 @@
             identifier: state.identifier,
             moduleId: state.moduleId,
             acquisId: state.acquisId,
+            timeSpent: state.totalTimeSpent,
             answers: state.answers
           })
         });
@@ -569,9 +575,11 @@
 
         const score = Number(payload.score || 0);
         const passed = Boolean(payload.passed);
+        const xpEarned = Number(payload.xpEarned || 0);
         summaryScore.textContent = passed
           ? `Quiz reussi avec ${score}%.`
           : `Quiz termine avec ${score}%.`;
+        summaryXp.textContent = xpEarned > 0 ? `+${xpEarned} XP gagnes !` : "";
         summaryDetail.textContent = passed
           ? "Bravo, le prochain quiz est debloque."
           : `Reessaie pour atteindre ${payload.passScore || 60}%.`;

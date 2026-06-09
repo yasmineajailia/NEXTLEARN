@@ -93,7 +93,7 @@
     });
   }
 
-  function hydrateSidebarData() {
+  async function hydrateSidebarData() {
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.identifier) {
       localStorage.removeItem("nextlearnCurrentUser");
@@ -107,9 +107,30 @@
       name.textContent = currentUser.fullName || currentUser.identifier;
     }
     if (identifier) {
-      // Modified to match the cleaner modern "Id: --" design structure
       identifier.textContent = `Id: ${currentUser.identifier}`;
     }
+
+    try {
+      const response = await fetch(`/api/student/progress/${encodeURIComponent(currentUser.identifier)}`);
+      if (response.ok) {
+        const data = await response.json();
+        const xp = Number(data.xp) || 0;
+        
+        const xpElement = document.getElementById("student-xp");
+        const xpFillElement = document.getElementById("student-xp-fill");
+        const levelElement = document.getElementById("student-level");
+        
+        if (xpElement && xpFillElement && levelElement) {
+          const level = Math.floor(xp / 1000) + 1;
+          const xpInCurrentLevel = xp % 1000;
+          const progressPercent = (xpInCurrentLevel / 1000) * 100;
+          
+          xpElement.textContent = `${xp} XP`;
+          levelElement.textContent = level;
+          xpFillElement.style.width = `${progressPercent}%`;
+        }
+      }
+    } catch (_e) {}
   }
 
   function attachToggleHandler() {

@@ -19,6 +19,7 @@ import { StudentRemediationQuiz } from "../models/StudentRemediationQuiz";
 import { hashPassword } from "../utils/password";
 import { Recommender, type ChapterScoreEntry, type RecommendOptions, type ScoreEntry, type SkillsJson } from "../services/recommendation/skill-recommender.js";
 import { env } from "../config/env";
+import { MLPredictorService } from "../services/MLPredictorService";
 
 const webRouter = Router();
 const publicRoot = path.join(process.cwd(), "public");
@@ -5074,6 +5075,7 @@ webRouter.get("/api/student/progress/:identifier", async (req, res) => {
 
     const progressData = (user as {
       progress?: {
+        xp?: number;
         completedLessonKeys?: unknown;
         quizResults?: Array<{
           lessonKey?: unknown;
@@ -5130,6 +5132,7 @@ webRouter.get("/api/student/progress/:identifier", async (req, res) => {
 
     res.status(200).json({
       identifier,
+      xp: progressData?.xp || 0,
       lessonsCompleted: stats.lessonsCompleted,
       quizzesPassed: stats.quizzesPassed,
       averageQuizScoreOn20: stats.averageQuizScoreOn20,
@@ -5139,6 +5142,97 @@ webRouter.get("/api/student/progress/:identifier", async (req, res) => {
   } catch (error) {
     console.error("Failed to load student progression:", error);
     res.status(500).json({ message: "Impossible de charger la progression" });
+  }
+});
+
+/**
+ * Derive ML prediction features from a user's raw progress data and profile.
+ */
+function extractMLFeatures(params: {
+  progress?: {
+    completedLessonKeys?: unknown[];
+    quizResults?: Array<{ score?: unknown; submittedAt?: unknown }>;
+    selfEvaluationResults?: Array<{ score?: unknown }>;
+  };
+  profile?: {
+    loginCount?: number;
+    lastLoginDate?: Date | null;
+    createdAt?: Date;
+  } | null;
+  totalSubAcquis?: number;
+}): Parameters<typeof MLPredictorService.predict>[0] {
+  const { progress, profile, totalSubAcquis = 20 } = params;
+
+  // completionPace: sub-acquis completed per week since account creation
+  const completedCount = Array.isArray(progress?.completedLessonKeys)
+    ? progress.completedLessonKeys.length
+    : 0;
+
+  const createdAt = profile?.createdAt ? new Date(profile.createdAt) : new Date();
+  const weeksSinceCreation = Math.max(
+    1,
+    (Date.now() - createdAt.getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
+  const completionPace = Math.min(5, completedCount / weeksSinceCreation);
+
+  // delayWeeks: if the student is behind – gap between expected and actual completion
+  // We use weeks since creation minus what they've actually done as a proxy.
+  const expectedPace = 2; // 2 sub-acquis per week is "on track"
+  const expectedCompleted = weeksSinceCreation * expectedPace;
+  const delayWeeks = Math.min(12, Math.max(0, (expectedCompleted - completedCount) / expectedPace));
+
+  // averageScore: mean quiz score
+  const quizResults = Array.isArray(progress?.quizResults) ? progress.quizResults : [];
+  const scores = quizResults.map((r) => Number(r?.score || 0)).filter((s) => Number.isFinite(s) && s > 0);
+  const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 50;
+
+  // loginFrequency: logins per week
+  const loginCount = Number(profile?.loginCount || 0);
+  const loginFrequency = Math.min(14, loginCount / weeksSinceCreation);
+
+  // gapDepth: fraction of curriculum not yet started
+  const gapDepth = Math.max(0, Math.min(1, 1 - completedCount / Math.max(1, totalSubAcquis)));
+
+  return {
+    delayWeeks,
+    completionPace,
+    averageScore,
+    loginFrequency,
+    gapDepth
+  };
+}
+
+webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
+  try {
+    const identifier = String(req.params.identifier || "").trim();
+    if (!identifier) {
+      return res.status(400).json({ message: "Identifiant requis" });
+    }
+
+    const [user, profile] = await Promise.all([
+      User.findOne({ identifier }).select({ identifier: 1, progress: 1 }).lean(),
+      StudentProfile.findOne({ identifier }).select({ loginCount: 1, lastLoginDate: 1, createdAt: 1 }).lean()
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const features = extractMLFeatures({
+      progress: (user as any).progress,
+      profile: profile as any
+    });
+
+    const catchupProbability = MLPredictorService.predict(features);
+
+    res.status(200).json({
+      identifier,
+      catchupProbability,
+      features
+    });
+  } catch (error) {
+    console.error("Failed to compute prediction:", error);
+    res.status(500).json({ message: "Impossible de calculer la prédiction" });
   }
 });
 
@@ -5160,8 +5254,18 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
           .lean()
       : [];
 
+    const profiles = identifiers.length
+      ? await StudentProfile.find({ identifier: { $in: identifiers } })
+          .select({ identifier: 1, loginCount: 1, lastLoginDate: 1, createdAt: 1 })
+          .lean()
+      : [];
+
     const userByIdentifier = new Map(
       users.map((user) => [String((user as any).identifier || "").trim(), user])
+    );
+
+    const profileByIdentifier = new Map(
+      profiles.map((p) => [String((p as any).identifier || "").trim(), p])
     );
 
     res.status(200).json({
@@ -5184,7 +5288,14 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
       students: students.map((student) => {
         const identifier = String(student.identifier || "").trim();
         const user = identifier ? userByIdentifier.get(identifier) : null;
+        const prof = identifier ? profileByIdentifier.get(identifier) : null;
         const stats = user ? computeStudentProgress((user as any).progress) : null;
+
+        const features = extractMLFeatures({
+          progress: (user as any)?.progress,
+          profile: prof as any
+        });
+        const catchupProbability = MLPredictorService.predict(features);
 
         return {
           id: String(student._id),
@@ -5194,7 +5305,8 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
           classId: student.classId ? String(student.classId) : "",
           lessonsCompleted: stats?.lessonsCompleted ?? Number(student.lessonsCompleted || 0),
           quizzesTaken: stats?.quizzesPassed ?? Number(student.quizzesTaken || 0),
-          averageQuizGrade: stats?.averageQuizScoreOn20 ?? Number(student.averageQuizGrade || 0)
+          averageQuizGrade: stats?.averageQuizScoreOn20 ?? Number(student.averageQuizGrade || 0),
+          catchupProbability
         };
       })
     });

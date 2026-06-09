@@ -800,6 +800,48 @@ async function fetchProgressStats() {
   }
 }
 
+async function fetchAndRenderPrediction() {
+  if (!currentUser?.identifier) return;
+
+  try {
+    const response = await fetch(
+      `/api/student/prediction/${encodeURIComponent(currentUser.identifier)}`
+    );
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const prob = Number(data.catchupProbability);
+    if (!Number.isFinite(prob)) return;
+
+    const pct = Math.round(prob * 100);
+    const badgeRow = document.getElementById("prediction-badge-row");
+    const badge = document.getElementById("prediction-badge");
+    const valueEl = document.getElementById("prediction-badge-value");
+    const pctEl = document.getElementById("prediction-badge-pct");
+
+    if (!badgeRow || !badge || !valueEl || !pctEl) return;
+
+    let label, colorClass;
+    if (pct >= 70) {
+      label = "Vous êtes sur la bonne voie — forte probabilité de rattrapage !";
+      colorClass = "is-high";
+    } else if (pct >= 40) {
+      label = "Des efforts supplémentaires sont recommandés pour rattraper votre niveau.";
+      colorClass = "is-mid";
+    } else {
+      label = "Risque de décrochage détecté — consultez votre enseignant.";
+      colorClass = "is-low";
+    }
+
+    badge.className = `prediction-badge ${colorClass}`;
+    valueEl.textContent = label;
+    pctEl.textContent = `${pct}%`;
+    badgeRow.style.display = "block";
+  } catch (_e) {
+    // Silently ignore prediction fetch errors
+  }
+}
+
 async function fetchModules() {
   try {
     const identifier = encodeURIComponent(String(currentUser?.identifier || ""));

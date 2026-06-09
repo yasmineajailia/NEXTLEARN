@@ -918,6 +918,56 @@
       .chatbot-input-row button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
       /* ── responsive ── */
+      @media (max-width: 900px) {
+        .dash-row-1 { grid-template-columns: 1fr; }
+        .dash-row-2 { grid-template-columns: repeat(2, 1fr); }
+        .dash-row-3 { grid-template-columns: 1fr; }
+        .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      /* Prediction badge */
+      .prediction-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 12px;
+        padding: 0.7rem 1rem;
+        transition: background 200ms ease;
+      }
+      .prediction-badge:hover { background: rgba(255,255,255,0.13); }
+      .prediction-badge-icon { font-size: 1.5rem; flex-shrink: 0; }
+      .prediction-badge-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        flex: 1;
+      }
+      .prediction-badge-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.55);
+      }
+      .prediction-badge-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.9);
+      }
+      .prediction-badge-pct {
+        font-family: var(--serif);
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #fff;
+        min-width: 4rem;
+        text-align: right;
+      }
+      .prediction-badge.is-high .prediction-badge-pct  { color: #4ade80; }
+      .prediction-badge.is-mid  .prediction-badge-pct  { color: #facc15; }
+      .prediction-badge.is-low  .prediction-badge-pct  { color: #f87171; }
+
       @media (max-width: 980px) {
         .dashboard-shell { grid-template-columns: 1fr; }
         .dash-row-1, .dash-row-2, .dash-row-3, .grid-two { grid-template-columns: 1fr; }
@@ -968,6 +1018,16 @@
                 <div class="kpi-tile">
                   <p>Vidéos</p>
                   <strong id="dash-kpi-videos">0/0</strong>
+                </div>
+              </div>
+              <div id="prediction-badge-row" style="margin-top: 1rem; display: none;">
+                <div id="prediction-badge" class="prediction-badge">
+                  <span class="prediction-badge-icon">&#129302;</span>
+                  <div class="prediction-badge-text">
+                    <span class="prediction-badge-label">Prédiction IA &mdash; Chances de rattrapage</span>
+                    <span class="prediction-badge-value" id="prediction-badge-value">Calcul en cours...</span>
+                  </div>
+                  <span class="prediction-badge-pct" id="prediction-badge-pct">&mdash;</span>
                 </div>
               </div>
             </article>

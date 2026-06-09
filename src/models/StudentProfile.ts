@@ -41,6 +41,18 @@ const studentProfileSchema = new mongoose.Schema(
     xp: {
       type: Number,
       default: 0
+    },
+    loginCount: {
+      type: Number,
+      default: 0
+    },
+    lastLoginDate: {
+      type: Date,
+      default: null
+    },
+    catchupProbability: {
+      type: Number,
+      default: null
     }
   },
   { timestamps: true }
