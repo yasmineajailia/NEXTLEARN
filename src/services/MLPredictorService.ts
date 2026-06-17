@@ -5,14 +5,20 @@
  * will catch up before exams.
  *
  * Features:
- *   [0] delayWeeks        – weeks since course start with no activity (0 = on time, 8 = very late)
+ *   [0] delayWeeks        – weeks since course start with no activity (0 = on time, 12 = very late)
  *   [1] completionPace    – sub-acquis completed per week  (0 = inactive, 5 = very active)
  *   [2] averageScore      – mean quiz score on 100  (0-100)
  *   [3] loginFrequency    – logins per week  (0-14)
  *   [4] gapDepth          – fraction of sub-acquis not yet touched  (0 = fully covered, 1 = nothing done)
  *
  * Output: probability in [0, 1] that the student will catch up.
+ *
+ * The model is loaded from data/rf-model.json (pre-trained by `npm run train:model`).
+ * If the file is missing, the service falls back to a neutral estimate of 0.5.
  */
+
+import fs from "node:fs";
+import path from "node:path";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { RandomForestClassifier } = require("ml-random-forest");
@@ -28,57 +34,13 @@ export type PredictionFeatures = {
 type RFClassifier = {
   train: (X: number[][], y: number[]) => void;
   predict: (X: number[][]) => number[];
+  toJSON: () => object;
 };
 
-// ---------------------------------------------------------------------------
-// Synthetic dataset generation (OULAD-inspired distributions)
-// ---------------------------------------------------------------------------
-
-function rand(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
+const MODEL_PATH = path.join(process.cwd(), "data", "rf-model.json");
 
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
-}
-
-/**
- * Generates n synthetic student feature rows and their labels.
- * The outcome probability follows OULAD research findings:
- *  - More delay  → lower success
- *  - Higher pace → higher success
- *  - Higher score → higher success
- *  - Higher frequency → higher success
- *  - Higher gap depth → lower success
- */
-function generateSyntheticDataset(n = 1200): { X: number[][]; y: number[] } {
-  const X: number[][] = [];
-  const y: number[] = [];
-
-  for (let i = 0; i < n; i++) {
-    const delay = clamp(rand(0, 9) + (Math.random() > 0.6 ? rand(0, 4) : 0), 0, 12);
-    const pace = clamp(rand(0, 5) - delay * 0.15 + rand(-0.5, 0.5), 0, 5);
-    const score = clamp(rand(0, 100) - delay * 4 + pace * 8 + rand(-10, 10), 0, 100);
-    const loginFreq = clamp(rand(0, 14) - delay * 0.5 + pace * 0.8 + rand(-1, 1), 0, 14);
-    const gapDepth = clamp(1 - pace / 5 + delay / 12 + rand(-0.1, 0.1), 0, 1);
-
-    // Success probability: logistic-style combination
-    const logit =
-      -2.0 +
-      -0.25 * delay +
-      0.55 * pace +
-      0.04 * score +
-      0.18 * loginFreq +
-      -2.5 * gapDepth;
-
-    const prob = 1 / (1 + Math.exp(-logit));
-    const label = Math.random() < prob ? 1 : 0;
-
-    X.push([delay, pace, score, loginFreq, gapDepth]);
-    y.push(label);
-  }
-
-  return { X, y };
 }
 
 // ---------------------------------------------------------------------------
@@ -90,23 +52,30 @@ class MLPredictorServiceImpl {
   private ready = false;
 
   async initialize(): Promise<void> {
-    console.log("[ML] Training Random Forest on synthetic OULAD dataset...");
-    const t0 = Date.now();
+    if (!fs.existsSync(MODEL_PATH)) {
+      console.warn(
+        "[ML] ⚠️  No pre-trained model found at data/rf-model.json.\n" +
+        "[ML]     Run `npm run train:model` once to train and save the model.\n" +
+        "[ML]     Predictions will return 0.5 (neutral) until the model is loaded."
+      );
+      return;
+    }
 
-    const { X, y } = generateSyntheticDataset(1200);
+    try {
+      console.log("[ML] Loading pre-trained Random Forest from data/rf-model.json …");
+      const t0 = Date.now();
 
-    this.classifier = new RandomForestClassifier({
-      nEstimators: 80,
-      maxDepth: 8,
-      minNumSamples: 5,
-      seed: 42
-    }) as RFClassifier;
+      const raw = fs.readFileSync(MODEL_PATH, "utf8");
+      const modelJson = JSON.parse(raw);
 
-    this.classifier.train(X, y);
-    this.ready = true;
+      this.classifier = RandomForestClassifier.load(modelJson) as RFClassifier;
+      this.ready = true;
 
-    const elapsed = Date.now() - t0;
-    console.log(`[ML] Random Forest trained in ${elapsed}ms (1200 samples, 80 trees).`);
+      console.log(`[ML] ✅ Random Forest loaded in ${Date.now() - t0}ms — ready to predict.`);
+    } catch (err) {
+      console.error("[ML] Failed to load model:", err);
+      console.warn("[ML] Predictions will return 0.5 until the issue is resolved.");
+    }
   }
 
   /**
@@ -115,32 +84,21 @@ class MLPredictorServiceImpl {
    */
   predict(features: PredictionFeatures): number {
     if (!this.ready || !this.classifier) {
-      // Return a neutral estimate if model not ready
       return 0.5;
     }
 
     const row = [
-      clamp(features.delayWeeks, 0, 12),
-      clamp(features.completionPace, 0, 5),
-      clamp(features.averageScore, 0, 100),
-      clamp(features.loginFrequency, 0, 14),
-      clamp(features.gapDepth, 0, 1)
+      clamp(features.delayWeeks,     0,  12),
+      clamp(features.completionPace, 0,   5),
+      clamp(features.averageScore,   0, 100),
+      clamp(features.loginFrequency, 0,  14),
+      clamp(features.gapDepth,       0,   1),
     ];
 
     try {
-      // Run a small ensemble vote: run predict N times with jitter for probability estimate
-      const votes = 20;
-      let positiveCount = 0;
-      for (let i = 0; i < votes; i++) {
-        // Tiny noise to sample the decision boundary
-        const jittered = row.map((v, idx) => {
-          const noise = (Math.random() - 0.5) * [0.3, 0.1, 2, 0.3, 0.03][idx];
-          return clamp(v + noise, 0, [12, 5, 100, 14, 1][idx]);
-        });
-        const result = this.classifier!.predict([jittered]);
-        if (result[0] === 1) positiveCount++;
-      }
-      return parseFloat((positiveCount / votes).toFixed(2));
+      // Use the built-in predictProbability method to get the fraction of trees voting for class 1
+      const probs = (this.classifier as any).predictProbability([row], 1);
+      return typeof probs[0] === "number" ? probs[0] : 0.5;
     } catch (err) {
       console.error("[ML] Prediction error:", err);
       return 0.5;

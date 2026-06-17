@@ -5236,6 +5236,37 @@ webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// ML Predictor — direct feature input endpoint (used by the test UI)
+// ---------------------------------------------------------------------------
+webRouter.post("/api/ml/predict", (req, res) => {
+  try {
+    const { delayWeeks, completionPace, averageScore, loginFrequency, gapDepth } = req.body ?? {};
+
+    const parsed = {
+      delayWeeks:     Number(delayWeeks),
+      completionPace: Number(completionPace),
+      averageScore:   Number(averageScore),
+      loginFrequency: Number(loginFrequency),
+      gapDepth:       Number(gapDepth),
+    };
+
+    for (const [key, val] of Object.entries(parsed)) {
+      if (!Number.isFinite(val)) {
+        return res.status(400).json({ message: `Invalid value for "${key}": must be a number.` });
+      }
+    }
+
+    const probability = MLPredictorService.predict(parsed);
+    const modelReady  = MLPredictorService.isReady();
+
+    return res.status(200).json({ probability, modelReady, features: parsed });
+  } catch (err) {
+    console.error("[ML] /api/ml/predict error:", err);
+    return res.status(500).json({ message: "Prediction failed." });
+  }
+});
+
 webRouter.get("/api/backoffice/organization", async (_req, res) => {
   try {
     const [teachers, classes, students] = await Promise.all([

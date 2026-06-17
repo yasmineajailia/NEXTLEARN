@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "clean": "rimraf dist",
-    "seed:login-users": "tsx scripts/seed-login-users.ts"
+    "seed:login-users": "tsx scripts/seed-login-users.ts",
+    "train:model": "tsx scripts/train-model.ts",
+    "test:model": "tsx scripts/test-model.ts"
   },
   "keywords": [
     "node",

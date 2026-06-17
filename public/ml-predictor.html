@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ML Predictor — Student Catch-Up Test</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      /* ── Reset & tokens ───────────────────────────────────────────── */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --bg:          #0b0f1a;
+        --bg2:         #111827;
+        --card:        #151d2e;
+        --card2:       #1a2235;
+        --border:      rgba(255,255,255,0.07);
+        --border2:     rgba(255,255,255,0.12);
+        --text:        #f1f5f9;
+        --muted:       #64748b;
+        --muted2:      #94a3b8;
+        --accent:      #6366f1;
+        --accent2:     #818cf8;
+        --green:       #22c55e;
+        --green2:      #4ade80;
+        --amber:       #f59e0b;
+        --amber2:      #fbbf24;
+        --red:         #ef4444;
+        --red2:        #f87171;
+        --radius:      16px;
+        --radius-sm:   10px;
+        --shadow:      0 4px 32px rgba(0,0,0,0.4);
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 2rem 1rem 4rem;
+        overflow-x: hidden;
+      }
+
+      /* ── Ambient blobs ───────────────────────────────────────────── */
+      .blob {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.12;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .blob-a { width: 600px; height: 600px; background: #6366f1; top: -200px; right: -200px; }
+      .blob-b { width: 500px; height: 500px; background: #22c55e; bottom: -150px; left: -150px; }
+
+      /* ── Layout ──────────────────────────────────────────────────── */
+      .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+
+      /* ── Header ──────────────────────────────────────────────────── */
+      .header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+      .header-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(99,102,241,0.15);
+        border: 1px solid rgba(99,102,241,0.3);
+        color: var(--accent2);
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        margin-bottom: 1.2rem;
+      }
+      .header h1 {
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        font-weight: 800;
+        background: linear-gradient(135deg, #f1f5f9 0%, #818cf8 50%, #22c55e 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.2;
+        margin-bottom: 0.8rem;
+      }
+      .header p {
+        color: var(--muted2);
+        font-size: 1rem;
+        max-width: 540px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      /* ── Grid ────────────────────────────────────────────────────── */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 1.5rem;
+        align-items: start;
+      }
+      @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+      /* ── Cards ───────────────────────────────────────────────────── */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.75rem;
+        box-shadow: var(--shadow);
+      }
+      .card-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .card-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* ── Sliders ─────────────────────────────────────────────────── */
+      .sliders { display: flex; flex-direction: column; gap: 1.6rem; }
+
+      .slider-row {}
+      .slider-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.6rem;
+      }
+      .slider-label {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .slider-desc {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 0.1rem;
+      }
+      .slider-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--accent2);
+        min-width: 48px;
+        text-align: right;
+      }
+      .slider-track {
+        position: relative;
+        height: 6px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        margin-top: 0.5rem;
+      }
+      .slider-fill {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        transition: width 0.1s;
+        pointer-events: none;
+      }
+      input[type=range] {
+        position: absolute;
+        inset: -8px 0;
+        width: 100%;
+        opacity: 0;
+        cursor: pointer;
+        height: 22px;
+      }
+
+      /* ── Presets ─────────────────────────────────────────────────── */
+      .presets {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.75rem;
+      }
+      .preset-btn {
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        border: 1px solid var(--border2);
+        background: var(--card2);
+        color: var(--muted2);
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .preset-btn:hover { background: rgba(99,102,241,0.15); border-color: var(--accent); color: var(--accent2); }
+      .preset-btn.active { background: rgba(99,102,241,0.2); border-color: var(--accent); color: var(--accent2); }
+
+      /* ── Run button ──────────────────────────────────────────────── */
+      #btnPredict {
+        width: 100%;
+        margin-top: 1.75rem;
+        padding: 0.9rem;
+        border: none;
+        border-radius: var(--radius-sm);
+        background: linear-gradient(135deg, #6366f1, #818cf8);
+        color: #fff;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.25s;
+        box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+      }
+      #btnPredict:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(99,102,241,0.5); }
+      #btnPredict:active { transform: translateY(0); }
+      #btnPredict:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+      /* ── Result card ─────────────────────────────────────────────── */
+      .result-card { position: sticky; top: 1.5rem; }
+
+      /* ── Gauge ───────────────────────────────────────────────────── */
+      .gauge-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.5rem 1rem 1rem;
+      }
+      .gauge-svg { width: 220px; height: 130px; overflow: visible; }
+
+      .gauge-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 18; }
+      .gauge-arc { fill: none; stroke-width: 18; stroke-linecap: round;
+        transition: stroke-dasharray 0.6s cubic-bezier(0.34,1.56,0.64,1), stroke 0.5s; }
+
+      .gauge-pct {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 2.8rem;
+        font-weight: 700;
+        text-anchor: middle;
+        dominant-baseline: middle;
+        transition: all 0.5s;
+      }
+      .gauge-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-anchor: middle;
+        fill: var(--muted);
+      }
+
+      /* ── Verdict banner ──────────────────────────────────────────── */
+      .verdict {
+        margin-top: 1.25rem;
+        padding: 0.8rem 1.2rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.4s;
+        border: 1px solid transparent;
+      }
+      .verdict.green  { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.25); color: var(--green2); }
+      .verdict.amber  { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); color: var(--amber2); }
+      .verdict.red    { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.25);  color: var(--red2); }
+      .verdict.idle   { background: rgba(255,255,255,0.04); border-color: var(--border); color: var(--muted); }
+
+      /* ── Feature breakdown bars ──────────────────────────────────── */
+      .breakdown { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
+      .breakdown-row { display: flex; align-items: center; gap: 0.75rem; }
+      .breakdown-name { font-size: 0.75rem; color: var(--muted2); width: 110px; flex-shrink: 0; }
+      .breakdown-bar-wrap { flex: 1; height: 5px; background: rgba(255,255,255,0.07); border-radius: 999px; overflow: hidden; }
+      .breakdown-bar { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+      .breakdown-val { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--muted); width: 36px; text-align: right; }
+
+      /* ── History ─────────────────────────────────────────────────── */
+      .history { margin-top: 1.5rem; }
+      .history-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+      .history-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto; }
+      .history-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.85rem;
+        background: var(--card2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .history-item:hover { border-color: var(--accent); }
+      .history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+      .history-features { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; flex: 1; }
+      .history-pct { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+      /* ── Status bar ──────────────────────────────────────────────── */
+      #statusBar {
+        margin-top: 0.9rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        text-align: center;
+        min-height: 1.2em;
+        transition: color 0.3s;
+      }
+      #statusBar.err { color: var(--red2); }
+      #statusBar.ok  { color: var(--green2); }
+
+      /* ── Spinner ─────────────────────────────────────────────────── */
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .spinner {
+        width: 16px; height: 16px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+
+      /* ── Model status badge ──────────────────────────────────────── */
+      .model-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em;
+        padding: 0.3rem 0.75rem; border-radius: 999px;
+        background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: var(--green2);
+      }
+      .model-badge.warn { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: var(--amber2); }
+      .model-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    </style>
+  </head>
+  <body>
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+
+    <div class="wrapper">
+
+      <!-- Header -->
+      <header class="header">
+        <div class="header-chip">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M6 3v3l2 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Random Forest Classifier
+        </div>
+        <h1>Student Catch-Up Predictor</h1>
+        <p>Adjust the five learning metrics below and run the model to see how likely a student is to catch up before exams.</p>
+      </header>
+
+      <div class="grid">
+
+        <!-- Left: Input controls -->
+        <div>
+          <div class="card">
+            <div class="card-title">Quick presets</div>
+
+            <div class="presets">
+              <button class="preset-btn" id="preset-ontrack"   onclick="applyPreset('ontrack')">🟢 On-track</button>
+              <button class="preset-btn" id="preset-engaged"   onclick="applyPreset('engaged')">🟡 Behind but engaged</button>
+              <button class="preset-btn" id="preset-recovering" onclick="applyPreset('recovering')">🟡 Recovering</button>
+              <button class="preset-btn" id="preset-risk"      onclick="applyPreset('risk')">🟠 At risk</button>
+              <button class="preset-btn" id="preset-critical"  onclick="applyPreset('critical')">🔴 Critical</button>
+              <button class="preset-btn" id="preset-hidden"    onclick="applyPreset('hidden')">🔵 High delay, very active</button>
+            </div>
+
+            <div class="card-title">Feature inputs</div>
+
+            <div class="sliders">
+
+              <!-- delayWeeks -->
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <div>
+                    <div class="slider-label">Delay Weeks</div>
+                    <div class="slider-desc">Weeks behind with no activity &nbsp;(0 = on time, 12 = very late)</div>
+                  </div>
+                  <div class="slider-value" id="val-delayWeeks">0</div>
+                </div>
+                <div class="slider-track">
+                  <div class="slider-fill" id="fill-delayWeeks" style="width:0%"></div>
+                  <input type="range" id="delayWeeks" min="0" max="12" step="0.5" value="0" oninput="onSlider(this)" />
+                </div>
+              </div>
+
+              <!-- completionPace -->
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <div>
+                    <div class="slider-label">Completion Pace</div>
+                    <div class="slider-desc">Sub-skills completed per week &nbsp;(0 = inactive, 5 = very active)</div>
+                  </div>
+                  <div class="slider-value" id="val-completionPace">2.5</div>
+                </div>
+                <div class="slider-track">
+                  <div class="slider-fill" id="fill-completionPace" style="width:50%"></div>
+                  <input type="range" id="completionPace" min="0" max="5" step="0.1" value="2.5" oninput="onSlider(this)" />
+                </div>
+              </div>
+
+              <!-- averageScore -->
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <div>
+                    <div class="slider-label">Average Score</div>
+                    <div class="slider-desc">Mean quiz score &nbsp;(0–100)</div>
+                  </div>
+                  <div class="slider-value" id="val-averageScore">50</div>
+                </div>
+                <div class="slider-track">
+                  <div class="slider-fill" id="fill-averageScore" style="width:50%"></div>
+                  <input type="range" id="averageScore" min="0" max="100" step="1" value="50" oninput="onSlider(this)" />
+                </div>
+              </div>
+
+              <!-- loginFrequency -->
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <div>
+                    <div class="slider-label">Login Frequency</div>
+                    <div class="slider-desc">Logins per week &nbsp;(0–14)</div>
+                  </div>
+                  <div class="slider-value" id="val-loginFrequency">7</div>
+                </div>
+                <div class="slider-track">
+                  <div class="slider-fill" id="fill-loginFrequency" style="width:50%"></div>
+                  <input type="range" id="loginFrequency" min="0" max="14" step="0.5" value="7" oninput="onSlider(this)" />
+                </div>
+              </div>
+
+              <!-- gapDepth -->
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <div>
+                    <div class="slider-label">Gap Depth</div>
+                    <div class="slider-desc">Fraction of content untouched &nbsp;(0 = all covered, 1 = nothing done)</div>
+                  </div>
+                  <div class="slider-value" id="val-gapDepth">0.5</div>
+                </div>
+                <div class="slider-track">
+                  <div class="slider-fill" id="fill-gapDepth" style="width:50%"></div>
+                  <input type="range" id="gapDepth" min="0" max="1" step="0.01" value="0.5" oninput="onSlider(this)" />
+                </div>
+              </div>
+
+            </div><!-- /sliders -->
+
+            <button id="btnPredict" onclick="runPrediction()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Run Prediction
+            </button>
+            <div id="statusBar">Adjust sliders above and press Run Prediction</div>
+          </div>
+        </div>
+
+        <!-- Right: Results -->
+        <div>
+          <div class="card result-card">
+            <div class="card-title" style="justify-content:space-between; display:flex; align-items:center;">
+              <span>Result</span>
+              <span class="model-badge" id="modelBadge"><span class="model-dot"></span>Model ready</span>
+            </div>
+
+            <!-- Gauge -->
+            <div class="gauge-wrap">
+              <svg class="gauge-svg" id="gaugeSvg" viewBox="-10 -10 240 140">
+                <!-- Background arc: half-circle from 180° to 0° -->
+                <path class="gauge-bg"  id="gaugeBg"  d="" />
+                <path class="gauge-arc" id="gaugeArc" d="" stroke="#6366f1" stroke-dasharray="0 1000" />
+                <text class="gauge-pct" id="gaugePct" x="110" y="82" fill="#f1f5f9">—</text>
+                <text class="gauge-label" x="110" y="106">Catch-up probability</text>
+              </svg>
+
+              <div class="verdict idle" id="verdict">Run a prediction to see the verdict</div>
+            </div>
+
+            <!-- Feature contribution bars -->
+            <div class="breakdown">
+              <div class="card-title" style="margin-bottom:0.5rem;">Feature values</div>
+
+              <div class="breakdown-row">
+                <div class="breakdown-name">Delay</div>
+                <div class="breakdown-bar-wrap"><div class="breakdown-bar" id="bar-delay" style="width:0%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                <div class="breakdown-val" id="bval-delay">—</div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-name">Pace</div>
+                <div class="breakdown-bar-wrap"><div class="breakdown-bar" id="bar-pace" style="width:0%;background:linear-gradient(90deg,#22c55e,#4ade80)"></div></div>
+                <div class="breakdown-val" id="bval-pace">—</div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-name">Avg Score</div>
+                <div class="breakdown-bar-wrap"><div class="breakdown-bar" id="bar-score" style="width:0%;background:linear-gradient(90deg,#22c55e,#4ade80)"></div></div>
+                <div class="breakdown-val" id="bval-score">—</div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-name">Logins/wk</div>
+                <div class="breakdown-bar-wrap"><div class="breakdown-bar" id="bar-login" style="width:0%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                <div class="breakdown-val" id="bval-login">—</div>
+              </div>
+              <div class="breakdown-row">
+                <div class="breakdown-name">Gap Depth</div>
+                <div class="breakdown-bar-wrap"><div class="breakdown-bar" id="bar-gap" style="width:0%;background:linear-gradient(90deg,#ef4444,#f87171)"></div></div>
+                <div class="breakdown-val" id="bval-gap">—</div>
+              </div>
+            </div>
+
+            <!-- History -->
+            <div class="history" id="historySection" style="display:none;">
+              <div class="history-title">Recent predictions</div>
+              <div class="history-list" id="historyList"></div>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /grid -->
+    </div><!-- /wrapper -->
+
+    <script>
+      // ── Slider helper ─────────────────────────────────────────────
+      function onSlider(el) {
+        const v = parseFloat(el.value);
+        const min = parseFloat(el.min);
+        const max = parseFloat(el.max);
+        const pct = ((v - min) / (max - min)) * 100;
+        document.getElementById('fill-' + el.id).style.width = pct + '%';
+        const display = Number.isInteger((max - min) / 0.01) && String(el.step).includes('0.0')
+          ? v.toFixed(2) : Number.isInteger(v) ? v : v.toFixed(1);
+        document.getElementById('val-' + el.id).textContent = display;
+      }
+
+      function setSlider(id, value) {
+        const el = document.getElementById(id);
+        el.value = value;
+        onSlider(el);
+      }
+
+      // ── Presets ───────────────────────────────────────────────────
+      const PRESETS = {
+        ontrack:    { delayWeeks:0,  completionPace:4.5, averageScore:88, loginFrequency:12,  gapDepth:0.05 },
+        engaged:    { delayWeeks:2,  completionPace:2.8, averageScore:65, loginFrequency:7,   gapDepth:0.25 },
+        recovering: { delayWeeks:4,  completionPace:3.2, averageScore:72, loginFrequency:9,   gapDepth:0.30 },
+        risk:       { delayWeeks:6,  completionPace:1.2, averageScore:40, loginFrequency:3,   gapDepth:0.60 },
+        critical:   { delayWeeks:10, completionPace:0.3, averageScore:15, loginFrequency:0.5, gapDepth:0.92 },
+        hidden:     { delayWeeks:8,  completionPace:4.8, averageScore:91, loginFrequency:13,  gapDepth:0.08 },
+      };
+
+      let activePreset = null;
+      function applyPreset(key) {
+        const p = PRESETS[key];
+        if (!p) return;
+        Object.entries(p).forEach(([id, val]) => setSlider(id, val));
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('preset-' + key)?.classList.add('active');
+        activePreset = key;
+      }
+
+      // Clear active preset when user moves a slider manually
+      document.querySelectorAll('input[type=range]').forEach(el => {
+        el.addEventListener('input', () => {
+          document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+          activePreset = null;
+        });
+      });
+
+      // ── Gauge drawing ─────────────────────────────────────────────
+      const R = 90, CX = 110, CY = 90;
+
+      function polarToXY(deg) {
+        const rad = (deg - 180) * Math.PI / 180;
+        return { x: CX + R * Math.cos(rad), y: CY + R * Math.sin(rad) };
+      }
+
+      function arcD(startDeg, endDeg) {
+        const s = polarToXY(startDeg);
+        const e = polarToXY(endDeg);
+        const large = (endDeg - startDeg) > 180 ? 1 : 0;
+        return `M ${s.x} ${s.y} A ${R} ${R} 0 ${large} 1 ${e.x} ${e.y}`;
+      }
+
+      // Draw static background arc (180° → 360°)
+      document.getElementById('gaugeBg').setAttribute('d', arcD(180, 360));
+
+      function setGauge(prob) {
+        const pct = Math.round(prob * 100);
+        const endDeg = 180 + prob * 180;
+        const arcEl = document.getElementById('gaugeArc');
+        arcEl.setAttribute('d', arcD(180, endDeg));
+
+        // Colour gradient: red → amber → green
+        const color = prob >= 0.65 ? '#22c55e' : prob >= 0.40 ? '#f59e0b' : '#ef4444';
+        arcEl.setAttribute('stroke', color);
+
+        // Percentage text
+        const pctEl = document.getElementById('gaugePct');
+        pctEl.textContent = pct + '%';
+        pctEl.setAttribute('fill', color);
+
+        // Verdict
+        const vEl = document.getElementById('verdict');
+        vEl.className = 'verdict';
+        if (prob >= 0.65) {
+          vEl.classList.add('green');
+          vEl.textContent = '✅ Likely catches up before exams';
+        } else if (prob >= 0.40) {
+          vEl.classList.add('amber');
+          vEl.textContent = '⚠️ Borderline — needs monitoring';
+        } else {
+          vEl.classList.add('red');
+          vEl.textContent = '🚨 At risk — intervention recommended';
+        }
+      }
+
+      function resetGauge() {
+        document.getElementById('gaugeArc').setAttribute('d', '');
+        document.getElementById('gaugePct').textContent = '—';
+        document.getElementById('gaugePct').setAttribute('fill', '#f1f5f9');
+        const vEl = document.getElementById('verdict');
+        vEl.className = 'verdict idle';
+        vEl.textContent = 'Run a prediction to see the verdict';
+      }
+
+      // ── Feature breakdown bars ────────────────────────────────────
+      function updateBreakdown(f) {
+        document.getElementById('bar-delay').style.width  = (f.delayWeeks / 12 * 100) + '%';
+        document.getElementById('bar-pace').style.width   = (f.completionPace / 5 * 100) + '%';
+        document.getElementById('bar-score').style.width  = f.averageScore + '%';
+        document.getElementById('bar-login').style.width  = (f.loginFrequency / 14 * 100) + '%';
+        document.getElementById('bar-gap').style.width    = (f.gapDepth * 100) + '%';
+
+        document.getElementById('bval-delay').textContent  = f.delayWeeks + 'w';
+        document.getElementById('bval-pace').textContent   = f.completionPace.toFixed(1);
+        document.getElementById('bval-score').textContent  = Math.round(f.averageScore);
+        document.getElementById('bval-login').textContent  = f.loginFrequency.toFixed(1);
+        document.getElementById('bval-gap').textContent    = f.gapDepth.toFixed(2);
+      }
+
+      // ── History ───────────────────────────────────────────────────
+      const history = [];
+      function addHistory(prob, features) {
+        history.unshift({ prob, features, ts: new Date().toLocaleTimeString() });
+        if (history.length > 8) history.pop();
+        renderHistory();
+      }
+
+      function renderHistory() {
+        const list = document.getElementById('historyList');
+        const section = document.getElementById('historySection');
+        if (!history.length) { section.style.display = 'none'; return; }
+        section.style.display = '';
+        list.innerHTML = history.map((h, i) => {
+          const pct = Math.round(h.prob * 100);
+          const color = h.prob >= 0.65 ? '#22c55e' : h.prob >= 0.40 ? '#f59e0b' : '#ef4444';
+          const f = h.features;
+          return `
+            <div class="history-item" onclick="restoreHistory(${i})">
+              <div class="history-dot" style="background:${color}"></div>
+              <div class="history-features">delay=${f.delayWeeks}w pace=${f.completionPace} score=${Math.round(f.averageScore)} login=${f.loginFrequency} gap=${f.gapDepth}</div>
+              <div class="history-pct" style="color:${color}">${pct}%</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function restoreHistory(i) {
+        const h = history[i];
+        if (!h) return;
+        Object.entries(h.features).forEach(([id, val]) => setSlider(id, val));
+        setGauge(h.prob);
+        updateBreakdown(h.features);
+      }
+
+      // ── Prediction call ───────────────────────────────────────────
+      async function runPrediction() {
+        const btn = document.getElementById('btnPredict');
+        const statusEl = document.getElementById('statusBar');
+
+        const features = {
+          delayWeeks:     parseFloat(document.getElementById('delayWeeks').value),
+          completionPace: parseFloat(document.getElementById('completionPace').value),
+          averageScore:   parseFloat(document.getElementById('averageScore').value),
+          loginFrequency: parseFloat(document.getElementById('loginFrequency').value),
+          gapDepth:       parseFloat(document.getElementById('gapDepth').value),
+        };
+
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner"></div> Running…';
+        statusEl.className = '';
+        statusEl.textContent = 'Querying model…';
+
+        try {
+          const res = await fetch('/api/ml/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(features),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) throw new Error(data.message || 'Server error');
+
+          const prob = data.probability;
+          setGauge(prob);
+          updateBreakdown(features);
+          addHistory(prob, features);
+
+          const badge = document.getElementById('modelBadge');
+          if (data.modelReady) {
+            badge.className = 'model-badge';
+            badge.innerHTML = '<span class="model-dot"></span>Model ready';
+          } else {
+            badge.className = 'model-badge warn';
+            badge.innerHTML = '<span class="model-dot"></span>Model not loaded';
+          }
+
+          statusEl.className = 'ok';
+          statusEl.textContent = `Prediction complete — ${Math.round(prob * 100)}% catch-up probability`;
+
+        } catch (err) {
+          statusEl.className = 'err';
+          statusEl.textContent = '⚠ ' + (err.message || 'Network error');
+          resetGauge();
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run Prediction`;
+        }
+      }
+
+      // Allow Enter key to trigger prediction
+      document.addEventListener('keydown', e => { if (e.key === 'Enter') runPrediction(); });
+
+      // Init sliders
+      ['delayWeeks','completionPace','averageScore','loginFrequency','gapDepth'].forEach(id => {
+        onSlider(document.getElementById(id));
+      });
+    </script>
+  </body>
+</html>
