@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import mongoose from "mongoose";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
+import JSZip from "jszip";
 import { authRouter } from "./auth";
 import { User } from "../models/User";
 import { Teacher } from "../models/Teacher";
@@ -20,6 +21,11 @@ import { hashPassword } from "../utils/password";
 import { Recommender, type ChapterScoreEntry, type RecommendOptions, type ScoreEntry, type SkillsJson } from "../services/recommendation/skill-recommender.js";
 import { env } from "../config/env";
 import { MLPredictorService } from "../services/MLPredictorService";
+import {
+  type PredictionFeatures,
+  computePredictionFeatures,
+  explainRiskFactors
+} from "../services/prediction/features";
 
 const webRouter = Router();
 const publicRoot = path.join(process.cwd(), "public");
@@ -391,6 +397,32 @@ function splitTextIntoRagSnippets(text: string, maxChars = 900, maxSnippets = 3)
   return snippets;
 }
 
+async function extractTextFromPptx(buffer: Buffer): Promise<string> {
+  const zip = await JSZip.loadAsync(buffer);
+  const slideNames = Object.keys(zip.files)
+    .filter((name) => /^ppt\/slides\/slide\d+\.xml$/i.test(name))
+    .sort((a, b) => {
+      const numA = parseInt(a.match(/slide(\d+)/i)?.[1] ?? "0", 10);
+      const numB = parseInt(b.match(/slide(\d+)/i)?.[1] ?? "0", 10);
+      return numA - numB;
+    });
+
+  const slideTexts: string[] = [];
+  for (const slideName of slideNames) {
+    const xmlContent = await zip.files[slideName].async("string");
+    const textMatches = xmlContent.match(/<a:t>([^<]*)<\/a:t>/g) ?? [];
+    const slideText = textMatches
+      .map((m) => m.replace(/<[^>]+>/g, "").trim())
+      .filter(Boolean)
+      .join(" ");
+    if (slideText.length >= 20) {
+      slideTexts.push(slideText);
+    }
+  }
+
+  return slideTexts.join("\n\n");
+}
+
 async function extractCourseContentSnippetsFromUrl(url: string): Promise<string[]> {
   const cacheKey = String(url || "").trim();
   if (!cacheKey) {
@@ -410,15 +442,21 @@ async function extractCourseContentSnippetsFromUrl(url: string): Promise<string[
     }
 
     const extension = path.extname(filePayload.filename).toLowerCase();
-    if (extension !== ".pdf") {
+    let rawText = "";
+
+    if (extension === ".pdf") {
+      const parser = new PDFParse({ data: filePayload.buffer });
+      const parsed = await parser.getText();
+      await parser.destroy().catch(() => undefined);
+      rawText = String(parsed.text || "");
+    } else if (extension === ".pptx" || extension === ".ppt") {
+      rawText = await extractTextFromPptx(filePayload.buffer);
+    } else {
       courseContentSnippetCache.set(cacheKey, []);
       return [];
     }
 
-    const parser = new PDFParse({ data: filePayload.buffer });
-    const parsed = await parser.getText();
-    await parser.destroy().catch(() => undefined);
-    const snippets = splitTextIntoRagSnippets(String(parsed.text || ""));
+    const snippets = splitTextIntoRagSnippets(rawText, 900, 6);
     courseContentSnippetCache.set(cacheKey, snippets);
     return snippets;
   } catch (error) {
@@ -627,25 +665,20 @@ function hasMissingFilesystemCurriculumEntries(
   persistedModules: CurriculumModuleDoc[],
   filesystemOverview: ModuleOverview[]
 ): boolean {
-  const persistedByModule = new Map<string, Set<string>>();
-
+  // Collect all sous-acquis IDs across ALL persisted modules so that sous-acquis
+  // housed under a subject-level module (e.g. "programmation-c") are still
+  // recognised even though their filesystem parent dir ID ("1", "2", …) no
+  // longer matches any top-level module id.
+  const allPersistedSubIds = new Set<string>();
   for (const moduleDoc of persistedModules) {
-    const moduleId = String(moduleDoc.id || "").trim();
-    if (!moduleId) {
-      continue;
+    for (const id of listSubAcquisIds(moduleDoc)) {
+      allPersistedSubIds.add(id);
     }
-
-    persistedByModule.set(moduleId, new Set(listSubAcquisIds(moduleDoc)));
   }
 
   for (const moduleEntry of filesystemOverview) {
-    const persistedSubAcquis = persistedByModule.get(moduleEntry.id);
-    if (!persistedSubAcquis) {
-      return true;
-    }
-
     for (const subAcquis of moduleEntry.subAcquis) {
-      if (!persistedSubAcquis.has(subAcquis.id)) {
+      if (!allPersistedSubIds.has(subAcquis.id)) {
         return true;
       }
     }
@@ -1180,6 +1213,81 @@ function buildLessonKey(moduleId: string, subAcquisId: string): string {
   return `${moduleId}::${subAcquisId}`;
 }
 
+// Quiz attempt policy (kept in sync with the client in questionnaire.html):
+// a student gets at most QUIZ_MAX_ATTEMPTS tries, and a score >= QUIZ_PASS_SCORE
+// counts as validated. Once validated or out of attempts, the quiz is locked.
+const QUIZ_PASS_SCORE = 60;
+const QUIZ_MAX_ATTEMPTS = 2;
+
+type QuizAttemptState = {
+  attempts: number;
+  attemptsRemaining: number;
+  locked: boolean;
+  validated: boolean;
+  lastScore: number | null;
+};
+
+/**
+ * Reads a student's stored attempt state for one quiz. Remediation quizzes are
+ * governed by their own lifecycle, so callers pass `hasActiveRemediation` to
+ * keep the base-quiz attempt limit from locking a remediation retry.
+ */
+async function readQuizAttemptState(
+  identifier: string,
+  lessonKey: string,
+  hasActiveRemediation: boolean
+): Promise<QuizAttemptState> {
+  const fresh: QuizAttemptState = {
+    attempts: 0,
+    attemptsRemaining: QUIZ_MAX_ATTEMPTS,
+    locked: false,
+    validated: false,
+    lastScore: null
+  };
+
+  if (!identifier) return fresh;
+
+  const userDoc = await User.findOne({ identifier }, { "progress.quizResults": 1 }).lean();
+  const prior = (userDoc?.progress?.quizResults || []).find(
+    (entry: any) => entry.lessonKey === lessonKey
+  );
+  if (!prior) return fresh;
+
+  const attempts = Number(prior.attempts || 1);
+  const lastScore = Number(prior.score);
+  const validated = Number.isFinite(lastScore) && lastScore >= QUIZ_PASS_SCORE;
+  const exhausted = attempts >= QUIZ_MAX_ATTEMPTS;
+
+  return {
+    attempts,
+    attemptsRemaining: Math.max(0, QUIZ_MAX_ATTEMPTS - attempts),
+    // An active remediation quiz overrides the base-quiz lock so the student can retry it.
+    locked: !hasActiveRemediation && (validated || exhausted),
+    validated,
+    lastScore: Number.isFinite(lastScore) ? lastScore : null
+  };
+}
+
+/** True if the student has a non-expired, active remediation quiz for this sub-acquis. */
+async function hasActiveRemediationQuiz(
+  identifier: string,
+  moduleId: string,
+  subAcquisId: string
+): Promise<boolean> {
+  if (!identifier) return false;
+  const active = await StudentRemediationQuiz.findOne({
+    identifier,
+    moduleId,
+    subAcquisId,
+    status: "active"
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+  if (!active) return false;
+  const expired = active.expiresAt instanceof Date && active.expiresAt.getTime() <= Date.now();
+  return !expired && Array.isArray(active.questions) && active.questions.length > 0;
+}
+
 function buildRemediationQuizJsonFilePath(params: {
   identifier: string;
   moduleId: string;
@@ -1205,6 +1313,24 @@ async function saveRemediationQuizJsonFile(params: {
 }): Promise<void> {
   await fs.mkdir(path.dirname(params.filePath), { recursive: true });
   await fs.writeFile(params.filePath, `${JSON.stringify(params.payload, null, 2)}\n`, "utf8");
+}
+
+function computeModuleQuizScores(quizResults: unknown): Record<string, number> {
+  if (!Array.isArray(quizResults)) return {};
+  const byModule: Record<string, { total: number; count: number }> = {};
+  for (const entry of quizResults) {
+    const mid = String((entry as any)?.moduleId || "").trim();
+    const score = Number((entry as any)?.score);
+    if (!mid || !Number.isFinite(score)) continue;
+    if (!byModule[mid]) byModule[mid] = { total: 0, count: 0 };
+    byModule[mid].total += score;
+    byModule[mid].count += 1;
+  }
+  const out: Record<string, number> = {};
+  for (const [mid, { total, count }] of Object.entries(byModule)) {
+    out[mid] = Math.round((total / count / 5) * 10) / 10; // percentage → /20
+  }
+  return out;
 }
 
 function computeStudentProgress(progress: unknown): {
@@ -1826,6 +1952,9 @@ async function savePersistedCurriculumModules(modules: CurriculumModuleDoc[]): P
   );
 
   await CurriculumModule.deleteMany(moduleIds.length ? { id: { $nin: moduleIds } } : {});
+
+  // Curriculum content changed — force the chatbot vector store to rebuild.
+  invalidateStudentVectorStore();
 }
 
 async function readPersistedProgramCOverview(): Promise<ModuleOverview[]> {
@@ -2496,10 +2625,66 @@ webRouter.get("/", (_req, res) => {
   res.sendFile(indexPath);
 });
 
-// Programmation C page endpoint.
-webRouter.get("/programmation-c", (_req, res) => {
-  const programmationCPath = path.join(process.cwd(), "public", "student", "programmation-c.html");
-  res.sendFile(programmationCPath);
+// Generic student modules endpoint — returns all curriculum modules.
+webRouter.get("/api/student/modules", async (req, res) => {
+  try {
+    const overview = await readPersistedProgramCOverview();
+
+    const modules = overview.map((moduleData) => ({
+      id: moduleData.id,
+      name: moduleData.name,
+      sortOrder: moduleData.sortOrder,
+      subAcquisCount: moduleData.subAcquisCount,
+      subAcquis: moduleData.subAcquis.map((entry) => entry.id),
+      subAcquisDetails: moduleData.subAcquis.map((entry) => ({
+        id: entry.id,
+        name: entry.name
+      }))
+    }));
+
+    res.status(200).json({ modules });
+  } catch (error) {
+    console.error("Failed to read student modules:", error);
+    res.status(500).json({ message: "Unable to load modules" });
+  }
+});
+
+// Full module detail for student view: returns acquis[] → sousAcquis[] hierarchy.
+webRouter.get("/api/student/module/:moduleId", async (req, res) => {
+  try {
+    const moduleId = String(req.params.moduleId || "").trim();
+    if (!moduleId) {
+      return res.status(400).json({ message: "moduleId is required" });
+    }
+
+    const modules = await readPersistedCurriculumModules();
+    const mod = modules.find((m) => m.id === moduleId);
+    if (!mod) {
+      return res.status(404).json({ message: "Module not found" });
+    }
+
+    const acquis = (Array.isArray(mod.acquis) ? mod.acquis : []).map((acq) => ({
+      id: acq.id,
+      name: acq.name,
+      sousAcquis: (Array.isArray(acq.sousAcquis) ? acq.sousAcquis : []).map((sub) => ({
+        id: sub.id,
+        name: sub.name,
+        bloomLevel: sub.bloomLevel || "",
+        lessonsCount: Number(sub.lessonsCount || 0),
+        hasQuiz: Array.isArray(sub.quizzes) && sub.quizzes.length > 0,
+        hasVideo:
+          (Array.isArray(sub.videos) && sub.videos.length > 0) ||
+          Boolean(sub.resource?.ref)
+      }))
+    }));
+
+    return res.status(200).json({
+      module: { id: mod.id, name: mod.name, acquis }
+    });
+  } catch (error) {
+    console.error("Failed to read module detail:", error);
+    return res.status(500).json({ message: "Unable to load module" });
+  }
 });
 
 // Programmation C modules endpoint.
@@ -2848,6 +3033,12 @@ webRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", async (r
       }
     }
 
+    const quizState = await readQuizAttemptState(
+      identifier,
+      buildLessonKey(moduleId, subAcquisId),
+      remediationMeta.isRemediation
+    );
+
     res.status(200).json({
       moduleId,
       subAcquisId,
@@ -2857,6 +3048,7 @@ webRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", async (r
       videoFiles: resources.videoFiles,
       quizQuestions: publicQuestions,
       quizQuestionCount: publicQuestions.length,
+      quizState,
       ...remediationMeta
     });
   } catch (error) {
@@ -3334,7 +3526,53 @@ async function fetchEmbeddings(texts: string[]): Promise<number[][]> {
   return fetchOpenAiEmbeddings(texts);
 }
 
+// Rebuilding/verifying the whole vector store (which parses every course PDF
+// to hash its content) is expensive, so it must not run on every chatbot
+// request. We cache the "ready" result for a TTL and de-duplicate concurrent
+// rebuilds so at most one runs at a time. Content edits are picked up on the
+// next rebuild after the TTL expires (or immediately via invalidateStudentVectorStore).
+const STUDENT_VECTOR_STORE_TTL_MS = 10 * 60 * 1000;
+let studentVectorStoreReady: { at: number; value: boolean } | null = null;
+let studentVectorStoreInFlight: Promise<boolean> | null = null;
+
+/** Marks the vector store as stale so the next request rebuilds it (call after curriculum edits). */
+function invalidateStudentVectorStore(): void {
+  studentVectorStoreReady = null;
+}
+
 async function ensureStudentVectorStore(persistedModules: CurriculumModuleDoc[]): Promise<boolean> {
+  if (!hasEmbeddingProvider()) {
+    return false;
+  }
+
+  const now = Date.now();
+  if (studentVectorStoreReady && now - studentVectorStoreReady.at < STUDENT_VECTOR_STORE_TTL_MS) {
+    return studentVectorStoreReady.value;
+  }
+
+  if (studentVectorStoreInFlight) {
+    return studentVectorStoreInFlight;
+  }
+
+  studentVectorStoreInFlight = (async () => {
+    try {
+      const value = await rebuildStudentVectorStore(persistedModules);
+      studentVectorStoreReady = { at: Date.now(), value };
+      return value;
+    } catch (error) {
+      console.warn("Student vector store rebuild failed:", error);
+      // Cache the failure briefly so we don't hammer the embedding API on every request.
+      studentVectorStoreReady = { at: Date.now(), value: false };
+      return false;
+    } finally {
+      studentVectorStoreInFlight = null;
+    }
+  })();
+
+  return studentVectorStoreInFlight;
+}
+
+async function rebuildStudentVectorStore(persistedModules: CurriculumModuleDoc[]): Promise<boolean> {
   if (!hasEmbeddingProvider()) {
     return false;
   }
@@ -3415,10 +3653,11 @@ async function getStudentVectorMatches(params: {
     );
   }
 
-  // Narrow further to a specific sub-skill when both filters are provided.
-  if (filterToModuleId && filterToSubAcquisId) {
-    allowedSubAcquisIds = new Set([`${filterToModuleId}::${filterToSubAcquisId}`]);
-  }
+  // We intentionally keep the whole MODULE in scope even when a current
+  // sub-acquis is provided: the answer to a question (e.g. "quand utiliser
+  // if else" while on the comparison lesson) often lives in a sibling
+  // sub-acquis. The current sub-acquis is *boosted* rather than isolated.
+  const boostSubAcquisId = filterToSubAcquisId ? filterToSubAcquisId : null;
 
   const fallbackToLegacy = async () => {
     const ragIndex = (await buildStudentRagIndex({ accessibleOverview, persistedModules })).filter((chunk) => {
@@ -3436,15 +3675,26 @@ async function getStudentVectorMatches(params: {
     const queryTokens = tokenizeForStudentRag(question);
 
     return ragIndex
-      .map((chunk) => ({
-        chunk,
-        score: scoreStudentRagChunk(chunk, queryNormalized, queryTokens)
-      }))
+      .map((chunk) => {
+        let score = scoreStudentRagChunk(chunk, queryNormalized, queryTokens);
+        // Gentle tiebreaker toward the lesson the student is currently on,
+        // without preventing a more relevant sibling chunk from winning.
+        if (boostSubAcquisId && chunk.subAcquisId === boostSubAcquisId) {
+          score *= 1.15;
+        }
+        return { chunk, score };
+      })
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
       .map((entry) => entry.chunk);
   };
+
+  // With a current sub-acquis (the sous-acquis chatbot), lexical ranking over
+  // the whole module is fast and good — and skips the embedding round-trip.
+  if (filterToModuleId && filterToSubAcquisId) {
+    return fallbackToLegacy();
+  }
 
   try {
     const vectorStoreReady = await ensureStudentVectorStore(persistedModules);
@@ -3702,7 +3952,7 @@ async function buildStudentRagIndex(params: {
         });
 
         const snippets = await extractCourseContentSnippetsFromUrl(String(file.url || ""));
-        for (const snippet of snippets.slice(0, 2)) {
+        for (const snippet of snippets.slice(0, 4)) {
           const contentText = `Contenu support ${subAcquis.id} (${String(file.title || file.id || "support").trim()}): ${snippet}`;
           chunks.push({
             moduleId: moduleDoc.id,
@@ -4148,23 +4398,6 @@ webRouter.post("/api/student/chatbot", async (req, res) => {
     const filterToModuleId = typeof req.body?.filterToModuleId === "string" ? req.body.filterToModuleId.trim() : undefined;
     const filterToSubAcquisId = typeof req.body?.filterToSubAcquisId === "string" ? req.body.filterToSubAcquisId.trim() : undefined;
 
-    let embeddingScopeCheck: {
-      usedEmbeddings: boolean;
-      accepted: boolean;
-      targetScore: number;
-      topModuleId: string | null;
-      topScore: number;
-    } | null = null;
-
-    if (filterToModuleId) {
-      embeddingScopeCheck = await evaluateQuestionAgainstScopedModule({
-        persistedModules,
-        accessibleOverview,
-        question: rawMessage,
-        targetModuleId: filterToModuleId
-      });
-    }
-
     const rankedChunks = await getStudentVectorMatches({
       persistedModules,
       accessibleOverview,
@@ -4175,8 +4408,19 @@ webRouter.post("/api/student/chatbot", async (req, res) => {
 
     const refinedChunks = refineStudentRagChunks(rawMessage, rankedChunks);
 
-    // Refuse when question is about another language.
+    // Refuse when question is about another language. The embedding scope-check
+    // is only a diagnostic on this refusal, so it is computed lazily here rather
+    // than on every request (it embeds the query + scans all module vectors).
     if ((filterToModuleId || filterToSubAcquisId) && isQuestionOutsideLangageC(rawMessage)) {
+      const embeddingScopeCheck = filterToModuleId
+        ? await evaluateQuestionAgainstScopedModule({
+            persistedModules,
+            accessibleOverview,
+            question: rawMessage,
+            targetModuleId: filterToModuleId
+          })
+        : null;
+
       return res.status(200).json({
         answer:
           "Je peux vous aider uniquement sur le module en cours et en langage C. Reformulez votre question sans mentionner un autre langage.",
@@ -4578,6 +4822,7 @@ async function generateQuestionVariationWithAi(params: {
 async function generateTeacherQuizQuestions(params: {
   moduleId: string;
   moduleName: string;
+  acquisName?: string;
   subAcquisId: string;
   subAcquisName: string;
   topic?: string;
@@ -4585,32 +4830,40 @@ async function generateTeacherQuizQuestions(params: {
   count: number;
   courseContent?: string[];
 }): Promise<TeacherGeneratedQuestion[]> {
-  const { moduleId, moduleName, subAcquisId, subAcquisName, topic, difficulty, count, courseContent } = params;
-  const effectiveTopic = topic?.trim() || subAcquisName || moduleName || `${moduleId} / ${subAcquisId}`;
+  const { moduleId, moduleName, acquisName, subAcquisId, subAcquisName, difficulty, count, courseContent } = params;
+
+  const breadcrumb = [moduleName, acquisName, subAcquisName].filter(Boolean).join(" > ");
+  const effectiveTopic = breadcrumb || subAcquisName || moduleName || `${moduleId} / ${subAcquisId}`;
 
   const questions: TeacherGeneratedQuestion[] = [];
 
-  const systemPrompt = `Tu es un expert pédagogique. Génère exactement ${count} questions de quiz en français sur le sujet "${effectiveTopic}" avec niveau "${difficulty}".
-Chaque question doit avoir exactement 4 options avec une seule bonne réponse. Retourne UNIQUEMENT un JSON valide sans texte autour.
-Format attendu: {"questions":[{"prompt":"...","options":["...","...","...","..."],"correctOptionIndex":0},...]}}`;
-
-  const contextLines = courseContent && courseContent.length > 0
-    ? `\n\nContexte pédagogique:\n${courseContent.slice(0, 3).join("\n")}`
+  const hasContent = Array.isArray(courseContent) && courseContent.length > 0;
+  const contentSection = hasContent
+    ? `\n\n--- Contenu du cours (extrait des supports PDF/PPT) ---\n${courseContent.join("\n\n---\n")}\n--- Fin du contenu ---`
     : "";
 
+  const systemPrompt = hasContent
+    ? `Tu es un expert pédagogique en informatique. Génère exactement ${count} questions de quiz en français sur "${subAcquisName}" dans le module "${moduleName}"${acquisName ? ` (acquis : ${acquisName})` : ""}, niveau "${difficulty}". BASE TES QUESTIONS PRINCIPALEMENT SUR LE CONTENU DU COURS FOURNI.
+Chaque question doit avoir exactement 4 options avec une seule bonne réponse. Retourne UNIQUEMENT un JSON valide sans texte autour.
+Format attendu: {"questions":[{"prompt":"...","options":["...","...","...","..."],"correctOptionIndex":0},...]}}`
+    : `Tu es un expert pédagogique en informatique. Génère exactement ${count} questions de quiz en français sur "${subAcquisName}" dans le module "${moduleName}"${acquisName ? ` (acquis : ${acquisName})` : ""}, niveau "${difficulty}".
+Chaque question doit avoir exactement 4 options avec une seule bonne réponse. Retourne UNIQUEMENT un JSON valide sans texte autour.
+Format attendu: {"questions":[{"prompt":"...","options":["...","...","...","..."],"correctOptionIndex":0},...]}`;
+
   const userPrompt = [
-    `Module: ${moduleName} (${moduleId})`,
-    `Sous-acquis: ${subAcquisName} (${subAcquisId})`,
-    `Thème: ${effectiveTopic}`,
-    `Difficulté: ${difficulty}`,
-    `Nombre de questions: ${count}`,
-    contextLines,
-    "\nGénère les questions au format JSON. Assure-toi que chaque question:",
-    "- Est pertinente pour le thème",
-    "- A un niveau approprié pour '${difficulty}'",
-    "- A exactement 4 options claires et distinctes",
-    "- A une seule bonne réponse"
-  ].join("\n");
+    `Module : ${moduleName} (${moduleId})`,
+    acquisName ? `Acquis : ${acquisName}` : null,
+    `Sous-acquis : ${subAcquisName}`,
+    `Thème complet : ${effectiveTopic}`,
+    `Difficulté : ${difficulty}`,
+    `Nombre de questions : ${count}`,
+    contentSection,
+    "\nGénère les questions au format JSON. Chaque question doit :",
+    hasContent ? "- S'appuyer sur le contenu du cours fourni ci-dessus" : "- Porter spécifiquement sur le sous-acquis indiqué",
+    "- Être adaptée au niveau de difficulté choisi",
+    "- Avoir exactement 4 options claires et distinctes",
+    "- Avoir une seule bonne réponse"
+  ].filter((line) => line !== null).join("\n");
 
   const parseQuestionsResult = (raw: string): TeacherGeneratedQuestion[] => {
     const trimmed = String(raw || "").trim();
@@ -4786,7 +5039,7 @@ Format attendu: {"questions":[{"prompt":"...","options":["...","...","...","..."
     };
 
     for (let i = 0; i < count; i++) {
-      const base = allSentences[i % Math.max(1, allSentences.length)] || `Énoncé correct sur ${topic}`;
+      const base = allSentences[i % Math.max(1, allSentences.length)] || `Énoncé correct sur ${effectiveTopic}`;
 
       // Build distractors from other sentences or variations
       const pool = allSentences.filter((s) => s !== base);
@@ -4798,7 +5051,7 @@ Format attendu: {"questions":[{"prompt":"...","options":["...","...","...","..."
 
       // Ensure we have 3 distractors
       while (distractors.length < 3) {
-        distractors.push(`Autre proposition liée à ${topic}`);
+        distractors.push(`Autre proposition liée à ${effectiveTopic}`);
       }
 
       const options = shuffle([base, ...distractors]).slice(0, 4);
@@ -4818,7 +5071,7 @@ Format attendu: {"questions":[{"prompt":"...","options":["...","...","...","..."
   // Generic fallback when no content is available
   for (let i = 0; i < count; i++) {
     questions.push({
-      prompt: `Question ${i + 1} sur "${topic}" - Quel énoncé est correct ?`,
+      prompt: `Question ${i + 1} sur "${effectiveTopic}" - Quel énoncé est correct ?`,
       options: [
         "Option A - Répondre avec le contenu du cours",
         "Option B - Répondre avec le contenu du cours",
@@ -4972,9 +5225,39 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
 
     const score = gradable > 0 ? Math.round((correct / gradable) * 100) : 0;
     const passed = gradable === 0 ? true : correct === gradable;
+    const validated = gradable === 0 ? true : score >= QUIZ_PASS_SCORE;
+
+    let attemptState: QuizAttemptState = {
+      attempts: 0,
+      attemptsRemaining: QUIZ_MAX_ATTEMPTS,
+      locked: false,
+      validated,
+      lastScore: score
+    };
 
     if (identifier) {
       const lessonKey = buildLessonKey(moduleId, subAcquisId);
+      const activeRemediation = await hasActiveRemediationQuiz(identifier, moduleId, subAcquisId);
+      const priorState = await readQuizAttemptState(identifier, lessonKey, activeRemediation);
+
+      // Reject submissions once the base quiz is locked (validated or out of
+      // attempts) — this closes the page-reload bypass. Remediation retries are
+      // exempt (priorState.locked is false while a remediation is active).
+      if (priorState.locked) {
+        return res.status(409).json({
+          message: priorState.validated
+            ? "Ce quiz est déjà validé."
+            : "Nombre maximal de tentatives atteint.",
+          locked: true,
+          validated: priorState.validated,
+          attempts: priorState.attempts,
+          attemptsRemaining: 0,
+          lastScore: priorState.lastScore
+        });
+      }
+
+      // Remediation attempts don't count against the base-quiz limit.
+      const newAttempts = activeRemediation ? priorState.attempts : priorState.attempts + 1;
 
       await User.updateOne(
         { identifier },
@@ -4993,11 +5276,21 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
               moduleId,
               subAcquisId,
               score,
+              attempts: newAttempts,
               submittedAt: new Date()
             }
           }
         }
       );
+
+      const exhausted = newAttempts >= QUIZ_MAX_ATTEMPTS;
+      attemptState = {
+        attempts: newAttempts,
+        attemptsRemaining: Math.max(0, QUIZ_MAX_ATTEMPTS - newAttempts),
+        locked: !activeRemediation && (validated || exhausted),
+        validated,
+        lastScore: score
+      };
     }
 
     const review = resources.quizQuestions.map((question, index) => {
@@ -5024,6 +5317,10 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
       correct,
       score,
       passed,
+      validated,
+      attempts: attemptState.attempts,
+      attemptsRemaining: attemptState.attemptsRemaining,
+      locked: attemptState.locked,
       wrongQuestionCount: wrongQuestionIndexes.length,
       wrongQuestionIndexes,
       review
@@ -5145,8 +5442,36 @@ webRouter.get("/api/student/progress/:identifier", async (req, res) => {
   }
 });
 
+// Cached curriculum size (denominator for gapDepth). Refreshed lazily so the
+// prediction endpoints don't hardcode a wrong total (the old default was 20
+// while the real curriculum has ~42 sous-acquis).
+let cachedTotalSubAcquis: { at: number; value: number } | null = null;
+const TOTAL_SUB_ACQUIS_TTL_MS = 10 * 60 * 1000;
+
+async function resolveTotalSubAcquisCount(): Promise<number> {
+  const now = Date.now();
+  if (cachedTotalSubAcquis && now - cachedTotalSubAcquis.at < TOTAL_SUB_ACQUIS_TTL_MS) {
+    return cachedTotalSubAcquis.value;
+  }
+  let count = 0;
+  try {
+    const modules = await CurriculumModule.find().select({ acquis: 1 }).lean();
+    for (const moduleDoc of modules as any[]) {
+      for (const acquis of Array.isArray(moduleDoc.acquis) ? moduleDoc.acquis : []) {
+        count += Array.isArray(acquis.sousAcquis) ? acquis.sousAcquis.length : 0;
+      }
+    }
+  } catch (_error) {
+    count = 0;
+  }
+  const value = count > 0 ? count : 42;
+  cachedTotalSubAcquis = { at: now, value };
+  return value;
+}
+
 /**
- * Derive ML prediction features from a user's raw progress data and profile.
+ * Derive the ML prediction feature vector from a user's raw progress data and
+ * profile. Thin adapter over the shared {@link computePredictionFeatures}.
  */
 function extractMLFeatures(params: {
   progress?: {
@@ -5160,46 +5485,39 @@ function extractMLFeatures(params: {
     createdAt?: Date;
   } | null;
   totalSubAcquis?: number;
-}): Parameters<typeof MLPredictorService.predict>[0] {
-  const { progress, profile, totalSubAcquis = 20 } = params;
+  /** Class schedule anchor — when present, delay is measured against the course timeline. */
+  scheduleStartDate?: Date | string | null;
+}): PredictionFeatures {
+  const { progress, profile, totalSubAcquis = 42, scheduleStartDate = null } = params;
 
-  // completionPace: sub-acquis completed per week since account creation
   const completedCount = Array.isArray(progress?.completedLessonKeys)
     ? progress.completedLessonKeys.length
     : 0;
 
-  const createdAt = profile?.createdAt ? new Date(profile.createdAt) : new Date();
-  const weeksSinceCreation = Math.max(
-    1,
-    (Date.now() - createdAt.getTime()) / (7 * 24 * 60 * 60 * 1000)
-  );
-  const completionPace = Math.min(5, completedCount / weeksSinceCreation);
-
-  // delayWeeks: if the student is behind – gap between expected and actual completion
-  // We use weeks since creation minus what they've actually done as a proxy.
-  const expectedPace = 2; // 2 sub-acquis per week is "on track"
-  const expectedCompleted = weeksSinceCreation * expectedPace;
-  const delayWeeks = Math.min(12, Math.max(0, (expectedCompleted - completedCount) / expectedPace));
-
-  // averageScore: mean quiz score
   const quizResults = Array.isArray(progress?.quizResults) ? progress.quizResults : [];
-  const scores = quizResults.map((r) => Number(r?.score || 0)).filter((s) => Number.isFinite(s) && s > 0);
-  const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 50;
+  const quizScores = quizResults.map((r) => Number(r?.score));
+  const quizTimestamps = quizResults
+    .map((r) => {
+      const d = r?.submittedAt ? new Date(r.submittedAt as any) : null;
+      return d && !Number.isNaN(d.getTime()) ? d.getTime() : NaN;
+    })
+    .filter((t) => Number.isFinite(t));
 
-  // loginFrequency: logins per week
-  const loginCount = Number(profile?.loginCount || 0);
-  const loginFrequency = Math.min(14, loginCount / weeksSinceCreation);
+  const createdAt = profile?.createdAt ? new Date(profile.createdAt).getTime() : Date.now();
+  const lastLoginAt = profile?.lastLoginDate ? new Date(profile.lastLoginDate).getTime() : null;
+  const scheduleStartAt = scheduleStartDate ? new Date(scheduleStartDate).getTime() : null;
 
-  // gapDepth: fraction of curriculum not yet started
-  const gapDepth = Math.max(0, Math.min(1, 1 - completedCount / Math.max(1, totalSubAcquis)));
-
-  return {
-    delayWeeks,
-    completionPace,
-    averageScore,
-    loginFrequency,
-    gapDepth
-  };
+  return computePredictionFeatures({
+    completedCount,
+    totalSubAcquis,
+    quizScores,
+    quizTimestamps,
+    loginCount: Number(profile?.loginCount || 0),
+    createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
+    lastLoginAt: lastLoginAt && Number.isFinite(lastLoginAt) ? lastLoginAt : null,
+    scheduleStartAt: scheduleStartAt && Number.isFinite(scheduleStartAt) ? scheduleStartAt : null,
+    now: Date.now()
+  });
 }
 
 webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
@@ -5209,26 +5527,37 @@ webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
       return res.status(400).json({ message: "Identifiant requis" });
     }
 
-    const [user, profile] = await Promise.all([
+    const [user, profile, totalSubAcquis] = await Promise.all([
       User.findOne({ identifier }).select({ identifier: 1, progress: 1 }).lean(),
-      StudentProfile.findOne({ identifier }).select({ loginCount: 1, lastLoginDate: 1, createdAt: 1 }).lean()
+      StudentProfile.findOne({ identifier }).select({ loginCount: 1, lastLoginDate: 1, createdAt: 1, classId: 1 }).lean(),
+      resolveTotalSubAcquisCount()
     ]);
 
     if (!user) {
       return res.status(404).json({ message: "Etudiant introuvable" });
     }
 
+    let scheduleStartDate: Date | null = null;
+    if ((profile as any)?.classId) {
+      const classRoom = await ClassRoom.findById((profile as any).classId).select({ scheduleStartDate: 1 }).lean();
+      scheduleStartDate = (classRoom as any)?.scheduleStartDate || null;
+    }
+
     const features = extractMLFeatures({
       progress: (user as any).progress,
-      profile: profile as any
+      profile: profile as any,
+      totalSubAcquis,
+      scheduleStartDate
     });
 
     const catchupProbability = MLPredictorService.predict(features);
+    const riskFactors = explainRiskFactors(features);
 
     res.status(200).json({
       identifier,
       catchupProbability,
-      features
+      features,
+      riskFactors
     });
   } catch (error) {
     console.error("Failed to compute prediction:", error);
@@ -5241,39 +5570,71 @@ webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
 // ---------------------------------------------------------------------------
 webRouter.post("/api/ml/predict", (req, res) => {
   try {
-    const { delayWeeks, completionPace, averageScore, loginFrequency, gapDepth } = req.body ?? {};
-
+    const body = req.body ?? {};
     const parsed = {
-      delayWeeks:     Number(delayWeeks),
-      completionPace: Number(completionPace),
-      averageScore:   Number(averageScore),
-      loginFrequency: Number(loginFrequency),
-      gapDepth:       Number(gapDepth),
+      delayWeeks:     Number(body.delayWeeks),
+      completionPace: Number(body.completionPace),
+      averageScore:   Number(body.averageScore),
+      loginFrequency: Number(body.loginFrequency),
+      gapDepth:       Number(body.gapDepth),
+      // Newer features default to neutral values so older 5-feature callers still work.
+      recencyRatio:   Number.isFinite(Number(body.recencyRatio)) ? Number(body.recencyRatio) : 0.5,
+      weakSkillRatio: Number.isFinite(Number(body.weakSkillRatio)) ? Number(body.weakSkillRatio) : 0,
     };
 
-    for (const [key, val] of Object.entries(parsed)) {
-      if (!Number.isFinite(val)) {
+    for (const key of ["delayWeeks", "completionPace", "averageScore", "loginFrequency", "gapDepth"] as const) {
+      if (!Number.isFinite(parsed[key])) {
         return res.status(400).json({ message: `Invalid value for "${key}": must be a number.` });
       }
     }
 
     const probability = MLPredictorService.predict(parsed);
     const modelReady  = MLPredictorService.isReady();
+    const riskFactors = explainRiskFactors(parsed);
 
-    return res.status(200).json({ probability, modelReady, features: parsed });
+    return res.status(200).json({ probability, modelReady, features: parsed, riskFactors });
   } catch (err) {
     console.error("[ML] /api/ml/predict error:", err);
     return res.status(500).json({ message: "Prediction failed." });
   }
 });
 
-webRouter.get("/api/backoffice/organization", async (_req, res) => {
+webRouter.get("/api/backoffice/organization", async (req, res) => {
   try {
-    const [teachers, classes, students] = await Promise.all([
+    // Resolve the caller's identity from the X-Teacher-Id header
+    const requestedTeacherId = String(req.headers["x-teacher-id"] || "").trim();
+    let callerIsAdmin = false;
+    let callerTeacherId = "";
+
+    if (requestedTeacherId && mongoose.Types.ObjectId.isValid(requestedTeacherId)) {
+      const caller = await Teacher.findById(requestedTeacherId).select({ role: 1 }).lean();
+      if (caller) {
+        callerIsAdmin = String((caller as any).role || "").toLowerCase() === "admin";
+        callerTeacherId = requestedTeacherId;
+      }
+    } else {
+      // No valid ID supplied — treat as admin so existing integrations keep working
+      callerIsAdmin = true;
+    }
+
+    const [teachers, allClasses, allStudents] = await Promise.all([
       Teacher.find().sort({ name: 1 }).lean(),
       ClassRoom.find().sort({ name: 1 }).lean(),
       StudentProfile.find().sort({ fullName: 1 }).lean()
     ]);
+
+    // Filter classes and students for non-admin callers
+    const classes = callerIsAdmin
+      ? allClasses
+      : allClasses.filter((room) => {
+          const roomTeacherId = room.teacherId ? String(room.teacherId) : "";
+          return roomTeacherId === callerTeacherId;
+        });
+
+    const allowedClassIds = new Set(classes.map((room) => String(room._id)));
+    const students = callerIsAdmin
+      ? allStudents
+      : allStudents.filter((student) => allowedClassIds.has(String(student.classId || "")));
 
     const identifiers = students
       .map((student) => String(student.identifier || "").trim())
@@ -5297,6 +5658,12 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
 
     const profileByIdentifier = new Map(
       profiles.map((p) => [String((p as any).identifier || "").trim(), p])
+    );
+
+    // Resolve prediction inputs once for the whole roster.
+    const orgTotalSubAcquis = await resolveTotalSubAcquisCount();
+    const scheduleByClassId = new Map(
+      allClasses.map((room) => [String(room._id), (room as any).scheduleStartDate || null])
     );
 
     res.status(200).json({
@@ -5324,7 +5691,9 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
 
         const features = extractMLFeatures({
           progress: (user as any)?.progress,
-          profile: prof as any
+          profile: prof as any,
+          totalSubAcquis: orgTotalSubAcquis,
+          scheduleStartDate: scheduleByClassId.get(String(student.classId || "")) || null
         });
         const catchupProbability = MLPredictorService.predict(features);
 
@@ -5337,7 +5706,9 @@ webRouter.get("/api/backoffice/organization", async (_req, res) => {
           lessonsCompleted: stats?.lessonsCompleted ?? Number(student.lessonsCompleted || 0),
           quizzesTaken: stats?.quizzesPassed ?? Number(student.quizzesTaken || 0),
           averageQuizGrade: stats?.averageQuizScoreOn20 ?? Number(student.averageQuizGrade || 0),
-          catchupProbability
+          catchupProbability,
+          lastLoginDate: (prof as any)?.lastLoginDate ? new Date((prof as any).lastLoginDate).toISOString() : null,
+          quizScoresByModule: computeModuleQuizScores((user as any)?.progress?.quizResults)
         };
       })
     });
@@ -5481,6 +5852,57 @@ webRouter.delete("/api/backoffice/teachers/:teacherId", async (req, res) => {
   } catch (error) {
     console.error("Failed to delete teacher:", error);
     res.status(500).json({ message: "Impossible de supprimer l'enseignant" });
+  }
+});
+
+// Returns the classes visible to the caller (resolved from the X-Teacher-Id
+// header, same convention as /api/backoffice/organization), each annotated
+// with its live student count. Used by the clustering dashboard's class
+// selector.
+webRouter.get("/api/backoffice/classes", async (req, res) => {
+  try {
+    const requestedTeacherId = String(req.headers["x-teacher-id"] || "").trim();
+    let callerIsAdmin = false;
+    let callerTeacherId = "";
+
+    if (requestedTeacherId && mongoose.Types.ObjectId.isValid(requestedTeacherId)) {
+      const caller = await Teacher.findById(requestedTeacherId).select({ role: 1 }).lean();
+      if (caller) {
+        callerIsAdmin = String((caller as any).role || "").toLowerCase() === "admin";
+        callerTeacherId = requestedTeacherId;
+      }
+    } else {
+      // No valid ID supplied — treat as admin so existing integrations keep working.
+      callerIsAdmin = true;
+    }
+
+    const allClasses = await ClassRoom.find().sort({ name: 1 }).lean();
+    const classes = callerIsAdmin
+      ? allClasses
+      : allClasses.filter((room) => String(room.teacherId || "") === callerTeacherId);
+
+    const classIds = classes.map((room) => room._id);
+    const students = classIds.length
+      ? await StudentProfile.find({ classId: { $in: classIds } }).select({ classId: 1 }).lean()
+      : [];
+
+    const countByClassId = new Map<string, number>();
+    for (const student of students as any[]) {
+      const key = String(student.classId || "");
+      countByClassId.set(key, (countByClassId.get(key) || 0) + 1);
+    }
+
+    return res.status(200).json({
+      classes: classes.map((room) => ({
+        id: String(room._id),
+        name: room.name,
+        teacherId: room.teacherId ? String(room.teacherId) : "",
+        studentCount: countByClassId.get(String(room._id)) || 0
+      }))
+    });
+  } catch (error) {
+    console.error("Failed to load backoffice classes:", error);
+    return res.status(500).json({ message: "Impossible de charger les classes" });
   }
 });
 
@@ -5906,11 +6328,9 @@ webRouter.get("/student", (_req, res) => {
   res.sendFile(studentDashboardPath);
 });
 
-// Student embedded C course endpoint.
-// Serves a dedicated version without the main platform header.
-webRouter.get("/student/programmation-c", (_req, res) => {
-  const studentCoursePath = path.join(process.cwd(), "public", "student", "programmation-c.html");
-  res.sendFile(studentCoursePath);
+// "Mission Apprenant" learning style detection game.
+webRouter.get("/student/mission-apprenant", (_req, res) => {
+  res.sendFile(path.join(process.cwd(), "public", "student", "mission-apprenant.html"));
 });
 
 // ============================================
@@ -5924,12 +6344,14 @@ webRouter.post("/api/teacher/quizzes/generate", async (req, res) => {
 
     const moduleId = typeof req.body?.moduleId === "string" ? req.body.moduleId.trim() : "";
     const subAcquisId = typeof req.body?.subAcquisId === "string" ? req.body.subAcquisId.trim() : "";
+    const subAcquisNameFallback = typeof req.body?.subAcquisName === "string" ? req.body.subAcquisName.trim() : "";
+    const acquisNameFallback = typeof req.body?.acquisName === "string" ? req.body.acquisName.trim() : "";
     const difficulty = req.body?.difficulty || "intermediate";
     const count = Math.min(Math.max(Number(req.body?.count) || 5, 1), 10);
 
-    if (!moduleId || !subAcquisId) {
+    if (!moduleId || (!subAcquisId && !subAcquisNameFallback)) {
       return res.status(400).json({
-        message: "moduleId et subAcquisId sont requis"
+        message: "moduleId et (subAcquisId ou subAcquisName) sont requis"
       });
     }
 
@@ -5946,32 +6368,44 @@ webRouter.post("/api/teacher/quizzes/generate", async (req, res) => {
       return res.status(404).json({ message: "Module introuvable" });
     }
 
-    const subAcquis = module.acquis
-      .flatMap((a) => a.sousAcquis)
-      .find((s) => s.id === subAcquisId);
-    if (!subAcquis) {
+    const subAcquis = subAcquisId
+      ? module.acquis.flatMap((a) => a.sousAcquis).find((s) => s.id === subAcquisId)
+      : undefined;
+    if (!subAcquis && !subAcquisNameFallback) {
       return res.status(404).json({ message: "Sous-acquis introuvable" });
     }
-    const generationTopic = subAcquis.name || module.name || `${moduleId} / ${subAcquisId}`;
+    const resolvedSubAcquisName = subAcquis?.name || subAcquisNameFallback || subAcquisId;
 
-    // Extract course content for context
+    // Resolve acquis name: prefer DB lookup (find parent acquis of the subAcquis), fall back to request body
+    const parentAcquis = subAcquisId
+      ? module.acquis.find((a) => Array.isArray(a.sousAcquis) && a.sousAcquis.some((s) => s.id === subAcquisId))
+      : undefined;
+    const resolvedAcquisName = parentAcquis?.name || acquisNameFallback;
+
+    // Extract course content from all uploaded files (PDF and PPTX)
     let courseContent: string[] = [];
-    try {
-      if (Array.isArray(subAcquis.courseFiles) && subAcquis.courseFiles.length > 0) {
-        const snippets = await extractCourseContentSnippetsFromUrl(subAcquis.courseFiles[0].url);
-        courseContent = snippets.slice(0, 3);
+    if (subAcquis && Array.isArray(subAcquis.courseFiles) && subAcquis.courseFiles.length > 0) {
+      const fileResults = await Promise.allSettled(
+        subAcquis.courseFiles.map((f: { url: string }) => extractCourseContentSnippetsFromUrl(f.url))
+      );
+      for (const result of fileResults) {
+        if (result.status === "fulfilled") {
+          courseContent.push(...result.value);
+          if (courseContent.length >= 9) break;
+        }
       }
-    } catch (error) {
-      console.warn("Could not extract course content for generation context:", error);
+      courseContent = courseContent.slice(0, 9);
     }
+
+    const breadcrumb = [module.name || moduleId, resolvedAcquisName, resolvedSubAcquisName].filter(Boolean).join(" > ");
 
     // Generate questions
     const generatedQuestions = await generateTeacherQuizQuestions({
       moduleId,
       moduleName: module.name || moduleId,
-      subAcquisId,
-      subAcquisName: subAcquis.name || subAcquisId,
-      topic: generationTopic,
+      acquisName: resolvedAcquisName,
+      subAcquisId: subAcquisId || resolvedSubAcquisName,
+      subAcquisName: resolvedSubAcquisName,
       difficulty,
       count,
       courseContent
@@ -5983,9 +6417,9 @@ webRouter.post("/api/teacher/quizzes/generate", async (req, res) => {
       sessionId,
       moduleId,
       moduleName: module.name || moduleId,
-      subAcquisId,
-      subAcquisName: subAcquis.name || subAcquisId,
-      topic: generationTopic,
+      subAcquisId: subAcquisId || resolvedSubAcquisName,
+      subAcquisName: resolvedSubAcquisName,
+      topic: breadcrumb,
       difficulty,
       count,
       questions: generatedQuestions,
@@ -6191,5 +6625,287 @@ webRouter.get("/teacher/quiz-generator", (_req, res) => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Dashboard — comprehensive student dashboard data
+// ---------------------------------------------------------------------------
+webRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
+  try {
+    const identifier = String(req.params.identifier || "").trim();
+    if (!identifier) {
+      return res.status(400).json({ message: "Identifiant requis" });
+    }
+
+    const [user, profile, modulesRaw] = await Promise.all([
+      User.findOne({ identifier }).select({ identifier: 1, progress: 1, createdAt: 1 }).lean(),
+      StudentProfile.findOne({ identifier }).lean(),
+      CurriculumModule.find().sort({ sortOrder: 1 }).lean()
+    ]);
+
+    if (!user) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const progress = (user as any).progress || {};
+    const completedLessonKeys: string[] = Array.isArray(progress.completedLessonKeys)
+      ? progress.completedLessonKeys.filter((k: unknown): k is string => typeof k === "string")
+      : [];
+
+    const quizResults: Array<{ moduleId: string; subAcquisId: string; score: number; submittedAt: string | null }> =
+      Array.isArray(progress.quizResults)
+        ? progress.quizResults
+            .map((entry: any) => {
+              const mid = String(entry?.moduleId || "");
+              const sid = String(entry?.subAcquisId || "");
+              const score = Number(entry?.score);
+              const at = entry?.submittedAt ? new Date(String(entry.submittedAt)).toISOString() : null;
+              if (!mid || !sid || !Number.isFinite(score)) return null;
+              return { moduleId: mid, subAcquisId: sid, score, submittedAt: at };
+            })
+            .filter(Boolean)
+        : [];
+
+    const selfEvalResults: Array<{ moduleId: string; acquisId: string; score: number; passed: boolean; submittedAt: string | null }> =
+      Array.isArray(progress.selfEvaluationResults)
+        ? progress.selfEvaluationResults
+            .map((entry: any) => ({
+              moduleId: String(entry?.moduleId || ""),
+              acquisId: String(entry?.acquisId || ""),
+              score: Number(entry?.score || 0),
+              passed: Boolean(entry?.passed),
+              submittedAt: entry?.submittedAt ? new Date(String(entry.submittedAt)).toISOString() : null
+            }))
+            .filter((e: any) => e.moduleId && e.acquisId)
+        : [];
+
+    // Build stats
+    const stats = computeStudentProgress({ completedLessonKeys, quizResults });
+
+    // Build module overview
+    const completedSet = new Set(completedLessonKeys);
+    const latestQuizMap = new Map<string, { score: number; submittedAt: string | null }>();
+    quizResults.forEach((qr) => {
+      const key = `${qr.moduleId}::${qr.subAcquisId}`;
+      const existing = latestQuizMap.get(key);
+      if (!existing || (qr.submittedAt && existing.submittedAt && qr.submittedAt > existing.submittedAt)) {
+        latestQuizMap.set(key, { score: qr.score, submittedAt: qr.submittedAt });
+      }
+    });
+
+    const totalSubAcquis = modulesRaw.reduce((acc, m) => {
+      const acquisList = Array.isArray((m as any).acquis) ? (m as any).acquis : [];
+      return acc + acquisList.reduce((a2: number, ac: any) => a2 + (Array.isArray(ac.sousAcquis) ? ac.sousAcquis.length : 0), 0);
+    }, 0);
+
+    const overview = modulesRaw
+      .filter((m: any) => m.id && m.name)
+      .map((m: any) => {
+        const acquisList = Array.isArray(m.acquis) ? m.acquis : [];
+        const allSousAcquis: Array<{ id: string; name: string; hasQuiz: boolean; hasVideo: boolean }> = [];
+        acquisList.forEach((ac: any) => {
+          if (Array.isArray(ac.sousAcquis)) {
+            ac.sousAcquis.forEach((sa: any) => {
+              allSousAcquis.push({
+                id: String(sa.id || ""),
+                name: String(sa.name || sa.id || ""),
+                hasQuiz: Array.isArray(sa.quizzes) && sa.quizzes.length > 0,
+                hasVideo: Array.isArray(sa.videos) && sa.videos.length > 0
+              });
+            });
+          }
+        });
+        const completedCount = allSousAcquis.filter((sa) => completedSet.has(`${m.id}::${sa.id}`)).length;
+        return {
+          id: String(m.id),
+          name: m.name,
+          sortOrder: Number(m.sortOrder) || 0,
+          subAcquisCount: allSousAcquis.length,
+          completedCount,
+          progressPct: allSousAcquis.length > 0 ? Math.round((completedCount / allSousAcquis.length) * 100) : 0,
+          subAcquis: allSousAcquis.map((sa) => {
+            const key = `${m.id}::${sa.id}`;
+            const quiz = latestQuizMap.get(key);
+            return {
+              ...sa,
+              completed: completedSet.has(key),
+              quizScore: quiz?.score ?? null,
+              quizSubmittedAt: quiz?.submittedAt ?? null
+            };
+          })
+        };
+      });
+
+    // ML Prediction
+    let predictionScheduleStart: Date | null = null;
+    if ((profile as any)?.classId) {
+      const classRoom = await ClassRoom.findById((profile as any).classId).select({ scheduleStartDate: 1 }).lean();
+      predictionScheduleStart = (classRoom as any)?.scheduleStartDate || null;
+    }
+    const features = extractMLFeatures({
+      progress: { completedLessonKeys, quizResults, selfEvaluationResults: selfEvalResults as any },
+      profile: profile as any,
+      totalSubAcquis: Math.max(totalSubAcquis, 1),
+      scheduleStartDate: predictionScheduleStart
+    });
+    const catchupProbability = MLPredictorService.predict(features);
+    const riskFactors = explainRiskFactors(features);
+
+    // Calendar
+    let calendar: any[] = [];
+    try {
+      const accessData = await readClassAccessByStudentIdentifier(identifier);
+      if (accessData) {
+        const cal = toStudentCalendarEntries(
+          modulesRaw.map((m: any) => ({
+            id: String(m.id),
+            name: m.name,
+            sortOrder: Number(m.sortOrder) || 0,
+            subAcquisCount: 0,
+            subAcquis: (Array.isArray((m as any).acquis) ? (m as any).acquis : []).flatMap(
+              (ac: any) => Array.isArray(ac.sousAcquis) ? ac.sousAcquis.map((sa: any) => ({
+                id: String(sa.id || ""),
+                name: String(sa.name || sa.id || ""),
+                hasQuiz: Array.isArray(sa.quizzes) && sa.quizzes.length > 0,
+                hasVideo: Array.isArray(sa.videos) && sa.videos.length > 0
+              })) : []
+            )
+          })),
+          accessData
+        );
+        calendar = cal || [];
+      }
+    } catch (_e) { /* calendar is optional */ }
+
+    // Next uncompleted item
+    let nextStep: { moduleId: string; moduleName: string; subAcquisId: string; subAcquisName: string } | null = null;
+    for (const m of overview) {
+      for (const sa of m.subAcquis) {
+        if (!sa.completed) {
+          nextStep = { moduleId: m.id, moduleName: m.name, subAcquisId: sa.id, subAcquisName: sa.name };
+          break;
+        }
+      }
+      if (nextStep) break;
+    }
+
+    // Weakest modules (recommendations)
+    const weakestModules = [...overview]
+      .filter((m) => m.subAcquisCount > 0)
+      .sort((a, b) => a.progressPct - b.progressPct)
+      .slice(0, 3)
+      .map((m) => ({ id: m.id, name: m.name, progressPct: m.progressPct }));
+
+    // Quiz score trend over time
+    const quizTrend = quizResults
+      .filter((qr) => qr.submittedAt)
+      .sort((a, b) => new Date(String(a.submittedAt)).getTime() - new Date(String(b.submittedAt)).getTime())
+      .slice(-30)
+      .map((qr) => ({
+        date: qr.submittedAt ? new Date(String(qr.submittedAt)).toISOString().slice(0, 10) : "",
+        score: qr.score,
+        moduleId: qr.moduleId,
+        subAcquisId: qr.subAcquisId
+      }));
+
+    // Weekly activity (approximate from quiz submissions and lesson completions)
+    const weeklyActivity: Array<{ week: string; lessons: number; quizzes: number }> = [];
+    const weekMap = new Map<string, { lessons: number; quizzes: number }>();
+    completedLessonKeys.forEach((key) => {
+      // We don't have timestamps for lesson completion, so skip
+    });
+    quizResults.forEach((qr) => {
+      if (!qr.submittedAt) return;
+      const date = new Date(String(qr.submittedAt));
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = weekStart.toISOString().slice(0, 10);
+      const entry = weekMap.get(weekKey) || { lessons: 0, quizzes: 0 };
+      entry.quizzes += 1;
+      weekMap.set(weekKey, entry);
+    });
+    weekMap.forEach((val, key) => weeklyActivity.push({ week: key, ...val }));
+    weeklyActivity.sort((a, b) => a.week.localeCompare(b.week));
+
+    // Achievements
+    const achievements: Array<{ id: string; title: string; description: string; icon: string; earned: boolean; progress: number; max: number }> = [
+      { id: "first-lesson", title: "Premier pas", description: "Completez votre premiere lecon", icon: "", earned: stats.lessonsCompleted >= 1, progress: Math.min(stats.lessonsCompleted, 1), max: 1 },
+      { id: "ten-lessons", title: "Apprenti", description: "Completez 10 lecons", icon: "", earned: stats.lessonsCompleted >= 10, progress: Math.min(stats.lessonsCompleted, 10), max: 10 },
+      { id: "quiz-master", title: "Maitre du quiz", description: "Reussissez 10 quiz", icon: "", earned: stats.quizzesPassed >= 10, progress: Math.min(stats.quizzesPassed, 10), max: 10 },
+      { id: "all-modules", title: "Explorateur", description: "Visitez tous les modules", icon: "", earned: overview.filter((m) => m.completedCount > 0).length >= overview.length, progress: overview.filter((m) => m.completedCount > 0).length, max: Math.max(overview.length, 1) },
+      { id: "perfect-score", title: "Sans faute", description: "Obtenez 100% a un quiz", icon: "", earned: quizResults.some((qr) => qr.score >= 95), progress: quizResults.filter((qr) => qr.score >= 95).length > 0 ? 1 : 0, max: 1 },
+      { id: "streak-7", title: "Regulier", description: "Connectez-vous 7 jours", icon: "", earned: Number(profile?.loginCount || 0) >= 7, progress: Math.min(Number(profile?.loginCount || 0), 7), max: 7 },
+    ];
+
+    // Study insights
+    const avgQuizScore = stats.quizzesPassed > 0
+      ? quizResults.reduce((s, q) => s + q.score, 0) / quizResults.length
+      : 0;
+
+    const bestModule = overview.length > 0 ? [...overview].sort((a, b) => b.progressPct - a.progressPct)[0] : null;
+    const worstModule = overview.length > 0 ? [...overview].sort((a, b) => a.progressPct - b.progressPct)[0] : null;
+
+    const insights = {
+      totalQuizAttempts: quizResults.length,
+      averageQuizScore: Math.round(avgQuizScore * 10) / 10,
+      bestModule: bestModule ? { id: bestModule.id, name: bestModule.name, progressPct: bestModule.progressPct } : null,
+      worstModule: worstModule ? { id: worstModule.id, name: worstModule.name, progressPct: worstModule.progressPct } : null,
+      loginFrequency: features.loginFrequency,
+      completionPace: features.completionPace,
+      xp: Number(progress.xp || 0),
+      streak: Math.min(Number(profile?.loginCount || 0), 30),
+      totalLessons: stats.lessonsCompleted,
+      totalQuizzes: stats.quizzesPassed
+    };
+
+    res.status(200).json({
+      identifier,
+      profile: profile ? {
+        fullName: (profile as any).fullName,
+        email: (profile as any).email,
+        xp: insights.xp,
+        loginCount: Number(profile?.loginCount || 0),
+        lastLoginDate: (profile as any)?.lastLoginDate || null,
+        streak: insights.streak
+      } : null,
+      progress: stats,
+      overview,
+      prediction: {
+        catchupProbability,
+        probabilityPct: Math.round(catchupProbability * 100),
+        features,
+        riskFactors
+      },
+      calendarEntries: calendar.slice(0, 8),
+      nextStep,
+      weakestModules,
+      quizTrend,
+      weeklyActivity,
+      achievements,
+      insights,
+      totalSubAcquis
+    });
+  } catch (error) {
+    console.error("Failed to load dashboard data:", error);
+    res.status(500).json({ message: "Impossible de charger les données du tableau de bord" });
+  }
+});
+
+/**
+ * Builds the chatbot vector store ahead of the first student request so the
+ * one-time PDF parsing + embedding cost is paid at boot, not on a live query.
+ * Safe to call fire-and-forget; failures are swallowed (the request path falls
+ * back to lexical retrieval).
+ */
+export async function warmStudentVectorStore(): Promise<void> {
+  if (!hasEmbeddingProvider()) {
+    return;
+  }
+  try {
+    const persistedModules = await readPersistedCurriculumModules();
+    await ensureStudentVectorStore(persistedModules);
+  } catch (error) {
+    console.warn("[chatbot] Vector store warm-up failed:", error);
+  }
+}
 
 export { webRouter };

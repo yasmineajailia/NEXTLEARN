@@ -2,14 +2,17 @@
  * MLPredictorService.ts
  *
  * Random Forest classifier that predicts the probability that a late student
- * will catch up before exams.
+ * will catch up before exams. The feature vector is defined centrally in
+ * services/prediction/features.ts (shared with the API and training scripts).
  *
- * Features:
- *   [0] delayWeeks        – weeks since course start with no activity (0 = on time, 12 = very late)
- *   [1] completionPace    – sub-acquis completed per week  (0 = inactive, 5 = very active)
- *   [2] averageScore      – mean quiz score on 100  (0-100)
- *   [3] loginFrequency    – logins per week  (0-14)
- *   [4] gapDepth          – fraction of sub-acquis not yet touched  (0 = fully covered, 1 = nothing done)
+ * Features (see PREDICTION_FEATURE_KEYS):
+ *   [0] delayWeeks      – weeks behind the expected pace (schedule-aware)  0-12
+ *   [1] completionPace  – sous-acquis completed per week                    0-5
+ *   [2] averageScore    – mean quiz score on 100                            0-100
+ *   [3] loginFrequency  – logins per week                                   0-14
+ *   [4] gapDepth        – fraction of curriculum not yet started            0-1
+ *   [5] recencyRatio    – how recently active (1 = today, 0 = dormant)      0-1
+ *   [6] weakSkillRatio  – fraction of quizzes scored below 60               0-1
  *
  * Output: probability in [0, 1] that the student will catch up.
  *
@@ -19,17 +22,15 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import {
+  PredictionFeatures,
+  predictionFeaturesToVector
+} from "./prediction/features";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { RandomForestClassifier } = require("ml-random-forest");
 
-export type PredictionFeatures = {
-  delayWeeks: number;
-  completionPace: number;
-  averageScore: number;
-  loginFrequency: number;
-  gapDepth: number;
-};
+export type { PredictionFeatures } from "./prediction/features";
 
 type RFClassifier = {
   train: (X: number[][], y: number[]) => void;
@@ -38,10 +39,6 @@ type RFClassifier = {
 };
 
 const MODEL_PATH = path.join(process.cwd(), "data", "rf-model.json");
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v));
-}
 
 // ---------------------------------------------------------------------------
 // Service singleton
@@ -87,13 +84,7 @@ class MLPredictorServiceImpl {
       return 0.5;
     }
 
-    const row = [
-      clamp(features.delayWeeks,     0,  12),
-      clamp(features.completionPace, 0,   5),
-      clamp(features.averageScore,   0, 100),
-      clamp(features.loginFrequency, 0,  14),
-      clamp(features.gapDepth,       0,   1),
-    ];
+    const row = predictionFeaturesToVector(features);
 
     try {
       // Use the built-in predictProbability method to get the fraction of trees voting for class 1

@@ -20,8 +20,8 @@ function clamp(v: number, min: number, max: number) {
 }
 
 function predict(clf: any, features: number[]): number {
-  const maxValues   = [12, 5, 100, 14, 1];
-  const jitterScale = [0.3, 0.1, 2, 0.3, 0.03];
+  const maxValues   = [12, 5, 100, 14, 1, 1, 1];
+  const jitterScale = [0.3, 0.1, 2, 0.3, 0.03, 0.03, 0.03];
   const votes = 30;
   let positive = 0;
   for (let i = 0; i < votes; i++) {
@@ -34,46 +34,47 @@ function predict(clf: any, features: number[]): number {
   return positive / votes;
 }
 
+// Features: delayWeeks, completionPace, averageScore, loginFrequency, gapDepth, recencyRatio, weakSkillRatio
 const PROFILES = [
   {
     label: "🟢 On-track student",
-    description: "No delay, high pace, great scores, logs in daily",
-    features: [0, 4.5, 88, 12, 0.05],
+    description: "No delay, high pace, great scores, active today",
+    features: [0, 4.5, 88, 12, 0.05, 0.95, 0.05],
   },
   {
     label: "🟡 Slightly behind but engaged",
-    description: "2 weeks late, decent pace, average score, regular logins",
-    features: [2, 2.8, 65, 7, 0.25],
+    description: "2 weeks late, decent pace, average score, recently active",
+    features: [2, 2.8, 65, 7, 0.25, 0.7, 0.3],
   },
   {
     label: "🟡 Behind but recovering",
-    description: "4 weeks late, picking up pace, improving score",
-    features: [4, 3.2, 72, 9, 0.30],
+    description: "4 weeks late, picking up pace, improving, active this week",
+    features: [4, 3.2, 72, 9, 0.30, 0.65, 0.25],
   },
   {
     label: "🟠 Moderately at risk",
-    description: "6 weeks late, slow pace, low score, rare logins",
-    features: [6, 1.2, 40, 3, 0.60],
+    description: "6 weeks late, slow pace, low score, fading activity",
+    features: [6, 1.2, 40, 3, 0.60, 0.3, 0.6],
   },
   {
     label: "🔴 Highly at risk",
-    description: "9 weeks late, almost no activity, very low score",
-    features: [9, 0.5, 22, 1, 0.85],
+    description: "9 weeks late, almost no activity, very low score, dormant",
+    features: [9, 0.5, 22, 1, 0.85, 0.1, 0.85],
   },
   {
     label: "💀 Critical – nearly dropped out",
-    description: "12 weeks late, no progress, almost nothing done",
-    features: [12, 0.1, 8, 0.5, 0.97],
+    description: "12 weeks late, no progress, long dormant",
+    features: [12, 0.1, 8, 0.5, 0.97, 0.02, 0.95],
   },
   {
     label: "🔵 Edge case: High delay but very active",
-    description: "8 weeks late but studying hard with high scores",
-    features: [8, 4.8, 91, 13, 0.08],
+    description: "8 weeks late but studying hard, high scores, active now",
+    features: [8, 4.8, 91, 13, 0.08, 0.9, 0.05],
   },
   {
     label: "🔵 Edge case: Low delay but disengaged",
-    description: "Only 1 week late but barely logging in, bad scores",
-    features: [1, 0.3, 18, 0.5, 0.80],
+    description: "Only 1 week late but dormant, bad scores",
+    features: [1, 0.3, 18, 0.5, 0.80, 0.1, 0.8],
   },
 ];
 
@@ -98,11 +99,11 @@ async function main() {
   console.log(" RANDOM FOREST — Student Catch-Up Probability Test");
   console.log("=".repeat(70));
   console.log(
-    " Features: delayWeeks | completionPace | averageScore | loginFreq | gapDepth\n"
+    " Features: delay | pace | score | login | gap | recency | weakSkill\n"
   );
 
   for (const p of PROFILES) {
-    const [delay, pace, score, login, gap] = p.features;
+    const [delay, pace, score, login, gap, recency, weak] = p.features;
     const prob    = predict(clf, p.features);
     const pct     = (prob * 100).toFixed(0).padStart(3);
     const verdict = prob >= 0.65 ? "LIKELY CATCHES UP" : prob >= 0.40 ? "BORDERLINE" : "AT RISK";
@@ -110,7 +111,7 @@ async function main() {
     console.log(`${p.label}`);
     console.log(`  ${p.description}`);
     console.log(
-      `  Inputs : delay=${delay}w  pace=${pace}  score=${score}  login=${login}/wk  gap=${gap}`
+      `  Inputs : delay=${delay}w  pace=${pace}  score=${score}  login=${login}/wk  gap=${gap}  recency=${recency}  weak=${weak}`
     );
     console.log(`  Result : ${bar(prob)}  ${pct}%  →  ${verdict}`);
     console.log();

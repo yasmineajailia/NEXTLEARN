@@ -16,6 +16,7 @@ type UserData = {
       moduleId: string;
       subAcquisId: string;
       score: number;
+      attempts?: number;
       submittedAt?: Date;
     }>;
     selfEvaluationResults?: Array<{
@@ -87,6 +88,7 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
             moduleId: { type: String, required: true },
             subAcquisId: { type: String, required: true },
             score: { type: Number, required: true },
+            attempts: { type: Number, default: 1 },
             submittedAt: { type: Date, default: Date.now }
           }
         ],

@@ -75,9 +75,12 @@
         // be handled by redirecting to the correct URL. The dashboard page's
         // own script will handle showing the correct view based on the URL.
         if (viewKey === "cours") {
-          window.location.href = "/student/programmation-c.html";
+          window.location.href = "/student/?view=cours";
         } else if (viewKey === "self-eval") {
           window.location.href = "/student/self-evaluation.html";
+        } else if (viewKey === "mission-apprenant") {
+          // Dedicated page, not a dashboard view — go straight to it.
+          window.location.href = "/student/mission-apprenant";
         } else {
           // For all other views, navigate to the root student page
           // with the appropriate view in the query string.
@@ -176,8 +179,9 @@
       const path = window.location.pathname || "";
       if (path.startsWith("/student/self-evaluation")) {
         savedView = "self-eval";
+      } else if (path.startsWith("/student/mission-apprenant")) {
+        savedView = "mission-apprenant";
       } else if (
-        path.startsWith("/student/programmation-c") ||
         path.startsWith("/student/sous-acquis") ||
         path.startsWith("/student/questionnaire")
       ) {

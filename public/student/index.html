@@ -53,15 +53,35 @@
       }
 
       /* ── header ── */
-      .content-header { margin-bottom: 1.75rem; }
+      .content-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.4rem;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
 
       .eyebrow {
-        margin: 0 0 0.3rem;
-        font-size: 0.68rem;
+        margin: 0;
+        font-size: 0.7rem;
         font-weight: 700;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
         color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .eyebrow::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: inline-block;
+        flex-shrink: 0;
       }
 
       .content-header h1 {
@@ -71,6 +91,7 @@
         font-weight: 700;
         line-height: 1.2;
         color: var(--ink);
+        letter-spacing: -0.025em;
       }
 
       /* ── views ── */
@@ -87,28 +108,31 @@
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: var(--radius);
-        padding: 1.35rem 1.5rem;
-        transition: box-shadow 200ms ease, transform 200ms ease;
+        padding: 1.5rem 1.65rem;
+        transition: box-shadow 220ms ease, transform 220ms ease, border-color 220ms ease;
+        position: relative;
+        overflow: hidden;
       }
 
       .card:hover {
-        box-shadow: 0 6px 28px rgba(0,0,0,0.07);
-        transform: translateY(-2px);
+        box-shadow: 0 14px 40px rgba(0,0,0,0.09);
+        transform: translateY(-3px);
+        border-color: #ddddd9;
       }
 
       .card h3 {
         margin: 0;
         font-family: var(--serif);
-        font-size: 0.95rem;
-        font-weight: 600;
+        font-size: 1.05rem;
+        font-weight: 700;
         color: var(--ink);
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
       }
 
       .card p {
-        margin: 0.55rem 0 0;
+        margin: 0.6rem 0 0;
         color: var(--muted);
-        line-height: 1.6;
+        line-height: 1.65;
         font-size: 0.9rem;
       }
 
@@ -321,42 +345,62 @@
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
+        align-items: stretch;
       }
 
       .course-card {
-        border-left: 3px solid var(--accent);
+        background: linear-gradient(148deg, #ffffff 0%, #fff6f6 100%);
+        border-left: 4px solid var(--accent);
         border-radius: 0 var(--radius) var(--radius) 0;
+      }
+
+      .course-card::after {
+        content: '';
+        position: absolute;
+        top: -55px;
+        right: -55px;
+        width: 190px;
+        height: 190px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(196,29,56,0.07) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .stats-card {
+        background: linear-gradient(148deg, #ffffff 0%, #f8f9fc 100%);
       }
 
       .action-link {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        margin-top: 1rem;
-        padding: 0.58rem 1.05rem;
+        margin-top: 1.1rem;
+        padding: 0.65rem 1.2rem;
         border: 0;
-        border-radius: 8px;
-        background: var(--accent);
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
         color: #fff;
         font-family: var(--sans);
-        font-size: 0.84rem;
+        font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
-        transition: background 160ms ease, transform 160ms ease;
+        box-shadow: 0 8px 20px rgba(196,29,56,0.25);
+        transition: transform 160ms ease, box-shadow 160ms ease;
+        text-decoration: none;
       }
 
       .action-link::after { content: ' →'; }
 
       .action-link:hover {
-        background: var(--accent-dark);
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(196,29,56,0.32);
       }
 
       .stat-line {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.65rem 0;
+        padding: 0.7rem 0;
         border-bottom: 1px solid var(--line);
         font-size: 0.88rem;
         color: var(--muted);
@@ -366,9 +410,9 @@
 
       .stat-line strong {
         font-family: var(--serif);
-        font-size: 1.05rem;
+        font-size: 1.15rem;
         font-weight: 700;
-        color: var(--ink);
+        color: var(--accent);
       }
 
       /* ── course embed ── */
@@ -980,6 +1024,38 @@
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation: none !important; transition: none !important; }
       }
+
+      /* ── dashboard wrapper ── */
+      #view-dashboard {
+        background: transparent;
+      }
+
+      /* ── message card improvements ── */
+      .message-item {
+        transition: box-shadow 180ms ease, transform 180ms ease;
+      }
+      .message-item:hover {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        transform: translateX(3px);
+      }
+
+      /* ── calendar improvements ── */
+      .calendar-month {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+      }
+
+      /* ── KPI tiles in intro card ── */
+      .kpi-tile {
+        transition: background 180ms ease;
+      }
+      .kpi-tile:hover {
+        background: rgba(255,255,255,0.12);
+      }
+
+      /* ── responsive ── */
+      @media (max-width: 720px) {
+        .grid-two { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
@@ -992,122 +1068,165 @@
           <h1 id="page-title">Mes cours disponibles</h1>
         </header>
 
-        <!-- ── dashboard ── -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!--  DASHBOARD — Apprentissage Hub                                -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
         <section class="view" id="view-dashboard">
+          <div class="dash-grid" id="dash-app">
 
-          <!-- row 1: intro + next step -->
-          <div class="dash-row-1">
-            <article class="card dashboard-intro-card">
-              <div>
-                <h3>Vue globale de progression</h3>
-                <p id="dashboard-summary-line">Suivez vos progrès dans les modules, les leçons, les quiz et les vidéos.</p>
-              </div>
-              <div class="kpi-row">
-                <div class="kpi-tile">
-                  <p>Leçons</p>
-                  <strong id="dash-kpi-lessons">0/0</strong>
-                </div>
-                <div class="kpi-tile">
-                  <p>Modules</p>
-                  <strong id="dash-kpi-modules">0/0</strong>
-                </div>
-                <div class="kpi-tile">
-                  <p>Quiz</p>
-                  <strong id="dash-kpi-quizzes">0/0</strong>
-                </div>
-                <div class="kpi-tile">
-                  <p>Vidéos</p>
-                  <strong id="dash-kpi-videos">0/0</strong>
+            <!-- ── HERO (1/12) ── -->
+            <article class="dash-card card-hero" id="dash-hero">
+              <div class="hero-greeting">
+                <span class="hero-dot"></span>
+                <div>
+                  <p class="hero-eyebrow" id="dash-hero-eyebrow">Tableau de bord</p>
+                  <h2 class="hero-name" id="dash-hero-name">Bonjour !</h2>
                 </div>
               </div>
-              <div id="prediction-badge-row" style="margin-top: 1rem; display: none;">
-                <div id="prediction-badge" class="prediction-badge">
-                  <span class="prediction-badge-icon">&#129302;</span>
-                  <div class="prediction-badge-text">
-                    <span class="prediction-badge-label">Prédiction IA &mdash; Chances de rattrapage</span>
-                    <span class="prediction-badge-value" id="prediction-badge-value">Calcul en cours...</span>
+              <div class="hero-badges">
+                <div class="hero-badge hero-badge-xp" id="dash-hero-xp">
+                  <span class="hero-badge-icon"></span>
+                  <div>
+                    <span class="hero-badge-label">XP</span>
+                    <strong class="hero-badge-value">0</strong>
                   </div>
-                  <span class="prediction-badge-pct" id="prediction-badge-pct">&mdash;</span>
+                </div>
+                <div class="hero-badge hero-badge-streak" id="dash-hero-streak">
+                  <span class="hero-badge-icon"></span>
+                  <div>
+                    <span class="hero-badge-label">Serie</span>
+                    <strong class="hero-badge-value">0j</strong>
+                  </div>
+                </div>
+                <div class="hero-badge hero-badge-login" id="dash-hero-login">
+                  <span class="hero-badge-icon"></span>
+                  <div>
+                    <span class="hero-badge-label">Progression</span>
+                    <strong class="hero-badge-value" id="dash-hero-progress">0%</strong>
+                  </div>
                 </div>
               </div>
-            </article>
-
-            <div class="next-step-card">
-              <div>
-                <p class="ns-eyebrow">Prochaine étape</p>
-                <h4 id="next-step-module">Commencez un module pour voir votre prochaine étape.</h4>
-                <p class="ns-meta" id="next-step-meta"></p>
+              <div class="hero-quote" id="dash-hero-quote">
+                <p>Continuez comme ca -- chaque petit pas compte !</p>
               </div>
-              <button class="next-step-btn" id="next-step-cta" type="button">Reprendre le cours →</button>
-            </div>
+            </article>
+
+            <!-- ── AI RISK PREDICTION (2/12) ── -->
+            <article class="dash-card card-prediction" id="dash-prediction">
+              <div class="pred-header">
+                <span class="pred-dot"></span>
+                <h3>Prediction IA</h3>
+              </div>
+              <div class="pred-gauge" id="dash-pred-gauge">
+                <svg viewBox="0 0 120 120" class="pred-svg">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="var(--dash-line)" stroke-width="10"/>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="var(--accent)" stroke-width="10"
+                    stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                    id="dash-pred-ring" transform="rotate(-90 60 60)"/>
+                </svg>
+                <div class="pred-center">
+                  <span class="pred-pct" id="dash-pred-pct">--%</span>
+                  <span class="pred-label">rattrapage</span>
+                </div>
+              </div>
+              <p class="pred-message" id="dash-pred-message">Analyse en cours...</p>
+              <div class="pred-features" id="dash-pred-features"></div>
+            </article>
+
+            <!-- ── NEXT BEST ACTION (3/12) ── -->
+            <article class="dash-card card-action" id="dash-next-action">
+              <div class="action-header">
+                <span class="action-dot"></span>
+                <h3>Prochaine etape</h3>
+              </div>
+              <div class="action-body" id="dash-action-body">
+                <p class="action-module" id="dash-action-module">Chargement...</p>
+                <p class="action-sub" id="dash-action-sub"></p>
+                <button class="action-cta" id="dash-action-cta" type="button">
+                  <span>Continuer</span>
+                  <span class="action-arrow">→</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- ── PROGRESS CHART (4/12) ── -->
+            <article class="dash-card card-chart card-chart-overall">
+              <div class="chart-head">
+                <h3>Progression globale</h3>
+              </div>
+              <div class="chart-body" id="dash-radial-container">
+                <div class="radial-loading">Chargement...</div>
+              </div>
+            </article>
+
+            <!-- ── WEAKEST MODULES ── -->
+            <article class="dash-card card-weakest">
+              <div class="chart-head">
+                <h3>Modules a renforcer</h3>
+              </div>
+              <div id="dash-weakest-body" class="weakest-body"></div>
+            </article>
+
+            <!-- ── MODULE PROGRESS (13/13) ── -->
+            <article class="dash-card card-module-progress">
+              <div class="chart-head">
+                <h3>Progression par module</h3>
+              </div>
+              <div id="dash-module-progress-body" class="mod-prog-body"></div>
+            </article>
+
+            <!-- ── MISSION APPRENANT (full-width banner) ── -->
+            <article class="dash-card card-vark" style="background:linear-gradient(135deg,#fdf2f4 0%,#fff 100%);border-color:rgba(196,29,56,.18);display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;">
+              <span style="font-size:2rem;line-height:1;">🚀</span>
+              <div style="flex:1 1 260px;min-width:0;">
+                <h3 style="margin:0 0 0.15rem;font-size:1rem;">Mission Apprenant</h3>
+                <p style="margin:0;font-size:0.84rem;color:#6b7280;line-height:1.5;">4 défis pour découvrir ton profil d'équipier — et la meilleure façon d'apprendre sur NextLearn.</p>
+              </div>
+              <a href="/student/mission-apprenant" style="flex-shrink:0;display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.3rem;border-radius:999px;background:#c41d38;color:#fff;font-size:0.85rem;font-weight:700;text-decoration:none;transition:background .18s;" onmouseover="this.style.background='#a0152c'" onmouseout="this.style.background='#c41d38'">
+                Relever les défis →
+              </a>
+            </article>
+
           </div>
-
-          <!-- row 2: 4 charts in a true 2×2 grid -->
-          <div class="dash-row-2">
-            <article class="card chart-card donut">
-              <h3>Avancement global</h3>
-              <canvas id="chart-overall-progress" aria-label="Avancement global"></canvas>
-            </article>
-
-            <article class="card chart-card">
-              <h3>Progression par module</h3>
-              <canvas id="chart-module-progress" aria-label="Progression par module"></canvas>
-            </article>
-
-            <article class="card chart-card">
-              <h3>Quiz par module</h3>
-              <canvas id="chart-quiz-progress" aria-label="Quiz par module"></canvas>
-            </article>
-
-            <!-- Videos chart removed per request -->
-          </div>
-
-          <!-- row 3: upcoming + recommendations -->
-          <div class="dash-row-3">
-            <article class="card">
-              <h3>Échéances à venir</h3>
-              <ul id="upcoming-list" class="upcoming-list"></ul>
-            </article>
-
-            <article class="card">
-              <h3>Recommandations</h3>
-              <p style="margin-top:0.4rem">Basé sur vos derniers résultats, nous vous suggérons de revoir :</p>
-              <div id="recommendations-list" class="recommendation-tags"></div>
-              <p id="recommendations-note" style="margin-top:0.8rem;font-size:0.88rem"></p>
-            </article>
-          </div>
-
+          <!-- /dash-grid -->
         </section>
+        <!-- /view-dashboard -->
 
         <!-- ── cours ── -->
         <section class="view active" id="view-cours">
-          <div class="grid-two" id="cours-overview">
-            <article class="card course-card">
-              <h3>Programmation en C</h3>
-              <p>Accédez à tous les modules, cours, quiz et ressources de Programmation en C pour suivre votre progression.</p>
-              <button class="action-link" type="button" id="open-c-course-btn">Accéder au cours</button>
-            </article>
 
-            <article class="card stats-card">
-              <h3>Progression rapide</h3>
-              <div class="stat-line">
-                <span>Leçons complétées</span>
-                <strong id="stat-lessons-completed">0</strong>
-              </div>
-              <div class="stat-line">
-                <span>Quiz passés</span>
-                <strong id="stat-quizzes-passed">0</strong>
-              </div>
-              <div class="stat-line">
-                <span>Moyenne quiz</span>
-                <strong id="stat-quiz-average">0.0/20</strong>
-              </div>
-            </article>
+          <!-- Stats bar — always visible -->
+          <article class="card cours-stats-bar">
+            <div class="stat-line">
+              <span>Leçons complétées</span>
+              <strong id="stat-lessons-completed">0</strong>
+            </div>
+            <div class="stat-line">
+              <span>Quiz passés</span>
+              <strong id="stat-quizzes-passed">0</strong>
+            </div>
+            <div class="stat-line">
+              <span>Moyenne quiz</span>
+              <strong id="stat-quiz-average">0.0/20</strong>
+            </div>
+          </article>
+
+          <!-- Module list (default) -->
+          <div id="modules-list-section">
+            <div id="modules-list-grid" class="modules-list-grid">
+              <p class="modules-loading">Chargement des modules…</p>
+            </div>
           </div>
 
-          <div class="course-embed" id="course-embed-card" hidden>
+          <!-- Module detail (shown when a module is selected) -->
+          <div id="module-detail-section" hidden>
+            <div class="module-detail-header">
+              <button id="module-detail-back" type="button" class="module-back-btn">← Retour aux modules</button>
+              <h2 id="module-detail-title" class="module-detail-title"></h2>
+            </div>
             <div id="course-embed-content" class="course-embed-content" aria-live="polite"></div>
           </div>
+
         </section>
 
         <!-- ── calendrier ── -->

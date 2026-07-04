@@ -27,33 +27,80 @@
       .head {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         gap: 1rem;
         margin-bottom: 1rem;
+      }
+
+      .head-titles { min-width: 0; }
+
+      .quiz-eyebrow {
+        display: inline-block;
+        margin-bottom: 0.35rem;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #b21f2d;
       }
 
       .head h1 {
         margin: 0;
         font-family: "Space Grotesk", sans-serif;
+        font-size: 1.5rem;
+        line-height: 1.25;
+        color: #111827;
+        letter-spacing: -0.01em;
       }
+
+      .quiz-module {
+        margin: 0.45rem 0 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #4f5971;
+      }
+      .quiz-module::before { content: "📋"; font-size: 0.9em; }
+      .quiz-module[hidden] { display: none; }
+
+      .back-link { flex-shrink: 0; }
 
       .back-link {
         text-decoration: none;
-        color: #23304a;
+        color: #4f5971;
         font-weight: 700;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: color 0.15s;
       }
+      .back-link::before { content: "←"; }
+      .back-link:hover { color: #b21f2d; }
 
       .card {
         background: #fff;
         border: 1px solid #e6ebf3;
-        border-radius: 14px;
+        border-radius: 16px;
         box-shadow: 0 10px 26px rgba(18, 24, 39, 0.08);
-        padding: 1rem;
+        padding: 1.35rem 1.4rem;
       }
 
       .meta {
-        margin: 0.45rem 0 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0 0 1.1rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        background: #eef1f7;
+        border: 1px solid #e0e5f0;
         color: #4f5971;
+        font-size: 0.82rem;
+        font-weight: 600;
       }
 
       .quiz-form {
@@ -63,46 +110,127 @@
 
       .question-box {
         border: 1px solid #e2e8f5;
-        border-radius: 10px;
-        padding: 0.8rem;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
         background: #fbfcff;
+        transition: box-shadow 0.2s, border-color 0.2s;
       }
+      .question-box:hover { box-shadow: 0 6px 18px rgba(18,24,39,.06); }
 
-      .question-box p {
-        margin: 0 0 0.6rem;
+      .question-prompt {
+        display: flex;
+        align-items: baseline;
+        gap: 0.6rem;
+        margin: 0 0 0.85rem;
+        font-weight: 700;
+        font-size: 1.02rem;
+        line-height: 1.5;
+        color: #182235;
+      }
+      .question-num {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.9rem;
+        height: 1.9rem;
+        padding: 0 0.4rem;
+        border-radius: 8px;
+        background: #182235;
+        color: #fff;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.82rem;
         font-weight: 700;
       }
 
       .question-box label {
-        display: block;
-        margin: 0.35rem 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        margin: 0.45rem 0;
+        padding: 0.6rem 0.75rem;
+        border: 1.5px solid #e6ebf3;
+        border-radius: 10px;
+        background: #fff;
         cursor: pointer;
+        transition: border-color 0.15s, background 0.15s, transform 0.1s;
       }
+      .question-box label:hover {
+        border-color: #b9c4dc;
+        background: #f9fbff;
+      }
+      .question-box label input {
+        margin-top: 0.15rem;
+        accent-color: #c41d38;
+        flex-shrink: 0;
+      }
+      .option-text { min-width: 0; word-break: break-word; }
 
       .question-box label.answer-correct {
         background: #e9f7ef;
-        border: 1px solid #bfe6cf;
-        border-radius: 8px;
-        padding: 0.25rem 0.45rem;
+        border-color: #7fca9f;
       }
 
       .question-box label.answer-wrong {
         background: #ffecec;
-        border: 1px solid #f0b9b9;
-        border-radius: 8px;
-        padding: 0.25rem 0.45rem;
+        border-color: #ea9c9c;
+      }
+
+      /* ── Inline & block code ── */
+      code.inline-code {
+        font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+        font-size: 0.86em;
+        background: #eef1f7;
+        border: 1px solid #dde3ee;
+        border-radius: 6px;
+        padding: 0.08em 0.4em;
+        color: #b21f2d;
+        white-space: nowrap;
+      }
+      pre.code-block {
+        margin: 0.5rem 0;
+        padding: 0.75rem 0.9rem;
+        background: #1e2430;
+        border-radius: 10px;
+        overflow-x: auto;
+      }
+      pre.code-block code {
+        font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+        font-size: 0.85rem;
+        color: #e6e9f0;
+        white-space: pre;
       }
 
       .quiz-submit {
         width: fit-content;
+        margin-top: 0.35rem;
         border: 0;
         border-radius: 999px;
-        padding: 0.55rem 1.1rem;
+        padding: 0.7rem 1.6rem;
         font: inherit;
+        font-size: 0.95rem;
         font-weight: 700;
-        background: #182235;
+        font-family: "Space Grotesk", sans-serif;
+        background: linear-gradient(135deg, #b21f2d 0%, #d33a49 100%);
         color: #fff;
         cursor: pointer;
+        box-shadow: 0 8px 20px rgba(178,31,45,.28);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .quiz-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 26px rgba(178,31,45,.38);
+      }
+      .quiz-submit:disabled {
+        opacity: 0.5;
+        cursor: default;
+        transform: none;
+        box-shadow: none;
+      }
+      .question-box label:has(input:disabled) { cursor: default; }
+      .question-box label:has(input:disabled):hover {
+        border-color: #e6ebf3;
+        background: #fff;
       }
 
       .quiz-retry {
@@ -231,8 +359,12 @@
     <div id="sidebar-slot"></div>
     <main class="page">
       <header class="head">
-        <h1 id="title">Questionnaire</h1>
-        <a id="back-link" class="back-link" href="/student/programmation-c.html">Retour au sous-acquis</a>
+        <div class="head-titles">
+          <span class="quiz-eyebrow">Questionnaire</span>
+          <h1 id="title">Chargement…</h1>
+          <p class="quiz-module" id="quiz-module" hidden></p>
+        </div>
+        <a id="back-link" class="back-link" href="/student/">Retour au sous-acquis</a>
       </header>
 
       <section class="card">
@@ -253,6 +385,7 @@
 
     <script>
       const title     = document.getElementById("title");
+      const quizModule = document.getElementById("quiz-module");
       const backLink  = document.getElementById("back-link");
       const meta      = document.getElementById("meta");
       const quizForm  = document.getElementById("quiz-form");
@@ -264,10 +397,20 @@
       const recList   = document.getElementById("rec-list");
       const recEmpty  = document.getElementById("rec-empty");
 
+      // Quiz attempt rules (enforced server-side; these are only for display):
+      // a student gets at most 2 attempts, and a score at or above PASS_SCORE
+      // validates the sous-acquis. Failing both triggers the remediation panel.
+      const PASS_SCORE = 60;
+      const MAX_ATTEMPTS = 2;
+
       const params       = new URLSearchParams(window.location.search);
       const moduleId     = params.get("moduleId") || "";
       const subAcquisId  = params.get("subAcquisId") || "";
-      const isEmbeddedMode = params.get("embedded") === "1";
+      if (backLink && moduleId && subAcquisId) {
+        backLink.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}`;
+      } else if (backLink) {
+        backLink.href = "/student/?view=cours";
+      }
 
       // cache the graph once fetched
       let skillGraph = null;
@@ -299,21 +442,68 @@
         return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
       }
 
+      // Escape HTML so code containing <, >, & (e.g. <stdio.h>, a < b) renders
+      // literally instead of being swallowed as markup.
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      // Renders question / option text with inline code styling. Detection runs
+      // on the RAW string (so real <, > match), then each slice is escaped —
+      // giving correct rendering AND monospaced code, with no double-wrapping.
+      const CODE_PATTERNS = new RegExp(
+        [
+          "```[\\s\\S]*?```",                                   // fenced block
+          "`[^`]+`",                                             // inline backticks
+          "#include\\s*(?:<[^>\\n]+>|\"[^\"\\n]+\")",           // #include directives
+          "\\b(?:return|int|float|double|char|void|struct|sizeof|const|unsigned|long|short|else|for|while|switch|printf|scanf|typedef|bool)\\b[^?!\\n;]*;", // statements ending in ;
+          "\\b[A-Za-z_]\\w*\\([^()\\n]*\\)"                     // function calls: name(...)
+        ].join("|"),
+        "g"
+      );
+
+      function renderRich(raw) {
+        const src = String(raw ?? "");
+        let out = "";
+        let last = 0;
+        let match;
+        CODE_PATTERNS.lastIndex = 0;
+        while ((match = CODE_PATTERNS.exec(src)) !== null) {
+          out += escapeHtml(src.slice(last, match.index));
+          let token = match[0];
+          if (token.startsWith("```")) {
+            const body = token.replace(/^```[^\n]*\n?/, "").replace(/```$/, "");
+            out += `<pre class="code-block"><code>${escapeHtml(body)}</code></pre>`;
+          } else {
+            const inline = token.startsWith("`") ? token.slice(1, -1) : token;
+            out += `<code class="inline-code">${escapeHtml(inline)}</code>`;
+          }
+          last = match.index + token.length;
+          if (token.length === 0) CODE_PATTERNS.lastIndex++;
+        }
+        out += escapeHtml(src.slice(last));
+        return out;
+      }
+
       function buildSubAcquisUrl(mId, sId) {
         const base = `/student/sous-acquis.html?moduleId=${encodeURIComponent(mId)}&subAcquisId=${encodeURIComponent(sId)}`;
-        return isEmbeddedMode ? base + "&embedded=1" : base;
+        return base;
       }
 
       // ── recommendation rendering ──────────────────────────────────────────
 
-      async function showRecommendations(score) {
+      async function showRecommendations(forward) {
         const graph = await fetchSkillGraph();
         const node  = graph[subAcquisId];
 
-        const passed = score > 60;
+        const passed = forward;
 
-        // passed  → recommend unlocks (move forward)
-        // failed  → recommend depends_on (go back, 2 levels deep)
+        // forward → recommend unlocks (move to the next sous-acquis)
+        // else    → recommend depends_on (go back, 2 levels deep)
         let ids = [];
 
         if (passed) {
@@ -341,11 +531,11 @@
         recPanel.style.display = "block";
 
         if (passed) {
-          recPanelTitle.textContent    = "Bien joué ! Voici ce que vous pouvez apprendre ensuite";
+          recPanelTitle.textContent    = "Bien joué ! Voici la suite de votre parcours";
           recPanelSubtitle.textContent = "Ces sous-acquis sont débloqués grâce à votre réussite.";
         } else {
-          recPanelTitle.textContent    = "Pas encore — révisez ces prérequis d'abord";
-          recPanelSubtitle.textContent = "Ces sous-acquis sont nécessaires pour maîtriser celui-ci.";
+          recPanelTitle.textContent    = "Score insuffisant après 2 tentatives — révisez ces prérequis";
+          recPanelSubtitle.textContent = "Maîtrisez d'abord ces sous-acquis avant de retenter celui-ci.";
         }
 
         recList.innerHTML = "";
@@ -403,6 +593,22 @@
           }
         );
 
+        // 409 = the server has locked this quiz (already validated or out of
+        // attempts). This is the reload-proof safety net behind the client gate.
+        if (response.status === 409) {
+          const info = await response.json().catch(() => ({}));
+          lockQuiz();
+          quizRetry.hidden = true;
+          if (info.validated) {
+            quizResult.textContent = "Ce quiz est déjà validé.";
+            await showRecommendations(true);
+          } else {
+            quizResult.textContent = "Nombre maximal de tentatives atteint.";
+            await showRecommendations(false);
+          }
+          return;
+        }
+
         if (!response.ok) {
           quizResult.textContent = "Impossible de corriger ce questionnaire pour le moment.";
           return;
@@ -435,23 +641,53 @@
           });
         }
 
-        quizResult.textContent = result.passed
-          ? `${summary}. Bravo, toutes les réponses sont correctes !`
-          : `${summary}. Corrigez les erreurs puis revalidez.`;
+        // The server is the source of truth for attempts/validation.
+        const isGood = Boolean(result.validated);
+        const attemptsLeft = Number.isFinite(result.attemptsRemaining) ? result.attemptsRemaining : 0;
 
-        quizRetry.hidden = false;
+        if (isGood) {
+          // Passed on this attempt → unlock the next sous-acquis, no more tries.
+          quizResult.textContent = result.passed
+            ? `${summary}. Bravo, toutes les réponses sont correctes !`
+            : `${summary}. Bien joué, vous avez validé ce sous-acquis.`;
+          quizRetry.hidden = true;
+          lockQuiz();
+          await showRecommendations(true);
+        } else if (!result.locked && attemptsLeft > 0) {
+          // Failed this attempt but tries remain → offer the final attempt, no recommendations yet.
+          quizResult.textContent =
+            `${summary}. Score insuffisant — il vous reste ${attemptsLeft} tentative${attemptsLeft > 1 ? "s" : ""}.`;
+          quizRetry.hidden = false;
+          quizRetry.textContent = "Réessayer (dernière tentative)";
+          recPanel.style.display = "none";
+        } else {
+          // Failed both attempts → show the remediation recommendations.
+          quizResult.textContent = `${summary}. Tentatives épuisées — voici comment progresser.`;
+          quizRetry.hidden = true;
+          lockQuiz();
+          await showRecommendations(false);
+        }
+      }
 
-        // show skill recommendations based on score
-        await showRecommendations(result.score);
+      // Disables the form once the quiz reaches a terminal state (passed, or
+      // both attempts used) so no further submissions are possible.
+      function lockQuiz() {
+        quizForm.querySelectorAll("input[type='radio']").forEach(input => { input.disabled = true; });
+        const submitBtn = quizForm.querySelector(".quiz-submit");
+        if (submitBtn) submitBtn.disabled = true;
       }
 
       // ── quiz reset ────────────────────────────────────────────────────────
 
+      // Retry handler for the final attempt — clears the form and re-enables
+      // it, but deliberately keeps attemptCount so this counts as attempt 2.
       function resetQuiz() {
-        quizForm.querySelectorAll("input[type='radio']:checked")
-          .forEach(input => { input.checked = false; });
+        quizForm.querySelectorAll("input[type='radio']")
+          .forEach(input => { input.checked = false; input.disabled = false; });
         quizForm.querySelectorAll("label")
           .forEach(label => label.classList.remove("answer-correct", "answer-wrong"));
+        const submitBtn = quizForm.querySelector(".quiz-submit");
+        if (submitBtn) submitBtn.disabled = false;
         quizResult.textContent = "";
         quizRetry.hidden = true;
         recPanel.style.display = "none";
@@ -463,12 +699,14 @@
 
       async function loadQuestions() {
         if (!moduleId || !subAcquisId) {
-          meta.textContent = "Questionnaire introuvable.";
+          title.textContent = "Questionnaire introuvable";
+          meta.textContent = "Aucun sous-acquis n'a été spécifié.";
           return;
         }
 
-        title.textContent = `Questionnaire — Module ${moduleId} / Sous-acquis ${subAcquisId}`;
-        backLink.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}${isEmbeddedMode ? "&embedded=1" : ""}`;
+        title.textContent = "Chargement du questionnaire…";
+        quizModule.hidden = true;
+        backLink.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}`;
 
         // prefetch graph in the background so it's ready when quiz is submitted
         fetchSkillGraph();
@@ -485,7 +723,12 @@
           const moduleName  = String(data.moduleName  || `Module ${moduleId}`);
           const subName     = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
 
-          title.textContent = `Questionnaire — ${moduleName} / ${subName}`;
+          const quizState = data.quizState || {};
+
+          title.textContent = subName;
+          quizModule.textContent = moduleName;
+          quizModule.hidden = false;
+          document.title = `Quiz — ${subName}`;
           quizForm.innerHTML = "";
           quizResult.textContent = "";
           quizRetry.hidden = true;
@@ -506,11 +749,11 @@
               seenOptions.add(normalized);
               return `<label>
                 <input type="radio" name="q-${qi}" value="${oi}" required />
-                ${option}
+                <span class="option-text">${renderRich(option)}</span>
               </label>`;
             }).filter(Boolean).join("");
 
-            wrapper.innerHTML = `<p>Q${qi + 1}. ${question.prompt}</p>${optionsHtml}`;
+            wrapper.innerHTML = `<p class="question-prompt"><span class="question-num">Q${qi + 1}</span>${renderRich(question.prompt)}</p>${optionsHtml}`;
             quizForm.appendChild(wrapper);
           });
 
@@ -520,9 +763,36 @@
           submitBtn.textContent = "Valider le questionnaire";
           quizForm.appendChild(submitBtn);
 
-          meta.textContent = `${questions.length} question(s) à répondre.`;
+          // Restore attempt state from the server (survives page reloads).
+          if (quizState.locked) {
+            meta.textContent = quizState.validated
+              ? `${questions.length} question(s) · sous-acquis déjà validé`
+              : `${questions.length} question(s) · tentatives épuisées`;
+            await applyLockedState(quizState.validated);
+          } else {
+            const remaining = Number.isFinite(quizState.attemptsRemaining)
+              ? quizState.attemptsRemaining : MAX_ATTEMPTS;
+            meta.textContent =
+              `${questions.length} question(s) · ${remaining} tentative${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} · réussite dès ${PASS_SCORE}%`;
+          }
         } catch (_err) {
-          meta.textContent = "Impossible de charger le questionnaire.";
+          title.textContent = "Questionnaire indisponible";
+          quizModule.hidden = true;
+          meta.textContent = "Impossible de charger le questionnaire pour le moment.";
+        }
+      }
+
+      // Renders the terminal state for an already-locked quiz on page load:
+      // disables the form and shows the appropriate recommendation panel.
+      async function applyLockedState(validated) {
+        lockQuiz();
+        quizRetry.hidden = true;
+        if (validated) {
+          quizResult.textContent = "Ce sous-acquis est déjà validé.";
+          await showRecommendations(true);
+        } else {
+          quizResult.textContent = "Vous avez utilisé vos 2 tentatives pour ce quiz.";
+          await showRecommendations(false);
         }
       }
 

@@ -19,6 +19,8 @@ if (!currentUser || !currentUser.identifier) {
 }
 
 let dom = null;
+let dashCharts = { overall: null, modules: null, quizzes: null };
+let dashData = null;
 
 function buildDom() {
   return {
@@ -27,7 +29,6 @@ function buildDom() {
     name: document.getElementById("student-name"),
     identifier: document.getElementById("student-identifier"),
     contentHeader: document.getElementById("content-header"),
-    coursOverview: document.getElementById("cours-overview"),
     navItems: Array.from(document.querySelectorAll(".nav-item[data-view]")),
     views: {
       dashboard: document.getElementById("view-dashboard"),
@@ -38,31 +39,43 @@ function buildDom() {
     pageEyebrow: document.getElementById("page-eyebrow"),
     pageTitle: document.getElementById("page-title"),
     logoutBtn: document.getElementById("logout-btn"),
-    openCCourseBtn: document.getElementById("open-c-course-btn"),
-    closeCCourseBtn: document.getElementById("close-c-course-btn"),
-    courseEmbedCard: document.getElementById("course-embed-card"),
+    modulesListSection: document.getElementById("modules-list-section"),
+    modulesListGrid: document.getElementById("modules-list-grid"),
+    moduleDetailSection: document.getElementById("module-detail-section"),
+    moduleDetailTitle: document.getElementById("module-detail-title"),
+    moduleDetailBack: document.getElementById("module-detail-back"),
     courseEmbedContent: document.getElementById("course-embed-content"),
     calendarList: document.getElementById("calendar-list"),
     messagesList: document.getElementById("messages-list"),
     lessonsCompleted: document.getElementById("stat-lessons-completed"),
     quizzesPassed: document.getElementById("stat-quizzes-passed"),
     quizAverage: document.getElementById("stat-quiz-average"),
-    dashboardSummaryLine: document.getElementById("dashboard-summary-line"),
-    dashKpiLessons: document.getElementById("dash-kpi-lessons"),
-    dashKpiModules: document.getElementById("dash-kpi-modules"),
-    dashKpiQuizzes: document.getElementById("dash-kpi-quizzes"),
-    dashKpiVideos: document.getElementById("dash-kpi-videos"),
-    chartOverall: document.getElementById("chart-overall-progress"),
-    chartWeekly: document.getElementById("chart-weekly-activity"),
-    chartModuleProgress: document.getElementById("chart-module-progress"),
-    chartSkillRadar: document.getElementById("chart-skill-radar"),
-    chartQuizzes: document.getElementById("chart-quiz-progress"),
-    nextStepModule: document.getElementById("next-step-module"),
-    nextStepMeta: document.getElementById("next-step-meta"),
-    nextStepCta: document.getElementById("next-step-cta"),
-    upcomingList: document.getElementById("upcoming-list"),
-    recommendationsList: document.getElementById("recommendations-list"),
-    recommendationsNote: document.getElementById("recommendations-note"),
+
+    // New dashboard refs
+    dashHeroName: document.getElementById("dash-hero-name"),
+    dashHeroEyebrow: document.getElementById("dash-hero-eyebrow"),
+    dashHeroXp: document.querySelector("#dash-hero-xp .hero-badge-value"),
+    dashHeroStreak: document.querySelector("#dash-hero-streak .hero-badge-value"),
+    dashHeroProgress: document.getElementById("dash-hero-progress"),
+    dashHeroQuote: document.querySelector("#dash-hero-quote p"),
+    dashPredPct: document.getElementById("dash-pred-pct"),
+    dashPredRing: document.getElementById("dash-pred-ring"),
+    dashPredMessage: document.getElementById("dash-pred-message"),
+    dashPredFeatures: document.getElementById("dash-pred-features"),
+    dashActionModule: document.getElementById("dash-action-module"),
+    dashActionSub: document.getElementById("dash-action-sub"),
+    dashActionCta: document.getElementById("dash-action-cta"),
+    dashRadialContainer: document.getElementById("dash-radial-container"),
+    dashTimelineContainer: document.getElementById("dash-timeline-container"),
+    dashRadarContainer: document.getElementById("dash-radar-container"),
+    dashHeatmapBody: document.getElementById("dash-heatmap-body"),
+    dashHealthBody: document.getElementById("dash-health-body"),
+    dashAchBody: document.getElementById("dash-achievements-body"),
+    dashDeadlinesList: document.getElementById("dash-deadlines-list"),
+    dashInsightsBody: document.getElementById("dash-insights-body"),
+    dashWeakestBody: document.getElementById("dash-weakest-body"),
+  dashModuleProgressBody: document.getElementById("dash-module-progress-body"),
+
     chatbotLauncher: document.getElementById("chatbot-launcher"),
     chatbotSidebarBtn: document.getElementById("chatbot-sidebar-btn"),
     chatbotPanel: document.getElementById("chatbot-panel"),
@@ -90,8 +103,6 @@ let chatbotFullscreen = false;
 let chatbotFilteredMode = false;
 let chatbotFilterModuleId = null;
 let chatbotFilterSubAcquisId = null;
-let courseModulesLoaded = false;
-let courseModulesLoading = false;
 
 function syncChatbotFilterButton() {
   if (!dom.chatbotFilterBtn) {
@@ -130,6 +141,8 @@ function initStudentApp() {
   detectChatbotContext();
   restoreSidebarPreference();
   loadDashboardData();
+  void renderModuleList();
+  initModuleListClicks();
   bindEvents();
   applyPreferredView();
 }
@@ -145,6 +158,10 @@ function bindEvents() {
       const viewKey = button.dataset.view || "cours";
       if (viewKey === "self-eval") {
         window.location.href = "/student/self-evaluation.html";
+        return;
+      }
+      if (viewKey === "mission-apprenant") {
+        window.location.href = "/student/mission-apprenant";
         return;
       }
       switchView(viewKey);
@@ -181,14 +198,8 @@ function bindEvents() {
     toggleChatbotFilterMode();
   });
 
-  dom.openCCourseBtn?.addEventListener("click", () => {
-    // Corrected navigation to the standalone page
-    window.location.href = "/student/programmation-c.html";
-  });
-
-  dom.closeCCourseBtn?.addEventListener("click", () => {
-    dom.courseEmbedCard?.setAttribute("hidden", "true");
-    syncCoursLayout();
+  dom.moduleDetailBack?.addEventListener("click", () => {
+    closeModuleDetail();
   });
 
   dom.calendarList?.addEventListener("click", (event) => {
@@ -286,19 +297,25 @@ function stopDashboardAutoRefresh() {
   }
 }
 
-function syncCoursLayout() {
-  const embedVisible = Boolean(dom.courseEmbedCard && !dom.courseEmbedCard.hasAttribute("hidden"));
-
-  dom.shell?.classList.toggle("course-focus", embedVisible);
-
-  if (embedVisible) {
-    dom.contentHeader?.setAttribute("hidden", "true");
-    dom.coursOverview?.setAttribute("hidden", "true");
-    return;
+function openModuleDetail(moduleId, moduleName) {
+  if (!dom.modulesListSection || !dom.moduleDetailSection) return;
+  dom.modulesListSection.hidden = true;
+  dom.moduleDetailSection.hidden = false;
+  if (dom.moduleDetailTitle) dom.moduleDetailTitle.textContent = moduleName;
+  dom.contentHeader?.setAttribute("hidden", "true");
+  dom.shell?.classList.add("course-focus");
+  if (dom.courseEmbedContent) {
+    dom.courseEmbedContent.innerHTML = '<p class="course-embed-loading">Chargement…</p>';
   }
+  void renderCourseModules(moduleId);
+}
 
+function closeModuleDetail() {
+  if (!dom.modulesListSection || !dom.moduleDetailSection) return;
+  dom.moduleDetailSection.hidden = true;
+  dom.modulesListSection.hidden = false;
   dom.contentHeader?.removeAttribute("hidden");
-  dom.coursOverview?.removeAttribute("hidden");
+  dom.shell?.classList.remove("course-focus");
 }
 
 function switchView(viewKey) {
@@ -348,21 +365,22 @@ function switchView(viewKey) {
     // Ignore URL update failures.
   }
 
-  if (viewKey !== "cours") {
-    dom.contentHeader?.removeAttribute("hidden");
-    return;
-  }
-
-  syncCoursLayout();
+  dom.contentHeader?.removeAttribute("hidden");
 }
 
 function applyPreferredView() {
   const params = new URLSearchParams(window.location.search);
   const urlView = params.get("view");
+  const urlModule = params.get("module");
   let preferredView = urlView;
 
   if (preferredView === "self-eval") {
     window.location.href = "/student/self-evaluation.html";
+    return;
+  }
+
+  if (preferredView === "mission-apprenant") {
+    window.location.href = "/student/mission-apprenant";
     return;
   }
 
@@ -374,10 +392,16 @@ function applyPreferredView() {
       preferredView = null;
     }
   }
-  
+
   // The default view is 'dashboard' if nothing else is specified.
   const targetView = preferredView && dom?.views?.[preferredView] ? preferredView : 'dashboard';
   switchView(targetView);
+
+  if (targetView === "cours" && urlModule) {
+    void fetchModuleDetail(urlModule).then((detail) => {
+      if (detail) openModuleDetail(urlModule, detail.name || urlModule);
+    });
+  }
 
   // Clean up the session storage key after using it.
   try {
@@ -845,7 +869,7 @@ async function fetchAndRenderPrediction() {
 async function fetchModules() {
   try {
     const identifier = encodeURIComponent(String(currentUser?.identifier || ""));
-    const response = await fetch(`/api/programmation-c/modules?identifier=${identifier}`);
+    const response = await fetch(`/api/student/modules?identifier=${identifier}`);
     if (!response.ok) return [];
 
     const data = await response.json();
@@ -926,100 +950,206 @@ function getQuizBubbleStatus(score, average) {
   };
 }
 
-async function renderCourseModules() {
-  if (!dom.courseEmbedContent) {
+async function fetchModuleDetail(moduleId) {
+  try {
+    const response = await fetch(`/api/student/module/${encodeURIComponent(String(moduleId || ""))}`);
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.module || null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function renderCourseModules(filterModuleId = null) {
+  if (!dom.courseEmbedContent) return false;
+
+  dom.courseEmbedContent.innerHTML = '<p class="course-embed-loading">Chargement…</p>';
+
+  const [moduleData, stats] = await Promise.all([
+    filterModuleId ? fetchModuleDetail(filterModuleId) : null,
+    fetchProgressStats()
+  ]);
+
+  if (!moduleData) {
+    dom.courseEmbedContent.innerHTML = '<p class="course-embed-loading">Aucun contenu disponible.</p>';
     return false;
   }
 
-  dom.courseEmbedContent.innerHTML = '<p class="course-embed-loading">Chargement des modules...</p>';
-
-  const [modules, stats] = await Promise.all([fetchModules(), fetchProgressStats()]);
-  if (!modules.length) {
-    dom.courseEmbedContent.innerHTML = '<p class="course-embed-loading">Aucun module disponible.</p>';
-    return false;
-  }
-
-  const completedLessonKeys = Array.isArray(stats?.completedLessonKeys)
-    ? stats.completedLessonKeys.filter((entry) => typeof entry === "string")
-    : [];
+  const completedSet = new Set(
+    (Array.isArray(stats?.completedLessonKeys) ? stats.completedLessonKeys : [])
+      .filter((k) => typeof k === "string")
+  );
   const quizResults = Array.isArray(stats?.quizResults) ? stats.quizResults : [];
-  const completedSet = new Set(completedLessonKeys);
   const scoreMap = buildLatestScoreMap(quizResults);
-  const scores = quizResults
-    .map((entry) => Number(entry?.score))
-    .filter((score) => Number.isFinite(score));
-  const averageScore = scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null;
+  const scores = quizResults.map((e) => Number(e?.score)).filter((s) => Number.isFinite(s));
+  const averageScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
 
-  const grid = document.createElement("div");
-  grid.className = "course-modules-grid";
+  const acquis = Array.isArray(moduleData.acquis) ? moduleData.acquis : [];
 
-  modules.forEach((moduleData) => {
-    const subAcquisItems = Array.isArray(moduleData?.subAcquisDetails)
-      ? moduleData.subAcquisDetails
-      : Array.isArray(moduleData?.subAcquis)
-        ? moduleData.subAcquis.map((subId) => ({ id: subId, name: `Sous-acquis ${subId}` }))
-        : [];
+  if (!acquis.length) {
+    dom.courseEmbedContent.innerHTML = '<p class="course-embed-empty">Ce module ne contient pas encore de contenu.</p>';
+    return false;
+  }
 
-    const totalCount = subAcquisItems.length;
-    const completedCount = subAcquisItems.filter((subItem) =>
-      completedSet.has(buildLessonKey(moduleData.id, subItem.id))
-    ).length;
-    const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const allSubs = acquis.flatMap((a) => Array.isArray(a.sousAcquis) ? a.sousAcquis : []);
+  const totalSubs = allSubs.length;
+  const doneSubs = allSubs.filter((s) => completedSet.has(buildLessonKey(filterModuleId, s.id))).length;
+  const totalPct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
 
-    const moduleSection = document.createElement("section");
-    moduleSection.className = "course-module";
+  let html = `
+    <div class="module-detail-progress">
+      <div class="module-detail-progress-info">
+        <span>${doneSubs} / ${totalSubs} sous-acquis complétés</span>
+        <strong>${totalPct}%</strong>
+      </div>
+      <div class="module-detail-track">
+        <div class="module-detail-fill" style="width:${totalPct}%"></div>
+      </div>
+    </div>
+    <div class="acquis-list">
+  `;
 
-    const moduleName = moduleData?.name || `Module ${moduleData?.id || ""}`;
-    const header = document.createElement("div");
-    header.className = "course-module-head";
-    header.innerHTML = `
-      <span class="course-module-thumb">${htmlEscape(moduleData?.id || "-")}</span>
-      <span class="course-module-meta">
-        <h2 class="course-module-title">${htmlEscape(moduleName)}</h2>
-        <p class="course-module-subtitle">${completedCount} / ${totalCount} termines</p>
-      </span>
-      <span class="course-progress-bar"><span class="course-progress-fill" style="width:${progressPercent}%"></span></span>
+  acquis.forEach((acq, acqIdx) => {
+    const subs = Array.isArray(acq.sousAcquis) ? acq.sousAcquis : [];
+    const acqDone = subs.filter((s) => completedSet.has(buildLessonKey(filterModuleId, s.id))).length;
+    const acqPct = subs.length > 0 ? Math.round((acqDone / subs.length) * 100) : 0;
+    const acqStatusClass = acqPct === 100 ? "acq-status-done" : acqDone > 0 ? "acq-status-partial" : "acq-status-idle";
+    const acqIcon = acqPct === 100 ? "✓" : acqDone > 0 ? "◎" : "○";
+
+    html += `
+      <section class="acquis-section">
+        <button class="acquis-header" type="button" data-acq-idx="${acqIdx}" aria-expanded="true">
+          <span class="acquis-icon ${acqStatusClass}">${acqIcon}</span>
+          <span class="acquis-title">${htmlEscape(acq.name || `Acquis ${acqIdx + 1}`)}</span>
+          <span class="acquis-meta">${acqDone}/${subs.length} · ${acqPct}%</span>
+          <span class="acquis-chevron">▾</span>
+        </button>
+        <ul class="acquis-sub-list">
     `;
 
-    const list = document.createElement("ul");
-    list.className = "course-sub-list";
-
-    subAcquisItems.forEach((subItem) => {
-      const key = buildLessonKey(moduleData.id, subItem.id);
+    subs.forEach((sub) => {
+      const key = buildLessonKey(filterModuleId, sub.id);
+      const done = completedSet.has(key);
       const scoreEntry = scoreMap.get(key);
       const score = scoreEntry ? scoreEntry.score : NaN;
-      const status = getQuizBubbleStatus(score, averageScore);
-      const lessonHref = buildSubAcquisUrl(moduleData.id, subItem.id);
-      const quizHref = `/student/questionnaire.html?moduleId=${encodeURIComponent(String(moduleData.id || ""))}&subAcquisId=${encodeURIComponent(String(subItem.id || ""))}`;
+      const quizStatus = getQuizBubbleStatus(score, averageScore);
+      const lessonHref = buildSubAcquisUrl(filterModuleId, sub.id);
+      const quizHref = `/student/questionnaire.html?moduleId=${encodeURIComponent(String(filterModuleId || ""))}&subAcquisId=${encodeURIComponent(String(sub.id || ""))}`;
 
-      const li = document.createElement("li");
-      li.className = "course-sub-entry";
-      li.innerHTML = `
-        <a class="course-sub-link" href="${lessonHref}">${htmlEscape(subItem.name || "Sous-acquis")}</a>
-        <a class="quiz-bubble ${status.className}" href="${quizHref}" title="${htmlEscape(status.title)}">${status.label}</a>
+      const checkHtml = done
+        ? `<span class="sub-check">✓</span>`
+        : `<span class="sub-check sub-check-empty">○</span>`;
+
+      const bloomHtml = sub.bloomLevel
+        ? `<span class="sub-bloom">${htmlEscape(sub.bloomLevel)}</span>`
+        : "";
+
+      const badges = [];
+      if (sub.hasVideo) badges.push(`<span class="sub-badge sub-badge-video">Vidéo</span>`);
+      if (sub.hasQuiz) {
+        badges.push(`<a class="sub-badge sub-badge-quiz quiz-bubble ${quizStatus.className}" href="${quizHref}" title="${htmlEscape(quizStatus.title)}">Quiz</a>`);
+      }
+
+      html += `
+        <li class="acquis-sub-entry${done ? " sub-done" : ""}">
+          ${checkHtml}
+          <div class="sub-content">
+            <a class="sub-lesson-link" href="${lessonHref}">${htmlEscape(sub.name || sub.id)}</a>
+            ${bloomHtml}
+          </div>
+          <div class="sub-actions">${badges.join("")}</div>
+        </li>
       `;
-      list.appendChild(li);
     });
 
-    moduleSection.appendChild(header);
-    moduleSection.appendChild(list);
-    grid.appendChild(moduleSection);
+    html += `</ul></section>`;
   });
 
-  dom.courseEmbedContent.innerHTML = "";
-  dom.courseEmbedContent.appendChild(grid);
+  html += `</div>`;
+
+  dom.courseEmbedContent.innerHTML = html;
+
+  dom.courseEmbedContent.querySelectorAll(".acquis-header").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const expanded = btn.getAttribute("aria-expanded") === "true";
+      btn.setAttribute("aria-expanded", String(!expanded));
+      const list = btn.nextElementSibling;
+      if (list) list.hidden = expanded;
+    });
+  });
+
   return true;
 }
 
-async function ensureCourseModulesLoaded() {
-  if (courseModulesLoaded || courseModulesLoading) {
+async function renderModuleList() {
+  if (!dom.modulesListGrid) return;
+
+  const [modules, stats] = await Promise.all([fetchModules(), fetchProgressStats()]);
+
+  if (!modules.length) {
+    dom.modulesListGrid.innerHTML = '<p class="modules-loading">Aucun module disponible.</p>';
     return;
   }
 
-  courseModulesLoading = true;
-  courseModulesLoaded = await renderCourseModules();
-  courseModulesLoading = false;
+  const completedSet = new Set(
+    (Array.isArray(stats?.completedLessonKeys) ? stats.completedLessonKeys : [])
+      .filter((k) => typeof k === "string")
+  );
+  const quizResults = Array.isArray(stats?.quizResults) ? stats.quizResults : [];
+  const scoreMap = buildLatestScoreMap(quizResults);
+
+  dom.modulesListGrid.innerHTML = modules.map((mod) => {
+    const subItems = Array.isArray(mod.subAcquisDetails)
+      ? mod.subAcquisDetails
+      : (Array.isArray(mod.subAcquis) ? mod.subAcquis.map((id) => ({ id })) : []);
+
+    const total = subItems.length;
+    const done = subItems.filter((s) => completedSet.has(buildLessonKey(mod.id, s.id))).length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    const quizScores = subItems
+      .map((s) => scoreMap.get(buildLessonKey(mod.id, s.id))?.score)
+      .filter((v) => Number.isFinite(v));
+    const avgScore = quizScores.length
+      ? quizScores.reduce((a, b) => a + b, 0) / quizScores.length
+      : null;
+    const avgLabel = avgScore !== null ? `${Math.round(avgScore)}%` : "—";
+
+    const statusClass = pct === 100 ? "mcard-done" : done > 0 ? "mcard-progress" : "mcard-idle";
+    const statusLabel = pct === 100 ? "Terminé" : done > 0 ? "En cours" : "Non commencé";
+
+    const modId = String(mod.id || "");
+    const modName = htmlEscape(mod.name || `Module ${modId}`);
+
+    return `<article class="module-card" data-module-id="${htmlEscape(modId)}" data-module-name="${modName}">
+      <div class="mcard-header">
+        <h3 class="mcard-name">${modName}</h3>
+        <span class="mcard-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="mcard-meta">${total} sous-acquis · Quiz moy. ${avgLabel}</div>
+      <div class="mcard-track">
+        <div class="mcard-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="mcard-footer">
+        <span class="mcard-pct">${done}/${total} leçons · ${pct}%</span>
+        <button class="mcard-btn" type="button" data-module-id="${htmlEscape(modId)}" data-module-name="${modName}">Accéder →</button>
+      </div>
+    </article>`;
+  }).join("");
+
 }
+
+function initModuleListClicks() {
+  dom.modulesListSection?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-module-id]");
+    if (!btn) return;
+    const id = btn.dataset.moduleId;
+    const name = btn.dataset.moduleName || id;
+    if (id) openModuleDetail(id, name);
+  });
+}
+
 
 async function fetchOverview() {
   try {
@@ -1420,7 +1550,7 @@ function renderNextStep(modules = [], stats = null) {
 
   dom.nextStepModule.textContent = "Aucun cours en attente — félicitations !";
   dom.nextStepMeta.textContent = "Vous avez complété tous les sous-acquis disponibles.";
-  dom.nextStepCta.onclick = () => { window.location.href = '/student/programmation-c.html'; };
+  dom.nextStepCta.onclick = () => { switchView("cours"); };
 }
 
 function renderUpcoming(calendar = []) {
@@ -1488,6 +1618,407 @@ function renderStats(stats) {
   dom.quizAverage.textContent = Number.isFinite(avg) ? `${avg.toFixed(1)}/20` : "0.0/20";
 }
 
+/* ════════════════════════════════════════════════════════
+   NEW DASHBOARD RENDERING
+   ════════════════════════════════════════════════════════ */
+
+function destroyDashCharts() {
+  Object.keys(dashCharts).forEach((key) => {
+    if (dashCharts[key] && typeof dashCharts[key].destroy === "function") {
+      dashCharts[key].destroy();
+      dashCharts[key] = null;
+    }
+  });
+}
+
+function renderNewDashboard(data) {
+  if (!data) return;
+  dashData = data;
+  const { profile, progress, overview, prediction, nextStep, weakestModules, quizTrend, weeklyActivity, achievements, insights, calendarEntries } = data;
+
+  // ── Hero ──
+  if (dom.dashHeroName) {
+    dom.dashHeroName.textContent = profile?.fullName ? `Bonjour, ${profile.fullName} !` : "Bonjour !";
+  }
+  if (dom.dashHeroEyebrow) {
+    dom.dashHeroEyebrow.textContent = `Tableau de bord • ${progress?.lessonsCompleted || 0} leçons`;
+  }
+  if (dom.dashHeroXp) dom.dashHeroXp.textContent = `${insights?.xp || 0}`;
+  if (dom.dashHeroStreak) dom.dashHeroStreak.textContent = `${insights?.streak || 0}j`;
+  if (dom.dashHeroProgress) {
+    const totalLessons = overview?.reduce((s, m) => s + m.subAcquisCount, 0) || 1;
+    const completedLessons = overview?.reduce((s, m) => s + m.completedCount, 0) || 0;
+    dom.dashHeroProgress.textContent = `${Math.round((completedLessons / totalLessons) * 100)}%`;
+  }
+  if (dom.dashHeroQuote) {
+    const pct = prediction?.probabilityPct || 0;
+    if (pct >= 70) dom.dashHeroQuote.textContent = "Excellent travail ! Vous etes sur la bonne voie pour reussir.";
+    else if (pct >= 40) dom.dashHeroQuote.textContent = "Continuez vos efforts -- chaque lecon compte pour rattraper.";
+    else dom.dashHeroQuote.textContent = "N'abandonnez pas ! Parlez a votre enseignant pour obtenir de l'aide.";
+  }
+
+  // ── Prediction gauge ──
+  if (dom.dashPredRing && dom.dashPredPct) {
+    const pct = prediction?.probabilityPct || 0;
+    const circumference = 326.7;
+    const offset = circumference - (pct / 100) * circumference;
+    dom.dashPredRing.style.strokeDashoffset = String(offset);
+    dom.dashPredRing.style.animation = `gaugeFill 1s ease forwards`;
+    const color = pct >= 70 ? "#c41d38" : pct >= 40 ? "#d93a4f" : "#8f1220";
+    dom.dashPredRing.style.stroke = color;
+    dom.dashPredPct.textContent = `${pct}%`;
+    dom.dashPredPct.style.color = color;
+  }
+  if (dom.dashPredMessage) {
+    const pct = prediction?.probabilityPct || 0;
+    if (pct >= 70) dom.dashPredMessage.textContent = "Forte probabilité de rattrapage. Continuez !";
+    else if (pct >= 40) dom.dashPredMessage.textContent = "Des efforts supplémentaires sont recommandés.";
+    else dom.dashPredMessage.textContent = "Risque de décrochage détecté. Consultez votre enseignant.";
+  }
+  if (dom.dashPredFeatures) {
+    const factors = Array.isArray(prediction?.riskFactors) ? prediction.riskFactors : [];
+    if (factors.length) {
+      // Explain *why* the score is what it is — the top risk (or protective) factors.
+      dom.dashPredFeatures.innerHTML = factors.map((factor) => {
+        const level = factor.level === "high" ? "pred-factor-high"
+          : factor.level === "good" ? "pred-factor-good" : "pred-factor-medium";
+        const icon = factor.level === "high" ? "🔴" : factor.level === "good" ? "🟢" : "🟡";
+        return `<div class="pred-factor ${level}"><span>${icon}</span>${htmlEscape(factor.label)}</div>`;
+      }).join("");
+    } else if (prediction?.features) {
+      const f = prediction.features;
+      dom.dashPredFeatures.innerHTML = `
+        <div class="pred-feat">Rythme<strong>${f.completionPace?.toFixed(1) || "0"}/sem</strong></div>
+        <div class="pred-feat">Moyenne<strong>${Math.round(f.averageScore || 0)}%</strong></div>
+        <div class="pred-feat">Connexions<strong>${f.loginFrequency?.toFixed(1) || "0"}/sem</strong></div>
+        <div class="pred-feat">Retard<strong>${Math.round(f.delayWeeks || 0)} sem</strong></div>
+      `;
+    }
+  }
+
+  // ── Next Action ──
+  if (dom.dashActionModule) {
+    if (nextStep) {
+      dom.dashActionModule.textContent = `${nextStep.moduleName} — ${nextStep.subAcquisName}`;
+      if (dom.dashActionSub) dom.dashActionSub.textContent = "Sous-acquis non complété";
+      if (dom.dashActionCta) {
+        dom.dashActionCta.onclick = () => {
+          window.location.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(nextStep.moduleId)}&subAcquisId=${encodeURIComponent(nextStep.subAcquisId)}`;
+        };
+      }
+    } else {
+      dom.dashActionModule.textContent = "Tout est complete !";
+      if (dom.dashActionSub) dom.dashActionSub.textContent = "Vous avez terminé tous les sous-acquis.";
+      if (dom.dashActionCta) {
+        dom.dashActionCta.onclick = () => { switchView("cours"); };
+      }
+    }
+  }
+
+  // ── Charts ──
+  renderDashCharts(data);
+
+  // ── Heatmap ──
+  renderDashHeatmap(weeklyActivity);
+
+  // ── Health ──
+  renderDashHealth(overview, quizTrend);
+
+  // ── Achievements ──
+  renderDashAchievements(achievements);
+
+  // ── Deadlines ──
+  renderDashDeadlines(calendarEntries);
+
+  // ── Insights ──
+  renderDashInsights(insights);
+
+  // ── Weakest Modules ──
+  renderDashWeakest(weakestModules);
+
+  // ── Module Progress ──
+  renderDashModuleProgress(overview, quizTrend);
+}
+
+function renderDashCharts(data) {
+  const { overview, quizTrend } = data;
+  if (!overview) return;
+
+  const labels = overview.map((m) => m.name ? m.name.substring(0, 12) : `M${m.id}`);
+  const completed = overview.map((m) => m.completedCount);
+  const totals = overview.map((m) => m.subAcquisCount);
+  
+  // 1. Radial Progress
+  if (dom.dashRadialContainer) {
+    const totalDone = overview.reduce((s, m) => s + m.completedCount, 0);
+    const totalAll = overview.reduce((s, m) => s + m.subAcquisCount, 0);
+    const pct = totalAll > 0 ? Math.round((totalDone / totalAll) * 100) : 0;
+    const circ = 2 * Math.PI * 54; // r=54
+    const offset = circ - (pct / 100) * circ;
+    
+    dom.dashRadialContainer.innerHTML = `
+      <div class="custom-radial-wrap">
+        <svg viewBox="0 0 120 120" class="custom-radial-svg">
+          <circle cx="60" cy="60" r="54" fill="none" stroke="var(--dash-line)" stroke-width="8"></circle>
+          <circle cx="60" cy="60" r="54" fill="none" stroke="url(#radialGrad)" stroke-width="8" stroke-linecap="round" 
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+            style="animation: gaugeFill 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;"></circle>
+          <defs>
+            <linearGradient id="radialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--dash-accent)" />
+              <stop offset="100%" stop-color="var(--dash-accent-dark)" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="custom-radial-center">
+          <span class="radial-pct">${pct}%</span>
+          <span class="radial-label">Complété</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // 2. Timeline / Gamified Path
+  if (dom.dashTimelineContainer) {
+    let timelineHTML = '<div class="learning-path">';
+    overview.forEach((m, i) => {
+      const isDone = m.completedCount === m.subAcquisCount && m.subAcquisCount > 0;
+      const isCurrent = m.completedCount > 0 && !isDone;
+      const statusClass = isDone ? 'done' : isCurrent ? 'current' : 'locked';
+      const mName = m.name ? m.name : `Module ${m.id}`;
+      
+      timelineHTML += `
+        <div class="path-node ${statusClass}">
+          <div class="path-icon">${isDone ? '✓' : isCurrent ? '★' : '🔒'}</div>
+          <div class="path-info">
+            <span class="path-title">${mName}</span>
+            <span class="path-prog">${m.completedCount} / ${m.subAcquisCount}</span>
+          </div>
+        </div>
+      `;
+    });
+    timelineHTML += '</div>';
+    dom.dashTimelineContainer.innerHTML = timelineHTML;
+  }
+
+  // 3. Knowledge Radar / Skill Map
+  if (dom.dashRadarContainer) {
+    if (overview && overview.length > 0) {
+      let barsHTML = '<div class="skill-bars">';
+      overview.forEach(m => {
+        const pct = m.subAcquisCount > 0 ? Math.round((m.completedCount / m.subAcquisCount) * 100) : 0;
+        barsHTML += `
+          <div class="skill-bar-row">
+            <span class="skill-bar-label">${m.name ? m.name.substring(0,14) : `M${m.id}`}</span>
+            <div class="skill-bar-track">
+              <div class="skill-bar-fill" style="width: ${pct}%"></div>
+            </div>
+            <span class="skill-bar-pct">${pct}%</span>
+          </div>
+        `;
+      });
+      barsHTML += '</div>';
+      dom.dashRadarContainer.innerHTML = barsHTML;
+    } else {
+      dom.dashRadarContainer.innerHTML = '<p class="empty-state">Pas encore de données</p>';
+    }
+  }
+}
+
+function renderDashHeatmap(weeklyActivity) {
+  if (!dom.dashHeatmapBody) return;
+  if (!weeklyActivity?.length) {
+    dom.dashHeatmapBody.innerHTML = '<p style="color:var(--dash-muted);font-size:0.78rem">Aucune activité cette semaine</p>';
+    return;
+  }
+
+  const last7 = weeklyActivity.slice(-7);
+  const maxVal = Math.max(...last7.map((w) => w.quizzes), 1);
+  let html = '<div class="heatmap-month-labels">';
+  const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  days.forEach((d) => { html += `<span class="heatmap-month-label">${d}</span>`; });
+  html += '</div><div class="heatmap-grid">';
+  last7.forEach((w) => {
+    const level = Math.min(5, Math.ceil((w.quizzes / maxVal) * 5) || 0);
+    html += `<div class="heatmap-cell l${level}" title="Semaine ${w.week}: ${w.quizzes} quiz, ${w.lessons} leçons"></div>`;
+  });
+  html += '</div>';
+  dom.dashHeatmapBody.innerHTML = html;
+}
+
+function renderDashHealth(overview, quizTrend) {
+  if (!dom.dashHealthBody || !overview) return;
+  const quizScores = quizTrend?.length > 0 ? quizTrend : [];
+  const avgScores = new Map();
+  quizScores.forEach((q) => {
+    const key = q.moduleId;
+    const existing = avgScores.get(key) || { sum: 0, count: 0 };
+    existing.sum += q.score;
+    existing.count += 1;
+    avgScores.set(key, existing);
+  });
+
+  const items = overview.slice(0, 8).map((m) => {
+    const avg = avgScores.get(m.id);
+    const score = avg ? Math.round(avg.sum / avg.count) : null;
+    const pct = m.subAcquisCount > 0 ? Math.round((m.completedCount / m.subAcquisCount) * 100) : 0;
+    return { id: m.id, name: m.name, progressPct: pct, quizAvg: score };
+  });
+
+  if (!items.length) {
+    dom.dashHealthBody.innerHTML = '<p style="color:var(--dash-muted);font-size:0.78rem">Aucune donnée disponible</p>';
+    return;
+  }
+
+  dom.dashHealthBody.innerHTML = items.map((item) => {
+    const barColor = item.progressPct >= 70 ? "#c41d38" : item.progressPct >= 40 ? "#d93a4f" : "#8f1220";
+    return `<div class="health-item">
+      <span class="health-item-name">${htmlEscape(item.name)}</span>
+      <span class="health-bar"><span class="health-bar-fill" style="width:${item.progressPct}%;background:${barColor}"></span></span>
+    </div>`;
+  }).join("");
+}
+
+function renderDashAchievements(achievements) {
+  if (!dom.dashAchBody || !achievements?.length) return;
+  dom.dashAchBody.innerHTML = achievements.map((a) => `
+    <div class="ach-item ${a.earned ? "earned" : ""}">
+      <span class="ach-icon">${a.icon}</span>
+      <div class="ach-info">
+        <p class="ach-title">${htmlEscape(a.title)}</p>
+        <p class="ach-desc">${htmlEscape(a.description)}</p>
+      </div>
+      <div class="ach-progress">
+        <div class="ach-progress-fill" style="width:${Math.min(100, (a.progress / Math.max(1, a.max)) * 100)}%"></div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderDashDeadlines(calendarEntries) {
+  if (!dom.dashDeadlinesList) return;
+  if (!calendarEntries?.length) {
+    dom.dashDeadlinesList.innerHTML = '<li class="deadline-empty">Aucune échéance à venir</li>';
+    return;
+  }
+
+  const sorted = [...calendarEntries]
+    .filter((e) => e.unlockAt)
+    .sort((a, b) => new Date(a.unlockAt).getTime() - new Date(b.unlockAt).getTime())
+    .slice(0, 4);
+
+  dom.dashDeadlinesList.innerHTML = sorted.map((entry) => {
+    const date = entry.unlockAt ? new Date(entry.unlockAt) : null;
+    const day = date ? String(date.getDate()).padStart(2, "0") : "--";
+    const month = date ? date.toLocaleString("fr-FR", { month: "short" }) : "";
+    const title = entry.subAcquisName || `Sous-acquis ${entry.subAcquisId || ""}`;
+    const moduleName = entry.moduleName || `Module ${entry.moduleId || ""}`;
+    return `<li class="deadline-item">
+      <div class="deadline-date">
+        <span class="deadline-day">${day}</span>
+        <span class="deadline-month">${month}</span>
+      </div>
+      <div class="deadline-info">
+        <p class="deadline-title">${htmlEscape(title)}</p>
+        <p class="deadline-module">${htmlEscape(moduleName)}</p>
+      </div>
+    </li>`;
+  }).join("");
+}
+
+function renderDashInsights(insights) {
+  if (!dom.dashInsightsBody || !insights) return;
+
+  const items = [
+    { label: "Quiz tentés", value: insights.totalQuizAttempts || 0, cls: "" },
+    { label: "Score moyen", value: `${Math.round(insights.averageQuizScore || 0)}%`, cls: "" },
+    { label: "Rythme", value: `${insights.completionPace?.toFixed(1) || "0"}/sem`, cls: "" },
+    { label: "Connexions", value: `${insights.loginFrequency?.toFixed(1) || "0"}/sem`, cls: insights.loginFrequency >= 3 ? "highlight" : "" }
+  ];
+
+  dom.dashInsightsBody.innerHTML = items.map((item) => `
+    <div class="insight-item ${item.cls}">
+      <span class="insight-value">${item.value}</span>
+      <span class="insight-label">${item.label}</span>
+    </div>
+  `).join("");
+}
+
+function renderDashWeakest(weakestModules) {
+  if (!dom.dashWeakestBody) return;
+  if (!weakestModules?.length) {
+    dom.dashWeakestBody.innerHTML = '<p style="color:var(--dash-muted);font-size:0.78rem">Tous les modules sont à jour !</p>';
+    return;
+  }
+
+  dom.dashWeakestBody.innerHTML = weakestModules.map((m) => {
+    const barColor = m.progressPct >= 50 ? "#d93a4f" : "#8f1220";
+    return `<div class="weak-item">
+      <p class="weak-name">${htmlEscape(m.name)}</p>
+      <div class="weak-bar"><div class="weak-bar-fill" style="width:${m.progressPct}%;background:${barColor}"></div></div>
+      <span class="weak-pct">${m.progressPct}% complété</span>
+    </div>`;
+  }).join("");
+}
+
+function renderDashModuleProgress(overview, quizTrend) {
+  if (!dom.dashModuleProgressBody || !Array.isArray(overview) || !overview.length) {
+    if (dom.dashModuleProgressBody) {
+      dom.dashModuleProgressBody.innerHTML = '<p class="mod-prog-empty">Aucune donnée disponible.</p>';
+    }
+    return;
+  }
+
+  // build moduleId → average quiz score map from quizTrend
+  const avgByModule = new Map();
+  if (Array.isArray(quizTrend)) {
+    const acc = new Map();
+    for (const q of quizTrend) {
+      const key = String(q.moduleId);
+      const cur = acc.get(key) || { sum: 0, count: 0 };
+      cur.sum += Number(q.score) || 0;
+      cur.count += 1;
+      acc.set(key, cur);
+    }
+    for (const [key, { sum, count }] of acc) {
+      avgByModule.set(key, sum / count);
+    }
+  }
+
+  dom.dashModuleProgressBody.innerHTML = overview.map((m) => {
+    const total = m.subAcquisCount || 0;
+    const done = m.completedCount || 0;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    const rawScore = avgByModule.get(String(m.id));
+    // quizTrend scores are 0-100; convert to /20
+    const scoreOn20 = rawScore !== undefined ? (rawScore / 5) : null;
+    const scoreLabel = scoreOn20 !== null ? `${scoreOn20.toFixed(1)}/20` : "—";
+    const scoreClass = scoreOn20 === null ? "" : scoreOn20 >= 14 ? "mod-prog-score-ok" : scoreOn20 >= 10 ? "mod-prog-score-warn" : "mod-prog-score-low";
+
+    const barColor = pct >= 70 ? "#c41d38" : pct >= 40 ? "#d93a4f" : "#8f1220";
+    const statusClass = pct === 100 ? "mod-prog-done" : done > 0 ? "mod-prog-partial" : "mod-prog-idle";
+    const statusLabel = pct === 100 ? "Terminé" : done > 0 ? "En cours" : "Non commencé";
+
+    return `<div class="mod-prog-row">
+      <div class="mod-prog-left">
+        <span class="mod-prog-name">${htmlEscape(m.name || `Module ${m.id}`)}</span>
+        <span class="mod-prog-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="mod-prog-center">
+        <div class="mod-prog-track">
+          <div class="mod-prog-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+        <span class="mod-prog-pct">${done}/${total} leçons · ${pct}%</span>
+      </div>
+      <div class="mod-prog-right">
+        <span class="mod-prog-score ${scoreClass}">${scoreLabel}</span>
+        <span class="mod-prog-score-label">quiz</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
 async function loadDashboardData() {
   const [modules, stats, overview, calendarPayload] = await Promise.all([
     fetchModules(),
@@ -1516,12 +2047,17 @@ async function loadDashboardData() {
     metrics.percentages.quizzes = toPercent(metrics.totals.quizzesPassed, metrics.totals.quizzes);
   }
 
-  // Render additional UI blocks
-  renderNextStep(modules, stats);
-  renderUpcoming(calendarPayload.calendar || []);
-  renderRecommendations(metrics, normalizedOverview.length ? normalizedOverview : modules);
-
-  renderStudentDashboard(metrics);
+  // New dashboard data
+  try {
+    const dashResp = await fetch(`/api/student/dashboard/${encodeURIComponent(String(currentUser?.identifier || ""))}`);
+    if (dashResp.ok) {
+      const dashPayload = await dashResp.json();
+      dashData = dashPayload;
+      renderNewDashboard(dashPayload);
+    }
+  } catch (_e) {
+    // silently fail
+  }
 }
 
 function initWhenSidebarReady() {

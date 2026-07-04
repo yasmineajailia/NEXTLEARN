@@ -2,7 +2,8 @@ import express from "express";
 import path from "node:path";
 import mongoose from "mongoose";
 import { env } from "./config/env";
-import { webRouter } from "./routes/web";
+import { webRouter, warmStudentVectorStore } from "./routes/web";
+import { clusteringRouter } from "./routes/backoffice/clustering";
 import { MLPredictorService } from "./services/MLPredictorService";
 
 // App bootstrap.
@@ -28,6 +29,7 @@ app.use(
 
 // App routes.
 app.use(webRouter);
+app.use(clusteringRouter);
 
 // Friendly 404 fallback for unknown routes.
 app.use((_req, res) => {
@@ -47,6 +49,12 @@ async function startServer() {
     // Train the ML model asynchronously – does not block startup.
     void MLPredictorService.initialize().catch((err) =>
       console.error("[ML] Failed to initialize ML predictor:", err)
+    );
+
+    // Build the chatbot RAG vector store in the background so the first
+    // student question doesn't pay the one-time indexing cost.
+    void warmStudentVectorStore().catch((err) =>
+      console.error("[chatbot] Vector store warm-up failed:", err)
     );
 
     app.listen(env.port, () => {

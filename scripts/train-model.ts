@@ -26,7 +26,15 @@ function parseCSV(raw: string): { X: number[][]; y: number[] } {
 
   console.log(`[train] Columns detected: ${header.join(", ")}`);
 
-  const featureCols = ["delayWeeks", "completionPace", "averageScore", "loginFrequency", "gapDepth"];
+  const featureCols = [
+    "delayWeeks",
+    "completionPace",
+    "averageScore",
+    "loginFrequency",
+    "gapDepth",
+    "recencyRatio",
+    "weakSkillRatio"
+  ];
   const labelCol    = "caughtUp";
 
   const featureIdxs = featureCols.map((col) => {

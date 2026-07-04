@@ -36,10 +36,9 @@
           <button data-view="overview" class="nav-item active" type="button">Vue d'ensemble</button>
           <button data-view="content" class="nav-item" type="button">Gestion des modules</button>
           <button data-view="teachers" class="nav-item" type="button">Gestion des enseignants</button>
-          <button data-view="classes-create" class="nav-item" type="button">Ajouter une classe</button>
+          <button data-view="classes-create" class="nav-item" type="button">Gestion des classes</button>
           <button data-view="classes-access" class="nav-item" type="button">Gérer l'accès aux modules</button>
-          <button data-view="students" class="nav-item" type="button">Gestion des étudiants</button>
-          <button data-view="quiz-generator" class="nav-item" type="button">Générer des quiz</button>
+          <button data-view="clustering" class="nav-item" type="button">Profils d'apprentissage</button>
         </nav>
 
         <a href="/" class="sidebar-home-link">Retour à l'accueil</a>
@@ -67,23 +66,56 @@
 
           <div class="kpi-grid" id="kpi-grid"></div>
 
-          <div class="overview-graphs" id="overview-graphs"></div>
-
-          <div class="panel-grid">
-            <article class="card wide">
-              <h3>Résumé par classe</h3>
-              <div id="class-summary-table" class="table-wrap"></div>
+          <div class="insights-row">
+            <article class="card insight-card">
+              <h3 class="insight-title">Étudiants à risque</h3>
+              <div id="at-risk-list" class="insight-list"></div>
             </article>
-            <article class="card wide">
-              <h3>Résumé par étudiant</h3>
-              <div id="student-summary-table" class="table-wrap"></div>
+            <article class="card insight-card">
+              <h3 class="insight-title">Étudiants inactifs</h3>
+              <div id="inactive-list" class="insight-list"></div>
             </article>
           </div>
+
+          <div class="insights-row">
+            <article class="card insight-card">
+              <h3 class="insight-title">Progression par classe</h3>
+              <div id="class-gauges" class="insight-list"></div>
+            </article>
+            <article class="card insight-card">
+              <h3 class="insight-title">Difficultés par module</h3>
+              <div id="quiz-struggle-list" class="insight-list"></div>
+            </article>
+          </div>
+
+          <article class="card module-table-card">
+            <h3 class="insight-title">Vue des modules</h3>
+            <div class="module-table-wrap">
+              <table class="module-table">
+                <thead>
+                  <tr>
+                    <th>Module</th>
+                    <th>Acquis</th>
+                    <th>Sous-acquis</th>
+                    <th>Leçons</th>
+                    <th>Quiz</th>
+                    <th>Moy. quiz</th>
+                  </tr>
+                </thead>
+                <tbody id="module-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+
         </section>
 
         <section class="view" id="view-content">
           <section class="content-panel active" id="content-panel-module" role="tabpanel">
             <article class="card" id="module-management-card">
+              <div class="module-manage-toolbar">
+                <h3 class="module-manage-toolbar-title">Modules</h3>
+                <button type="button" id="add-module-btn" class="btn-primary">+ Ajouter un module</button>
+              </div>
               <div id="content-management-list" class="content-management-list"></div>
             </article>
 
@@ -125,159 +157,220 @@
               <h4>Sous-acquis du module</h4>
               <div id="module-editor-sub-list" class="module-editor-sub-list"></div>
 
-              <section id="module-add-sub-section" class="sub-acquis-create-shell" hidden>
-                <div class="editor-head sub-acquis-create-head">
-                  <h4 id="module-add-sub-title">Ajouter un sous-acquis</h4>
-                  <button type="button" id="module-add-sub-cancel" class="secondary-btn">Annuler</button>
-                </div>
-
-                <form id="module-add-sub-form" class="stack-form two-col sub-acquis-create-form">
-                  <label>
-                    Nom du sous-acquis
-                    <input type="text" name="subName" required placeholder="Exemple: Allocation dynamique" />
-                  </label>
-                  <label>
-                    Taxonomie de Bloom
-                    <select name="bloomLevel" required>
-                      <option value="">Selectionner un niveau</option>
-                      <option value="Memoriser">Memoriser</option>
-                      <option value="Comprendre">Comprendre</option>
-                      <option value="Appliquer">Appliquer</option>
-                      <option value="Analyser">Analyser</option>
-                      <option value="Evaluer">Evaluer</option>
-                      <option value="Creer">Creer</option>
-                    </select>
-                  </label>
-                  <label>
-                    Nombre de lecons
-                    <input type="number" min="1" name="lessonsCount" value="1" required />
-                  </label>
-                  <label>
-                    Support PDF/PPT
-                    <input type="file" name="resourceFile" required accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
-                  </label>
-                  <label class="full-row">
-                    Lien video
-                    <input type="url" name="videoUrl" placeholder="https://..." />
-                  </label>
-                  <div class="button-row full-row sub-quiz-action-row">
-                    <button type="button" id="open-sub-quiz-builder" class="secondary-btn">Ajouter un quiz</button>
-                    <span id="sub-quiz-builder-status" class="sub-quiz-status-chip"></span>
-                  </div>
-                  <div class="button-row full-row sub-acquis-submit-row">
-                    <button type="submit">Ajouter le sous-acquis</button>
-                  </div>
-                </form>
-              </section>
-            </article>
-
-            <article class="card" id="sub-quiz-builder-page" hidden>
-              <div class="editor-head">
-                <h3>Configurer le quiz du nouveau sous-acquis</h3>
-                <button type="button" id="sub-quiz-builder-back" class="secondary-btn">Retour ajout sous-acquis</button>
-              </div>
-
-              <form id="sub-quiz-builder-meta-form" class="stack-form two-col">
-                <label>
-                  Titre du quiz
-                  <input type="text" id="sub-quiz-title" placeholder="Exemple: Quiz 1" />
-                </label>
-                <label>
-                  Type du quiz
-                  <select id="sub-quiz-type">
-                    <option value="qcm">QCM</option>
-                    <option value="vrai-faux">Vrai/Faux</option>
-                    <option value="reponse-courte">Reponse courte</option>
-                  </select>
-                </label>
-
-                <label class="full-row">
-                  Question
-                  <textarea id="sub-quiz-question" rows="2" placeholder="Saisir une question"></textarea>
-                </label>
-                <div class="full-row" id="sub-quiz-options-list"></div>
-                <div class="button-row full-row">
-                  <button type="button" id="sub-quiz-add-option" class="secondary-btn">Ajouter une option</button>
-                </div>
-                <label>
-                  Bonne reponse
-                  <select id="sub-quiz-correct-answer"></select>
-                </label>
-
-                <div class="button-row full-row">
-                  <button type="button" id="sub-quiz-add-question" class="secondary-btn">Ajouter la question</button>
-                  <button type="button" id="sub-quiz-clear" class="danger-btn">Supprimer le quiz</button>
-                </div>
-              </form>
-
-              <div class="draft-list-wrap">
-                <h4>Questions ajoutees</h4>
-                <ul id="sub-quiz-draft-list" class="draft-list"></ul>
-              </div>
-            </article>
-
-            <article class="card" id="sub-editor-page" hidden>
-              <div class="editor-head">
-                <h3 id="sub-editor-title">Modifier le sous-acquis</h3>
-                <button type="button" id="sub-editor-back" class="secondary-btn">Retour module</button>
-              </div>
-
-              <form id="sub-edit-form" class="stack-form two-col">
-                <label>
-                  Nom du sous-acquis
-                  <input type="text" id="sub-edit-name" required />
-                </label>
-                <label>
-                  Taxonomie de Bloom
-                  <select id="sub-edit-bloom" required>
-                    <option value="">Selectionner un niveau</option>
-                    <option value="Memoriser">Memoriser</option>
-                    <option value="Comprendre">Comprendre</option>
-                    <option value="Appliquer">Appliquer</option>
-                    <option value="Analyser">Analyser</option>
-                    <option value="Evaluer">Evaluer</option>
-                    <option value="Creer">Creer</option>
-                  </select>
-                </label>
-                <label>
-                  Nombre de lecons
-                  <input type="number" min="0" id="sub-edit-lessons" required />
-                </label>
-                <label>
-                  Remplacer support PDF/PPT
-                  <input type="file" id="sub-edit-resource-file" accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
-                </label>
-                <label class="full-row">
-                  Lien video
-                  <input type="url" id="sub-edit-video-url" placeholder="https://..." />
-                </label>
-                <label class="full-row">
-                  Quiz a modifier
-                  <select id="sub-edit-quiz-select"></select>
-                </label>
-                <label>
-                  Titre quiz
-                  <input type="text" id="sub-edit-quiz-title" />
-                </label>
-                <label>
-                  Type quiz
-                  <select id="sub-edit-quiz-type">
-                    <option value="qcm">QCM</option>
-                    <option value="vrai-faux">Vrai/Faux</option>
-                    <option value="reponse-courte">Reponse courte</option>
-                  </select>
-                </label>
-                <label class="full-row">
-                  Questions du quiz (JSON)
-                  <textarea id="sub-edit-quiz-questions" rows="8" placeholder='[{"prompt":"...","options":["A","B","C","D"],"correctAnswerIndex":0}]'></textarea>
-                </label>
-                <div class="button-row full-row">
-                  <button type="submit">Enregistrer le sous-acquis</button>
-                  <button type="button" id="sub-edit-delete-btn" class="danger-btn">Supprimer ce sous-acquis</button>
-                </div>
-              </form>
             </article>
           </section>
+        </section>
+
+        <!-- ── Ajouter un sous-acquis ───────────────────────────── -->
+        <section class="view" id="view-sub-add">
+          <article class="card" id="sub-add-form-card">
+            <div class="editor-head">
+              <h3 id="module-add-sub-title">Ajouter un sous-acquis</h3>
+              <button type="button" id="module-add-sub-cancel" class="secondary-btn">← Retour au module</button>
+            </div>
+            <form id="module-add-sub-form" class="stack-form two-col sub-acquis-create-form">
+              <label>
+                Nom du sous-acquis
+                <input type="text" name="subName" required placeholder="Exemple: Allocation dynamique" />
+              </label>
+              <label>
+                Taxonomie de Bloom
+                <select name="bloomLevel" required>
+                  <option value="">Selectionner un niveau</option>
+                  <option value="Memoriser">Memoriser</option>
+                  <option value="Comprendre">Comprendre</option>
+                  <option value="Appliquer">Appliquer</option>
+                  <option value="Analyser">Analyser</option>
+                  <option value="Evaluer">Evaluer</option>
+                  <option value="Creer">Creer</option>
+                </select>
+              </label>
+              <label>
+                Nombre de lecons
+                <input type="number" min="1" name="lessonsCount" value="1" required />
+              </label>
+              <label>
+                Supports PDF/PPT
+                <input type="file" name="resourceFile" multiple required accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+              </label>
+              <label class="full-row">
+                Lien video
+                <input type="url" name="videoUrl" placeholder="https://..." />
+              </label>
+              <div class="ai-quiz-panel full-row">
+                <button type="button" class="ai-quiz-toggle secondary-btn" id="add-ai-toggle">✨ Générer un quiz avec l'IA</button>
+                <div class="ai-quiz-body" id="add-ai-body" hidden>
+                  <div class="ai-quiz-config">
+                    <label>Difficulté
+                      <select id="add-ai-difficulty">
+                        <option value="beginner">Débutant</option>
+                        <option value="intermediate" selected>Intermédiaire</option>
+                        <option value="advanced">Avancé</option>
+                      </select>
+                    </label>
+                    <label>Questions
+                      <select id="add-ai-count">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="8">8</option>
+                        <option value="10">10</option>
+                      </select>
+                    </label>
+                    <button type="button" class="secondary-btn" id="add-ai-generate-btn">Générer</button>
+                  </div>
+                  <div id="add-ai-results" class="ai-quiz-results"></div>
+                  <div id="add-ai-footer" class="ai-quiz-footer" hidden>
+                    <input type="text" id="add-ai-title" placeholder="Titre du quiz généré…" class="ai-quiz-title-input" />
+                    <button type="button" class="secondary-btn" id="add-ai-validate-btn">Valider la sélection</button>
+                  </div>
+                </div>
+              </div>
+              <div class="button-row full-row sub-quiz-action-row">
+                <button type="button" id="open-sub-quiz-builder" class="secondary-btn">Ajouter un quiz manuellement</button>
+                <span id="sub-quiz-builder-status" class="sub-quiz-status-chip"></span>
+              </div>
+              <div class="button-row full-row sub-acquis-submit-row">
+                <button type="submit">Ajouter le sous-acquis</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="card" id="sub-quiz-builder-page" hidden>
+            <div class="editor-head">
+              <h3>Configurer le quiz du nouveau sous-acquis</h3>
+              <button type="button" id="sub-quiz-builder-back" class="secondary-btn">← Retour ajout sous-acquis</button>
+            </div>
+            <form id="sub-quiz-builder-meta-form" class="stack-form two-col">
+              <label>
+                Titre du quiz
+                <input type="text" id="sub-quiz-title" placeholder="Exemple: Quiz 1" />
+              </label>
+              <label>
+                Type du quiz
+                <select id="sub-quiz-type">
+                  <option value="qcm">QCM</option>
+                  <option value="vrai-faux">Vrai/Faux</option>
+                  <option value="reponse-courte">Reponse courte</option>
+                </select>
+              </label>
+              <label class="full-row">
+                Question
+                <textarea id="sub-quiz-question" rows="2" placeholder="Saisir une question"></textarea>
+              </label>
+              <div class="full-row" id="sub-quiz-options-list"></div>
+              <div class="button-row full-row">
+                <button type="button" id="sub-quiz-add-option" class="secondary-btn">Ajouter une option</button>
+              </div>
+              <label>
+                Bonne reponse
+                <select id="sub-quiz-correct-answer"></select>
+              </label>
+              <div class="button-row full-row">
+                <button type="button" id="sub-quiz-add-question" class="secondary-btn">Ajouter la question</button>
+                <button type="button" id="sub-quiz-clear" class="danger-btn">Supprimer le quiz</button>
+              </div>
+            </form>
+            <div class="draft-list-wrap">
+              <h4>Questions ajoutees</h4>
+              <ul id="sub-quiz-draft-list" class="draft-list"></ul>
+            </div>
+          </article>
+        </section>
+
+        <!-- ── Modifier un sous-acquis ──────────────────────────── -->
+        <section class="view" id="view-sub-editor">
+          <article class="card">
+            <div class="editor-head">
+              <h3 id="sub-editor-title">Modifier le sous-acquis</h3>
+              <button type="button" id="sub-editor-back" class="secondary-btn">← Retour au module</button>
+            </div>
+            <form id="sub-edit-form" class="stack-form two-col">
+              <label>
+                Nom du sous-acquis
+                <input type="text" id="sub-edit-name" required />
+              </label>
+              <label>
+                Taxonomie de Bloom
+                <select id="sub-edit-bloom" required>
+                  <option value="">Selectionner un niveau</option>
+                  <option value="Memoriser">Memoriser</option>
+                  <option value="Comprendre">Comprendre</option>
+                  <option value="Appliquer">Appliquer</option>
+                  <option value="Analyser">Analyser</option>
+                  <option value="Evaluer">Evaluer</option>
+                  <option value="Creer">Creer</option>
+                </select>
+              </label>
+              <label>
+                Nombre de lecons
+                <input type="number" min="0" id="sub-edit-lessons" required />
+              </label>
+              <div class="full-row sub-edit-files-section">
+                <span class="sub-edit-files-label">Supports PDF/PPT</span>
+                <div id="sub-edit-existing-files" class="existing-files-list"></div>
+                <label class="sub-edit-add-label">
+                  Ajouter des supports
+                  <input type="file" id="sub-edit-resource-file" multiple accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                </label>
+              </div>
+              <label class="full-row">
+                Lien video
+                <input type="url" id="sub-edit-video-url" placeholder="https://..." />
+              </label>
+              <label class="full-row">
+                Quiz a modifier
+                <select id="sub-edit-quiz-select"></select>
+              </label>
+              <label>
+                Titre quiz
+                <input type="text" id="sub-edit-quiz-title" />
+              </label>
+              <label>
+                Type quiz
+                <select id="sub-edit-quiz-type">
+                  <option value="qcm">QCM</option>
+                  <option value="vrai-faux">Vrai/Faux</option>
+                  <option value="reponse-courte">Reponse courte</option>
+                </select>
+              </label>
+              <label class="full-row">
+                Questions du quiz (JSON)
+                <textarea id="sub-edit-quiz-questions" rows="8" placeholder='[{"prompt":"...","options":["A","B","C","D"],"correctAnswerIndex":0}]'></textarea>
+              </label>
+              <div class="ai-quiz-panel full-row">
+                <button type="button" class="ai-quiz-toggle secondary-btn" id="edit-ai-toggle">✨ Générer un quiz avec l'IA</button>
+                <div class="ai-quiz-body" id="edit-ai-body" hidden>
+                  <div class="ai-quiz-config">
+                    <label>Difficulté
+                      <select id="edit-ai-difficulty">
+                        <option value="beginner">Débutant</option>
+                        <option value="intermediate" selected>Intermédiaire</option>
+                        <option value="advanced">Avancé</option>
+                      </select>
+                    </label>
+                    <label>Questions
+                      <select id="edit-ai-count">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="8">8</option>
+                        <option value="10">10</option>
+                      </select>
+                    </label>
+                    <button type="button" class="secondary-btn" id="edit-ai-generate-btn">Générer</button>
+                  </div>
+                  <div id="edit-ai-results" class="ai-quiz-results"></div>
+                  <div id="edit-ai-footer" class="ai-quiz-footer" hidden>
+                    <input type="text" id="edit-ai-title" placeholder="Titre du quiz généré…" class="ai-quiz-title-input" />
+                    <button type="button" class="secondary-btn" id="edit-ai-validate-btn">Valider la sélection</button>
+                  </div>
+                </div>
+              </div>
+              <div class="button-row full-row">
+                <button type="submit">Enregistrer le sous-acquis</button>
+                <button type="button" id="sub-edit-delete-btn" class="danger-btn">Supprimer ce sous-acquis</button>
+              </div>
+            </form>
+          </article>
         </section>
 
         <section class="view" id="view-teachers">
@@ -316,26 +409,38 @@
         </section>
 
         <section class="view" id="view-classes-create">
-          <div class="panel-grid">
-            <article class="card wide classes-create-card">
-              <h3>Ajouter une classe</h3>
-              <form id="class-form" class="stack-form classes-create-form">
-                <label>
-                  Nom de la classe
-                  <input type="text" name="className" required placeholder="Exemple: INFO-2A" />
-                </label>
-                <label>
-                  Enseignant
-                  <select id="class-teacher-select" name="teacherId" required></select>
-                </label>
-                <button type="submit">Creer la classe</button>
-              </form>
-            </article>
-          </div>
+          <div id="class-table" class="classes-grid"></div>
 
+          <article class="card classes-create-form-card">
+            <h3>Ajouter une classe</h3>
+            <form id="class-form" class="stack-form classes-create-form">
+              <label>
+                Nom de la classe
+                <input type="text" name="className" required placeholder="Exemple: INFO-2A" />
+              </label>
+              <label>
+                Enseignant
+                <select id="class-teacher-select" name="teacherId" required></select>
+              </label>
+              <button type="submit">Créer la classe</button>
+            </form>
+          </article>
+        </section>
+
+        <section class="view" id="view-class-detail">
+          <div class="class-detail-bar">
+            <button type="button" id="class-detail-back" class="secondary-btn">← Retour aux classes</button>
+            <div class="class-detail-info">
+              <h3 id="class-detail-name"></h3>
+              <p id="class-detail-teacher"></p>
+            </div>
+          </div>
           <article class="card">
-            <h3>Classes</h3>
-            <div id="class-table" class="table-wrap"></div>
+            <div class="student-list-head">
+              <h3>Étudiants de la classe</h3>
+              <button type="button" id="class-detail-add-btn">Ajouter un étudiant</button>
+            </div>
+            <div id="class-detail-student-table" class="table-wrap"></div>
           </article>
         </section>
 
@@ -431,104 +536,8 @@
           </article>
         </section>
 
-        <section class="view" id="view-quiz-generator">
-          <div class="panel-grid">
-            <article class="card wide">
-              <header>
-                <h1>Générateur de Questions Quiz</h1>
-                <p>Générez, validez et régénérez des questions de quiz avec l'aide de l'IA</p>
-              </header>
-
-              <div class="content">
-                <div id="phase-config" class="section">
-                  <div class="section-title">Type de quiz</div>
-                  <div class="quiz-mode-toggle" role="radiogroup" aria-label="Type de quiz">
-                    <label class="toggle-option">
-                      <input type="radio" name="quizScope" value="sous-acquis" checked />
-                      <span>Sous-acquis</span>
-                    </label>
-                    <label class="toggle-option">
-                      <input type="radio" name="quizScope" value="acquis" />
-                      <span>Acquis</span>
-                    </label>
-                  </div>
-
-                  <div class="section-title">Configurer la génération</div>
-                  <div class="form-group grid-2">
-                    <div>
-                      <label for="moduleId">Module *</label>
-                      <select id="moduleId" required>
-                        <option value="">-- Sélectionner un module --</option>
-                      </select>
-                    </div>
-                    <div id="subAcquisWrap">
-                      <label>Sous-acquis *</label>
-                      <div id="subAcquisList" class="subacquis-list is-disabled">
-                        <p class="subacquis-empty">-- D'abord sélectionner un module --</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="form-group grid-2">
-                    <div>
-                      <label for="difficulty">Niveau de difficulté</label>
-                      <select id="difficulty">
-                        <option value="beginner">Débutant</option>
-                        <option value="intermediate" selected>Intermédiaire</option>
-                        <option value="advanced">Avancé</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label for="count">Nombre de questions (1-10)</label>
-                      <select id="count">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5" selected>5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="button-group">
-                    <button class="btn-primary" id="btnGenerate">Générer les questions</button>
-                  </div>
-
-                  <div id="status-message" class="hidden"></div>
-                </div>
-
-                <div id="phase-review" class="section hidden">
-                  <div class="section-title">Examiner et approuver les questions</div>
-                  <div class="status info" id="review-info">
-                    <strong>Instructions:</strong> Sélectionnez les questions que vous souhaitez ajouter au quiz, puis cliquez sur "Valider et enregistrer".
-                  </div>
-                  <div id="questions-container"></div>
-                  <div class="form-group full">
-                    <label for="quizTitle">Titre du quiz (optionnel)</label>
-                    <input type="text" id="quizTitle" placeholder="ex: Quiz - Boucles for">
-                  </div>
-                  <div class="button-group">
-                    <button class="btn-success" id="btnValidate">Valider et enregistrer</button>
-                    <button class="btn-secondary" id="btnRegenerateAll">Régénérer tout</button>
-                    <button class="btn-danger" id="btnReject">Annuler</button>
-                  </div>
-                </div>
-
-                <div id="phase-success" class="section hidden">
-                  <div class="status success"><strong>Succès!</strong> Les questions ont été ajoutées au quiz.</div>
-                  <div id="success-message"></div>
-                  <div class="button-group">
-                    <button class="btn-primary" id="btnReset">Générer d'autres questions</button>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </div>
+        <section class="view" id="view-clustering">
+          <div id="clustering-dashboard-root"></div>
         </section>
 
         <div id="student-modal" class="modal-shell" hidden>
@@ -600,6 +609,7 @@
       </main>
     </div>
 
+    <script src="/backoffice/js/clusteringDashboard.js"></script>
     <script src="/backoffice/backoffice.js"></script>
   </body>
 </html>

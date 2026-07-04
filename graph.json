@@ -8,7 +8,7 @@
   "sub_skills": {
     "1.1": {
       "id": "1.1",
-      "title": "Lister les étapes pour passer d’un code source à un exécutable",
+      "title": "Lister les étapes pour passer d’un code source à un exécutable",    
       "level": 1,
       "related_to": ["8.1"],
       "depends_on": [],
