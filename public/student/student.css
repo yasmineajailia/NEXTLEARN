@@ -371,6 +371,8 @@ body.chatbot-open {
 }
 
 /* ── Cours view — stats bar ── */
+.cours-stats-bar[hidden] { display: none; }
+
 .cours-stats-bar {
   display: flex;
   padding: 0;

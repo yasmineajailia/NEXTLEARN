@@ -362,11 +362,20 @@ function normalizeCourseExtractedText(value: string): string {
     .trim();
 }
 
-function splitTextIntoRagSnippets(text: string, maxChars = 900, maxSnippets = 3): string[] {
+// Returns the trailing ~1 sentence of a chunk so the next chunk can carry a bit
+// of overlap. Retrieval quality improves when an idea that straddles a chunk
+// boundary still appears (partially) in the neighbouring chunk.
+function ragSnippetOverlapTail(text: string, maxTail = 220): string {
+  const slice = String(text || "").slice(-maxTail);
+  const match = slice.match(/[.!?]\s+([^]*)$/);
+  return normalizeWhitespace(match ? match[1] : slice);
+}
+
+function splitTextIntoRagSnippets(text: string, maxChars = 1000, maxSnippets = 10): string[] {
   const paragraphs = normalizeCourseExtractedText(text)
     .split(/\n\n+/)
     .map((entry) => normalizeWhitespace(entry))
-    .filter((entry) => entry.length >= 40);
+    .filter((entry) => entry.length >= 30);
 
   const snippets: string[] = [];
   let current = "";
@@ -387,7 +396,9 @@ function splitTextIntoRagSnippets(text: string, maxChars = 900, maxSnippets = 3)
       return snippets;
     }
 
-    current = paragraph;
+    // Seed the next chunk with the tail of this one for continuity.
+    const overlap = ragSnippetOverlapTail(current);
+    current = overlap && overlap.length < paragraph.length ? `${overlap}\n${paragraph}` : paragraph;
   }
 
   if (current && snippets.length < maxSnippets) {
@@ -456,7 +467,7 @@ async function extractCourseContentSnippetsFromUrl(url: string): Promise<string[
       return [];
     }
 
-    const snippets = splitTextIntoRagSnippets(rawText, 900, 6);
+    const snippets = splitTextIntoRagSnippets(rawText, 1000, 12);
     courseContentSnippetCache.set(cacheKey, snippets);
     return snippets;
   } catch (error) {
@@ -2840,20 +2851,60 @@ webRouter.get("/api/media/:fileId/:filename", async (req, res) => {
       (file.metadata as { contentType?: string } | undefined)?.contentType ||
       inferContentType(file.filename || req.params.filename);
 
+    const fileLength = Number(file.length) || 0;
+
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(file.filename || req.params.filename)}"`);
+    // Advertise range support so HTML5 <video>/<audio> can stream and seek.
+    res.setHeader("Accept-Ranges", "bytes");
 
-    const downloadStream = bucket.openDownloadStream(objectId);
-    downloadStream.on("error", (error) => {
-      console.error("Failed to stream media file:", error);
-      if (!res.headersSent) {
-        res.status(500).end("Failed to stream file");
-      } else {
-        res.end();
+    const pipeStream = (streamOptions?: { start: number; end: number }) => {
+      // GridFS `end` is exclusive.
+      const downloadStream = streamOptions
+        ? bucket.openDownloadStream(objectId, { start: streamOptions.start, end: streamOptions.end + 1 })
+        : bucket.openDownloadStream(objectId);
+      downloadStream.on("error", (error) => {
+        console.error("Failed to stream media file:", error);
+        if (!res.headersSent) {
+          res.status(500).end("Failed to stream file");
+        } else {
+          res.end();
+        }
+      });
+      // Stop reading from GridFS if the client aborts (e.g. seeking a video).
+      res.on("close", () => downloadStream.destroy());
+      downloadStream.pipe(res);
+    };
+
+    const rangeHeader = req.headers.range;
+    if (rangeHeader && fileLength > 0) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(String(rangeHeader).trim());
+      if (!match || (!match[1] && !match[2])) {
+        res.status(416).setHeader("Content-Range", `bytes */${fileLength}`).end();
+        return;
       }
-    });
 
-    downloadStream.pipe(res);
+      let start = match[1] ? parseInt(match[1], 10) : 0;
+      let end = match[2] ? parseInt(match[2], 10) : fileLength - 1;
+      if (Number.isNaN(start)) start = 0;
+      if (Number.isNaN(end) || end >= fileLength) end = fileLength - 1;
+
+      if (start > end || start >= fileLength || start < 0) {
+        res.status(416).setHeader("Content-Range", `bytes */${fileLength}`).end();
+        return;
+      }
+
+      res.status(206);
+      res.setHeader("Content-Range", `bytes ${start}-${end}/${fileLength}`);
+      res.setHeader("Content-Length", end - start + 1);
+      pipeStream({ start, end });
+      return;
+    }
+
+    if (fileLength > 0) {
+      res.setHeader("Content-Length", fileLength);
+    }
+    pipeStream();
   } catch (error) {
     console.error("Failed to load media file:", error);
     res.status(500).json({ message: "Impossible de charger le fichier" });
@@ -3939,7 +3990,7 @@ async function buildStudentRagIndex(params: {
       }
 
       const courseFiles = Array.isArray(subAcquis.courseFiles) ? subAcquis.courseFiles : [];
-      for (const file of courseFiles.slice(0, 3)) {
+      for (const file of courseFiles.slice(0, 5)) {
         const fileText = `Support ${subAcquis.id}: ${String(file.title || file.id || "").trim()}`;
         chunks.push({
           moduleId: moduleDoc.id,
@@ -3952,7 +4003,7 @@ async function buildStudentRagIndex(params: {
         });
 
         const snippets = await extractCourseContentSnippetsFromUrl(String(file.url || ""));
-        for (const snippet of snippets.slice(0, 4)) {
+        for (const snippet of snippets.slice(0, 8)) {
           const contentText = `Contenu support ${subAcquis.id} (${String(file.title || file.id || "support").trim()}): ${snippet}`;
           chunks.push({
             moduleId: moduleDoc.id,
@@ -4243,18 +4294,61 @@ function isAnswerGroundedInChunks(answer: string, chunks: StudentRagChunk[]): bo
     }
   }
 
-  return false;
+  // Content-overlap fallback: a natural answer that doesn't literally name the
+  // sub-acquis is still grounded if most of its meaningful words come from the
+  // retrieved chunk texts. This lets the model answer conversationally instead
+  // of being forced to echo lesson titles.
+  const chunkVocab = new Set<string>();
+  for (const chunk of chunks) {
+    for (const token of tokenizeForStudentRag(String(chunk.text || ""))) {
+      chunkVocab.add(token);
+    }
+  }
+  if (!chunkVocab.size) {
+    return false;
+  }
+
+  const answerTokens = tokenizeForStudentRag(answer).filter((token) => token.length >= 4);
+  if (answerTokens.length < 3) {
+    return false;
+  }
+
+  let overlap = 0;
+  for (const token of answerTokens) {
+    if (chunkVocab.has(token)) {
+      overlap += 1;
+    }
+  }
+
+  return overlap >= 4 || overlap / answerTokens.length >= 0.35;
 }
 
-async function generateStudentChatAnswer(question: string, topChunks: StudentRagChunk[]): Promise<string | null> {
-  if (!env.openaiApiKey && !env.geminiApiKey) {
-    return null;
-  }
+type StudentChatTurn = { role: "user" | "assistant"; content: string };
 
-  if (!topChunks.length) {
-    return null;
+/**
+ * Normalizes a raw `history` payload from the client into a bounded, safe list
+ * of prior conversation turns for conversation-memory-aware answers.
+ */
+function normalizeChatHistory(raw: unknown, maxTurns = 6): StudentChatTurn[] {
+  if (!Array.isArray(raw)) {
+    return [];
   }
+  return raw
+    .filter(
+      (entry): entry is StudentChatTurn =>
+        !!entry &&
+        typeof entry === "object" &&
+        (entry as any).role &&
+        typeof (entry as any).content === "string" &&
+        ((entry as any).role === "user" || (entry as any).role === "assistant")
+    )
+    .map((entry) => ({ role: entry.role, content: normalizeWhitespace(String(entry.content)).slice(0, 1500) }))
+    .filter((entry) => entry.content.length > 0)
+    .slice(-maxTurns);
+}
 
+/** Builds the shared system + user prompts used by both the buffered and streaming chat paths. */
+function buildStudentChatPrompts(question: string, topChunks: StudentRagChunk[]): { systemPrompt: string; userPrompt: string } {
   const context = topChunks
     .slice(0, 6)
     .map((chunk, index) => {
@@ -4265,15 +4359,45 @@ async function generateStudentChatAnswer(question: string, topChunks: StudentRag
     })
     .join("\n");
 
-  const systemPrompt =
-    "Tu es l'assistant pédagogique NextLearn. Réponds en français, de manière claire et concise. Utilise EXCLUSIVEMENT le contenu du module présent dans le contexte récupéré. N'utilise aucune connaissance externe, aucun exemple inventé et aucune information non visible dans le contexte. Si la question concerne le module affiché, même formulée de façon générale, réponds à partir du contexte du module. Si l'information manque dans le module, dis clairement que ce n'est pas présent dans le contenu fourni et propose de consulter les ressources du module. Ne refuse que si la question parle clairement d'un autre langage ou d'un sujet hors contexte.";
+  const systemPrompt = [
+    "Tu es l'assistant pédagogique NextLearn qui aide des étudiants à comprendre le cours de programmation en C. Ton ton est clair, pédagogique et encourageant.",
+    "",
+    "Règles de contenu (strictes) :",
+    "- Utilise UNIQUEMENT les informations du contexte fourni. N'invente rien, n'ajoute aucune connaissance externe ni exemple non présent dans le contexte.",
+    "- Si l'information n'est pas dans le contexte, dis-le simplement en une phrase et invite à consulter les ressources du module. Ne refuse la réponse que si la question porte clairement sur un autre langage ou un sujet hors-sujet.",
+    "- Tu peux t'appuyer sur les échanges précédents pour comprendre une question de suivi (« explique plus », « et pour ça ? »).",
+    "",
+    "Style de réponse :",
+    "- Va droit au but : commence par une phrase qui répond directement, puis développe si utile.",
+    "- Quand tu énumères des étapes ou des éléments, utilise une liste à puces courte plutôt qu'un long paragraphe.",
+    "- Si le contexte contient du code C pertinent, illustre avec un petit bloc ```c ... ```.",
+    "- Reste concis et naturel. Évite les formulations rigides comme « est défini comme suit » ou « le contexte indique ».",
+    "- N'ajoute PAS de section « Sources » : les sources sont affichées automatiquement sous ta réponse."
+  ].join("\n");
   const userPrompt = [
-    `Question étudiant: ${question}`,
-    "Contexte récupéré:",
+    `Question de l'étudiant : ${question}`,
+    "Contexte du module (seule source d'information autorisée) :",
     context,
-    "Consigne: réponds directement à la question en t'appuyant UNIQUEMENT sur le contexte du module, même si la formulation de l'étudiant est simple ou générale. Interdiction d'ajouter des informations externes. CITE explicitement au moins un élément du contexte (nom de sous-acquis, module.x.y ou extrait).",
-    "Termine par une section 'Sources:' avec 1 à 3 éléments au format '- module.sous-acquis - titre'."
+    "Réponds à la question de façon claire, pédagogique et naturelle, en t'appuyant uniquement sur ce contexte."
   ].join("\n\n");
+
+  return { systemPrompt, userPrompt };
+}
+
+async function generateStudentChatAnswer(
+  question: string,
+  topChunks: StudentRagChunk[],
+  history: StudentChatTurn[] = []
+): Promise<string | null> {
+  if (!env.openaiApiKey && !env.geminiApiKey) {
+    return null;
+  }
+
+  if (!topChunks.length) {
+    return null;
+  }
+
+  const { systemPrompt, userPrompt } = buildStudentChatPrompts(question, topChunks);
 
   if (env.geminiApiKey) {
     const chatModelName = await resolveGeminiModelForMethod(
@@ -4294,6 +4418,10 @@ async function generateStudentChatAnswer(question: string, topChunks: StudentRag
             parts: [{ text: systemPrompt }]
           },
           contents: [
+            ...history.map((turn) => ({
+              role: turn.role === "assistant" ? "model" : "user",
+              parts: [{ text: turn.content }]
+            })),
             {
               role: "user",
               parts: [{ text: userPrompt }]
@@ -4343,6 +4471,7 @@ async function generateStudentChatAnswer(question: string, topChunks: StudentRag
           role: "system",
           content: systemPrompt
         },
+        ...history.map((turn) => ({ role: turn.role, content: turn.content })),
         {
           role: "user",
           content: userPrompt
@@ -4368,6 +4497,192 @@ async function generateStudentChatAnswer(question: string, topChunks: StudentRag
   return content || null;
 }
 
+/**
+ * Streams a grounded chat answer token-by-token via the OpenAI-compatible
+ * (OpenRouter) chat endpoint, invoking `onDelta` for each text fragment.
+ * Returns the full accumulated answer, or null if streaming was unavailable
+ * (caller should fall back to the buffered path). Gemini has no streaming
+ * branch here — when only Gemini is configured this returns null.
+ */
+async function streamStudentChatAnswer(
+  question: string,
+  topChunks: StudentRagChunk[],
+  history: StudentChatTurn[],
+  onDelta: (delta: string) => void
+): Promise<string | null> {
+  if (!env.openaiApiKey || !topChunks.length) {
+    return null;
+  }
+
+  const { systemPrompt, userPrompt } = buildStudentChatPrompts(question, topChunks);
+
+  const response = await fetch(`${env.openaiChatBaseUrl.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.openaiApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: env.openaiChatModel,
+      temperature: 0.2,
+      stream: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...history.map((turn) => ({ role: turn.role, content: turn.content })),
+        { role: "user", content: userPrompt }
+      ]
+    })
+  });
+
+  if (!response.ok || !response.body) {
+    const errorText = response.ok ? "" : await response.text().catch(() => "");
+    throw new Error(`Chat stream failed (${response.status}): ${errorText}`);
+  }
+
+  const reader = (response.body as any).getReader
+    ? (response.body as unknown as ReadableStream<Uint8Array>).getReader()
+    : null;
+  if (!reader) {
+    return null;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+
+  // Parse the Server-Sent-Events stream: newline-delimited `data: {json}` lines,
+  // each carrying an incremental `choices[0].delta.content` fragment.
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line.startsWith("data:")) {
+        continue;
+      }
+      const data = line.slice(5).trim();
+      if (!data || data === "[DONE]") {
+        continue;
+      }
+      try {
+        const json = JSON.parse(data) as { choices?: Array<{ delta?: { content?: unknown } }> };
+        const delta = json.choices?.[0]?.delta?.content;
+        if (typeof delta === "string" && delta) {
+          full += delta;
+          onDelta(delta);
+        }
+      } catch {
+        // Ignore keep-alive comments / partial frames.
+      }
+    }
+  }
+
+  return full || null;
+}
+
+type StudentChatSource = {
+  moduleId: string;
+  moduleName: string;
+  subAcquisId: string | null;
+  subAcquisName: string | null;
+  kind: string;
+  excerpt: string;
+};
+
+type StudentChatContext =
+  | { kind: "empty"; answer: string }
+  | { kind: "scope-guard"; answer: string; embeddingScope?: unknown }
+  | { kind: "ok"; refinedChunks: StudentRagChunk[]; sources: StudentChatSource[]; responseMode: string };
+
+/**
+ * Shared retrieval + scope-guard pipeline for both the buffered and streaming
+ * chatbot endpoints. Returns the retrieved/refined chunks and their source
+ * descriptors, or an early-exit answer (no access / out-of-scope).
+ */
+async function buildStudentChatContext(params: {
+  identifier: string;
+  rawMessage: string;
+  filterToModuleId?: string;
+  filterToSubAcquisId?: string;
+}): Promise<StudentChatContext> {
+  const { identifier, rawMessage, filterToModuleId, filterToSubAcquisId } = params;
+
+  const [overview, persistedModules, access] = await Promise.all([
+    readPersistedProgramCOverview(),
+    readPersistedCurriculumModules(),
+    readClassAccessByStudentIdentifier(identifier)
+  ]);
+
+  const accessibleOverview = filterOverviewByAccess(overview, access);
+  if (!accessibleOverview.length) {
+    return {
+      kind: "empty",
+      answer:
+        "Je ne trouve aucun module disponible pour votre compte actuellement. Vérifiez votre calendrier ou contactez votre enseignant."
+    };
+  }
+
+  const rankedChunks = await getStudentVectorMatches({
+    persistedModules,
+    accessibleOverview,
+    question: rawMessage,
+    filterToModuleId,
+    filterToSubAcquisId
+  });
+
+  const refinedChunks = refineStudentRagChunks(rawMessage, rankedChunks);
+
+  // Refuse when question is about another language. The embedding scope-check
+  // is only a diagnostic on this refusal, so it is computed lazily here rather
+  // than on every request (it embeds the query + scans all module vectors).
+  if ((filterToModuleId || filterToSubAcquisId) && isQuestionOutsideLangageC(rawMessage)) {
+    const embeddingScopeCheck = filterToModuleId
+      ? await evaluateQuestionAgainstScopedModule({
+          persistedModules,
+          accessibleOverview,
+          question: rawMessage,
+          targetModuleId: filterToModuleId
+        })
+      : null;
+
+    return {
+      kind: "scope-guard",
+      answer:
+        "Je peux vous aider uniquement sur le module en cours et en langage C. Reformulez votre question sans mentionner un autre langage.",
+      embeddingScope: embeddingScopeCheck
+        ? {
+            targetModuleId: filterToModuleId || null,
+            targetScore: Number(embeddingScopeCheck.targetScore.toFixed(4)),
+            topModuleId: embeddingScopeCheck.topModuleId,
+            topScore: Number(embeddingScopeCheck.topScore.toFixed(4))
+          }
+        : undefined
+    };
+  }
+
+  const sources: StudentChatSource[] = refinedChunks.map((chunk) => ({
+    moduleId: chunk.moduleId,
+    moduleName: chunk.moduleName,
+    subAcquisId: chunk.subAcquisId,
+    subAcquisName: chunk.subAcquisName,
+    kind: chunk.kind,
+    excerpt: normalizeWhitespace(String(chunk.text || "")).slice(0, 300)
+  }));
+
+  return {
+    kind: "ok",
+    refinedChunks,
+    sources,
+    responseMode: hasEmbeddingProvider() ? "vector" : "rag"
+  };
+}
+
 webRouter.post("/api/student/chatbot", async (req, res) => {
   try {
     const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
@@ -4381,67 +4696,31 @@ webRouter.post("/api/student/chatbot", async (req, res) => {
       return res.status(400).json({ message: "Question requise" });
     }
 
-    const [overview, persistedModules, access] = await Promise.all([
-      readPersistedProgramCOverview(),
-      readPersistedCurriculumModules(),
-      readClassAccessByStudentIdentifier(identifier)
-    ]);
-
-    const accessibleOverview = filterOverviewByAccess(overview, access);
-    if (!accessibleOverview.length) {
-      return res.status(200).json({
-        answer:
-          "Je ne trouve aucun module disponible pour votre compte actuellement. Vérifiez votre calendrier ou contactez votre enseignant."
-      });
-    }
-
     const filterToModuleId = typeof req.body?.filterToModuleId === "string" ? req.body.filterToModuleId.trim() : undefined;
     const filterToSubAcquisId = typeof req.body?.filterToSubAcquisId === "string" ? req.body.filterToSubAcquisId.trim() : undefined;
+    const history = normalizeChatHistory(req.body?.history);
 
-    const rankedChunks = await getStudentVectorMatches({
-      persistedModules,
-      accessibleOverview,
-      question: rawMessage,
-      filterToModuleId,
-      filterToSubAcquisId
-    });
+    const context = await buildStudentChatContext({ identifier, rawMessage, filterToModuleId, filterToSubAcquisId });
 
-    const refinedChunks = refineStudentRagChunks(rawMessage, rankedChunks);
-
-    // Refuse when question is about another language. The embedding scope-check
-    // is only a diagnostic on this refusal, so it is computed lazily here rather
-    // than on every request (it embeds the query + scans all module vectors).
-    if ((filterToModuleId || filterToSubAcquisId) && isQuestionOutsideLangageC(rawMessage)) {
-      const embeddingScopeCheck = filterToModuleId
-        ? await evaluateQuestionAgainstScopedModule({
-            persistedModules,
-            accessibleOverview,
-            question: rawMessage,
-            targetModuleId: filterToModuleId
-          })
-        : null;
-
+    if (context.kind === "empty") {
+      return res.status(200).json({ answer: context.answer });
+    }
+    if (context.kind === "scope-guard") {
       return res.status(200).json({
-        answer:
-          "Je peux vous aider uniquement sur le module en cours et en langage C. Reformulez votre question sans mentionner un autre langage.",
+        answer: context.answer,
         mode: "scope-guard",
         retrieved: 0,
         sources: [],
-        embeddingScope: embeddingScopeCheck ? {
-          targetModuleId: filterToModuleId || null,
-          targetScore: Number(embeddingScopeCheck.targetScore.toFixed(4)),
-          topModuleId: embeddingScopeCheck.topModuleId,
-          topScore: Number(embeddingScopeCheck.topScore.toFixed(4))
-        } : undefined
+        embeddingScope: context.embeddingScope
       });
     }
 
-    let answer = buildStudentRagAnswer(rawMessage, refinedChunks);
-    let responseMode = hasEmbeddingProvider() ? "vector" : "rag";
+    let answer = buildStudentRagAnswer(rawMessage, context.refinedChunks);
+    let responseMode = context.responseMode;
 
     try {
-      const generated = await generateStudentChatAnswer(rawMessage, refinedChunks);
-      if (generated && !isRefusalLikeAnswer(generated) && isAnswerGroundedInChunks(generated, refinedChunks)) {
+      const generated = await generateStudentChatAnswer(rawMessage, context.refinedChunks, history);
+      if (generated && !isRefusalLikeAnswer(generated) && isAnswerGroundedInChunks(generated, context.refinedChunks)) {
         answer = generated;
         responseMode = `${responseMode}+llm`;
       }
@@ -4449,24 +4728,78 @@ webRouter.post("/api/student/chatbot", async (req, res) => {
       console.warn("Chat generation failed; using deterministic fallback:", error);
     }
 
-    const sources = refinedChunks.map((chunk) => ({
-      moduleId: chunk.moduleId,
-      moduleName: chunk.moduleName,
-      subAcquisId: chunk.subAcquisId,
-      subAcquisName: chunk.subAcquisName,
-      kind: chunk.kind,
-      excerpt: normalizeWhitespace(String(chunk.text || "")).slice(0, 300)
-    }));
-
     return res.status(200).json({
       answer,
       mode: responseMode,
-      retrieved: sources.length,
-      sources
+      retrieved: context.sources.length,
+      sources: context.sources
     });
   } catch (error) {
     console.error("Failed to answer student chatbot question:", error);
     return res.status(500).json({ message: "Impossible de générer une réponse pour le moment" });
+  }
+});
+
+// Streaming variant: emits Server-Sent Events so answers render token-by-token.
+// Events: `delta` { text }, `sources` { sources }, `meta` { mode }, `done` {}, `error` { message }.
+webRouter.post("/api/student/chatbot/stream", async (req, res) => {
+  const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+  const rawMessage = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  (res as unknown as { flushHeaders?: () => void }).flushHeaders?.();
+
+  const send = (event: string, data: unknown) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  if (!identifier || !rawMessage) {
+    send("error", { message: !identifier ? "Identifiant requis" : "Question requise" });
+    return res.end();
+  }
+
+  try {
+    const filterToModuleId = typeof req.body?.filterToModuleId === "string" ? req.body.filterToModuleId.trim() : undefined;
+    const filterToSubAcquisId = typeof req.body?.filterToSubAcquisId === "string" ? req.body.filterToSubAcquisId.trim() : undefined;
+    const history = normalizeChatHistory(req.body?.history);
+
+    const context = await buildStudentChatContext({ identifier, rawMessage, filterToModuleId, filterToSubAcquisId });
+
+    if (context.kind === "empty" || context.kind === "scope-guard") {
+      send("meta", { mode: context.kind === "scope-guard" ? "scope-guard" : "empty" });
+      send("delta", { text: context.answer });
+      send("sources", { sources: [] });
+      send("done", {});
+      return res.end();
+    }
+
+    send("meta", { mode: `${context.responseMode}+stream` });
+
+    let streamed: string | null = null;
+    try {
+      streamed = await streamStudentChatAnswer(rawMessage, context.refinedChunks, history, (delta) => {
+        send("delta", { text: delta });
+      });
+    } catch (error) {
+      console.warn("Chat stream failed; using deterministic fallback:", error);
+    }
+
+    // No streaming provider (or it failed): emit the deterministic answer at once.
+    if (!streamed) {
+      const fallback = buildStudentRagAnswer(rawMessage, context.refinedChunks);
+      send("delta", { text: fallback });
+    }
+
+    send("sources", { sources: context.sources });
+    send("done", {});
+    return res.end();
+  } catch (error) {
+    console.error("Failed to stream student chatbot answer:", error);
+    send("error", { message: "Impossible de générer une réponse pour le moment" });
+    return res.end();
   }
 });
 

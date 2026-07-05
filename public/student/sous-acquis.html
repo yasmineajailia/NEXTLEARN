@@ -918,6 +918,7 @@
                 <p class="chatbot-panel-title">Assistant NextLearn</p>
               </div>
               <div class="chatbot-panel-actions">
+                <button type="button" id="chatbot-clear-btn" class="chatbot-icon-btn" aria-label="Nouvelle conversation" title="Nouvelle conversation">↺</button>
                 <button type="button" id="chatbot-close-btn" class="chatbot-icon-btn" aria-label="Fermer l'assistant">×</button>
               </div>
             </header>
@@ -995,6 +996,7 @@
 
       const chatbotPanel      = document.getElementById("chatbot-panel");
       const chatbotCloseBtn   = document.getElementById("chatbot-close-btn");
+      const chatbotClearBtn   = document.getElementById("chatbot-clear-btn");
       const chatbotThread     = document.getElementById("chatbot-thread");
       const chatbotForm       = document.getElementById("chatbot-form");
       const chatbotInput      = document.getElementById("chatbot-input");
@@ -1048,8 +1050,60 @@
         renderTask: null, renderRequestId: 0
       };
 
-      const chatbotState = { bootstrapped: false };
+      const chatbotState = { bootstrapped: false, history: [] };
       const focusState   = { enabled: false, target: null };
+
+      /* ── Chat conversation memory + persistence ── */
+      const CHAT_HISTORY_TURNS = 6; // prior turns sent to the server for context
+      const chatStorageKey = (moduleId && subAcquisId)
+        ? `nextlearn_chat_${moduleId}_${subAcquisId}`
+        : "";
+
+      function loadStoredChatHistory() {
+        if (!chatStorageKey) return [];
+        try {
+          const raw = localStorage.getItem(chatStorageKey);
+          const arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr)
+            ? arr.filter((t) => t && (t.role === "user" || t.role === "assistant") && typeof t.content === "string")
+            : [];
+        } catch { return []; }
+      }
+      function saveChatHistory() {
+        if (!chatStorageKey) return;
+        try { localStorage.setItem(chatStorageKey, JSON.stringify(chatbotState.history.slice(-40))); } catch {}
+      }
+      function pushChatHistory(role, content) {
+        const text = String(content || "").trim();
+        if (!text) return;
+        chatbotState.history.push({ role, content: text });
+        saveChatHistory();
+      }
+      function recentChatHistory() {
+        return chatbotState.history.slice(-CHAT_HISTORY_TURNS).map((t) => ({ role: t.role, content: t.content }));
+      }
+      function restoreChatHistory() {
+        const saved = loadStoredChatHistory();
+        if (!saved.length || !chatbotThread) return;
+        chatbotState.history = saved;
+        chatbotState.bootstrapped = true; // keep restored convo instead of the greeting
+        saved.forEach((turn) => appendChatMessage(turn.role === "assistant" ? "bot" : "user", turn.content));
+      }
+      function clearChatConversation() {
+        chatbotState.history = [];
+        saveChatHistory();
+        if (chatbotThread) chatbotThread.innerHTML = "";
+        chatbotState.bootstrapped = false;
+        ensureChatbotWelcome();
+      }
+
+      // Builds a "module.sous — nom" label from a server source descriptor.
+      function chatSourceLabel(s) {
+        if (!s) return "";
+        const id = s.subAcquisId ? `${s.moduleId}.${s.subAcquisId}` : String(s.moduleId || "");
+        const name = s.subAcquisName || s.moduleName || "";
+        return name ? `${id} — ${name}` : id;
+      }
 
       pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs";
 
@@ -1432,6 +1486,71 @@
         chatbotThread.scrollTop = chatbotThread.scrollHeight;
       }
 
+      // Creates an empty bot bubble that can be filled incrementally as
+      // streamed tokens arrive, then finalized with a timestamp + sources.
+      function beginBotBubble() {
+        const row = document.createElement("div");
+        row.className = "chatbot-bubble-row bot";
+
+        const av = document.createElement("div");
+        av.className = "bubble-avatar";
+        av.textContent = "⚡";
+
+        const body = document.createElement("div");
+        body.className = "bubble-body";
+
+        const bubble = document.createElement("div");
+        bubble.className = "chatbot-bubble bot";
+
+        body.appendChild(bubble);
+        row.appendChild(av);
+        row.appendChild(body);
+        chatbotThread.appendChild(row);
+        chatbotThread.scrollTop = chatbotThread.scrollHeight;
+
+        const update = (text) => {
+          const { body: answerBody } = splitAnswerSources(text);
+          bubble.innerHTML = renderChatMarkdown(answerBody);
+          chatbotThread.scrollTop = chatbotThread.scrollHeight;
+        };
+
+        const finalize = (text, serverSources) => {
+          const { body: answerBody, sources: inlineSources } = splitAnswerSources(text);
+          bubble.innerHTML = renderChatMarkdown(answerBody);
+
+          // Prefer clean, structured server sources ("module.sous — nom") over the
+          // model's freeform lines, which can be truncated snippets. Dedupe labels.
+          const serverChips = Array.isArray(serverSources)
+            ? Array.from(new Set(serverSources.map(chatSourceLabel).filter(Boolean)))
+            : [];
+          const chips = serverChips.length ? serverChips : (inlineSources || []);
+          if (chips.length) {
+            const src = document.createElement("div");
+            src.className = "bubble-sources";
+            const label = document.createElement("span");
+            label.className = "bubble-sources-label";
+            label.textContent = "Sources";
+            src.appendChild(label);
+            chips.slice(0, 3).forEach((s) => {
+              const chip = document.createElement("span");
+              chip.className = "bubble-source-chip";
+              chip.textContent = s;
+              chip.title = s;
+              src.appendChild(chip);
+            });
+            bubble.appendChild(src);
+          }
+
+          const time = document.createElement("span");
+          time.className = "bubble-time";
+          time.textContent = "Maintenant";
+          body.appendChild(time);
+          chatbotThread.scrollTop = chatbotThread.scrollHeight;
+        };
+
+        return { update, finalize };
+      }
+
       function ensureChatbotWelcome() {
         if (chatbotState.bootstrapped || !chatbotThread) return;
         const lessonName = title?.textContent || "cette leçon";
@@ -1446,31 +1565,127 @@
         const question = String(chatbotInput?.value || "").trim();
         if (!question) return;
         ensureChatbotWelcome();
+
+        // Snapshot prior turns BEFORE adding the current question.
+        const priorHistory = recentChatHistory();
+
         appendChatMessage("user", question);
+        pushChatHistory("user", question);
         if (chatbotInput) chatbotInput.value = "";
         if (chatbotSendBtn) chatbotSendBtn.disabled = true;
 
         const typingRow = showChatTyping();
         try {
-          const res = await fetch("/api/student/chatbot", {
+          await streamChatbotAnswer(question, priorHistory, typingRow);
+        } catch {
+          typingRow?.remove();
+          const msg = "Une erreur réseau est survenue. Réessayez dans un instant.";
+          appendChatMessage("bot", msg);
+        } finally {
+          if (chatbotSendBtn) chatbotSendBtn.disabled = false;
+        }
+      }
+
+      // Buffered (non-streaming) fallback used when SSE is unavailable.
+      async function bufferedChatbotAnswer(question, history, typingRow) {
+        const res = await fetch("/api/student/chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            identifier: getCurrentIdentifier(),
+            message: question,
+            filterToModuleId: moduleId,
+            filterToSubAcquisId: subAcquisId || undefined,
+            history
+          })
+        });
+        const payload = await res.json().catch(() => ({}));
+        typingRow?.remove();
+        const answer = res.ok
+          ? String(payload?.answer || "Je n'ai pas trouvé de réponse pertinente.")
+          : String(payload?.message || "Je n'ai pas pu traiter votre question.");
+        appendChatMessage("bot", answer);
+        pushChatHistory("assistant", answer);
+      }
+
+      // Streams the answer via SSE, updating the bubble token-by-token.
+      async function streamChatbotAnswer(question, history, typingRow) {
+        let res;
+        try {
+          res = await fetch("/api/student/chatbot/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               identifier: getCurrentIdentifier(),
               message: question,
               filterToModuleId: moduleId,
-              filterToSubAcquisId: subAcquisId || undefined
+              filterToSubAcquisId: subAcquisId || undefined,
+              history
             })
           });
-          const payload = await res.json().catch(()=>({}));
-          typingRow?.remove();
-          if (!res.ok) { appendChatMessage("bot", String(payload?.message || "Je n'ai pas pu traiter votre question.")); return; }
-          appendChatMessage("bot", String(payload?.answer || "Je n'ai pas trouvé de réponse pertinente."));
         } catch {
-          typingRow?.remove();
-          appendChatMessage("bot", "Une erreur réseau est survenue. Réessayez dans un instant.");
+          return bufferedChatbotAnswer(question, history, typingRow);
         }
-        finally { if (chatbotSendBtn) chatbotSendBtn.disabled = false; }
+
+        if (!res.ok || !res.body || !res.body.getReader) {
+          return bufferedChatbotAnswer(question, history, typingRow);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let acc = "";
+        let sources = [];
+        let bot = null;
+
+        const ensureBot = () => {
+          if (!bot) { typingRow?.remove(); bot = beginBotBubble(); }
+          return bot;
+        };
+
+        const handleFrame = (frame) => {
+          const lines = frame.split("\n");
+          let evName = "message";
+          const dataParts = [];
+          for (const line of lines) {
+            if (line.startsWith("event:")) evName = line.slice(6).trim();
+            else if (line.startsWith("data:")) dataParts.push(line.slice(5).replace(/^ /, ""));
+          }
+          if (!dataParts.length) return;
+          let data = {};
+          try { data = JSON.parse(dataParts.join("\n")); } catch { return; }
+
+          if (evName === "delta" && typeof data.text === "string") {
+            acc += data.text;
+            ensureBot().update(acc);
+          } else if (evName === "sources") {
+            sources = Array.isArray(data.sources) ? data.sources : [];
+          } else if (evName === "error") {
+            acc = String(data.message || "Une erreur est survenue.");
+            ensureBot().update(acc);
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let sep;
+          while ((sep = buffer.indexOf("\n\n")) !== -1) {
+            const frame = buffer.slice(0, sep);
+            buffer = buffer.slice(sep + 2);
+            if (frame.trim()) handleFrame(frame);
+          }
+        }
+        if (buffer.trim()) handleFrame(buffer);
+
+        if (!bot) {
+          typingRow?.remove();
+          appendChatMessage("bot", acc || "Je n'ai pas trouvé de réponse pertinente.");
+        } else {
+          bot.finalize(acc, sources);
+        }
+        pushChatHistory("assistant", acc || "");
       }
 
       /* ── Focus mode ── */
@@ -1824,6 +2039,7 @@
       });
 
       chatbotCloseBtn?.addEventListener("click", closeChatbotPanel);
+      chatbotClearBtn?.addEventListener("click", clearChatConversation);
       chatbotForm?.addEventListener("submit", e => { e.preventDefault(); void submitChatbotQuestion(); });
       chatbotReopenBtn?.addEventListener("click", () => openChatbotPanel());
       focusModeBtn?.addEventListener("click", toggleFocusMode);
@@ -1844,6 +2060,7 @@
       /* ── Init ── */
       loadData();
       setupNextSubAcquisLink();
+      restoreChatHistory();
       if (moduleId) openChatbotPanel();
     </script>
   </body>

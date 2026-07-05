@@ -41,6 +41,7 @@ function buildDom() {
     logoutBtn: document.getElementById("logout-btn"),
     modulesListSection: document.getElementById("modules-list-section"),
     modulesListGrid: document.getElementById("modules-list-grid"),
+    coursStatsBar: document.querySelector(".cours-stats-bar"),
     moduleDetailSection: document.getElementById("module-detail-section"),
     moduleDetailTitle: document.getElementById("module-detail-title"),
     moduleDetailBack: document.getElementById("module-detail-back"),
@@ -301,6 +302,8 @@ function openModuleDetail(moduleId, moduleName) {
   if (!dom.modulesListSection || !dom.moduleDetailSection) return;
   dom.modulesListSection.hidden = true;
   dom.moduleDetailSection.hidden = false;
+  // The stats bar reflects progress within the open module, so show it only here.
+  if (dom.coursStatsBar) dom.coursStatsBar.hidden = false;
   if (dom.moduleDetailTitle) dom.moduleDetailTitle.textContent = moduleName;
   dom.contentHeader?.setAttribute("hidden", "true");
   dom.shell?.classList.add("course-focus");
@@ -314,6 +317,7 @@ function closeModuleDetail() {
   if (!dom.modulesListSection || !dom.moduleDetailSection) return;
   dom.moduleDetailSection.hidden = true;
   dom.modulesListSection.hidden = false;
+  if (dom.coursStatsBar) dom.coursStatsBar.hidden = true;
   dom.contentHeader?.removeAttribute("hidden");
   dom.shell?.classList.remove("course-focus");
 }
