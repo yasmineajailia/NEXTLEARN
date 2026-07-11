@@ -23,11 +23,144 @@ import { env } from "../config/env";
 import { MLPredictorService } from "../services/MLPredictorService";
 import {
   type PredictionFeatures,
+  type RiskFactor,
   computePredictionFeatures,
-  explainRiskFactors
+  computeShapValues,
+  explainGradeFactorsFromShap,
+  explainRiskFactors,
+  explainRiskFactorsFromShap
 } from "../services/prediction/features";
 
 const webRouter = Router();
+
+/**
+ * Builds the risk explanation for a feature vector. Prefers EXACT SHAP values
+ * (model-derived, faithful to the Random Forest) when the model is loaded, and
+ * falls back to the rule-based heuristic when it isn't.
+ */
+function buildRiskFactors(features: PredictionFeatures): RiskFactor[] {
+  if (MLPredictorService.isReady()) {
+    try {
+      return explainRiskFactorsFromShap(features, (f) => MLPredictorService.predict(f));
+    } catch (error) {
+      console.warn("[ML] SHAP explanation failed; using rule-based factors:", error);
+    }
+  }
+  return explainRiskFactors(features);
+}
+
+/** SHAP contributions per feature (for API transparency / charts); empty when the model isn't ready. */
+function buildShapValues(features: PredictionFeatures): Record<string, number> | undefined {
+  if (!MLPredictorService.isReady()) return undefined;
+  try {
+    return computeShapValues(features, (f) => MLPredictorService.predict(f));
+  } catch (error) {
+    console.warn("[ML] SHAP value computation failed:", error);
+    return undefined;
+  }
+}
+
+// ── Real `shap` library integration (Python microservice) ──────────────────
+// The Python service (ml/shap_service.py) serves canonical shap.TreeExplainer
+// values. We call it when available and fall back to the in-process JS exact-
+// Shapley implementation otherwise. A short circuit-breaker avoids paying the
+// request timeout on every call while the service is down.
+const SHAP_SERVICE_URL = process.env.SHAP_SERVICE_URL || "http://127.0.0.1:8000";
+const SHAP_SERVICE_TIMEOUT_MS = 2500;
+const SHAP_SERVICE_BACKOFF_MS = 30_000;
+let shapServiceDownUntil = 0;
+
+type RiskExplanation = {
+  riskFactors: RiskFactor[];
+  shapValues: Record<string, number> | undefined;
+  /** SHAP contributions to the predicted grade, in points /20. */
+  gradeShapValues: Record<string, number> | undefined;
+  /** Top drivers of the predicted grade (impacts in points /20). */
+  gradeFactors: RiskFactor[] | undefined;
+  /** "shap-python" = real shap lib, "shap-js" = exact JS Shapley, "rules" = heuristic fallback. */
+  explainSource: "shap-python" | "shap-js" | "rules";
+};
+
+type ShapServicePayload = {
+  riskFactors: RiskFactor[];
+  shapValues: Record<string, number> | undefined;
+  gradeShapValues: Record<string, number> | undefined;
+  gradeFactors: RiskFactor[] | undefined;
+};
+
+async function fetchShapFromService(features: PredictionFeatures): Promise<ShapServicePayload | null> {
+  if (Date.now() < shapServiceDownUntil) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SHAP_SERVICE_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${SHAP_SERVICE_URL.replace(/\/$/, "")}/explain`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(features),
+      signal: controller.signal
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const data = (await res.json()) as {
+      riskFactors?: RiskFactor[];
+      shapValues?: Record<string, number>;
+      gradeShapValues?: Record<string, number>;
+      gradeFactors?: RiskFactor[];
+    };
+    if (!Array.isArray(data.riskFactors)) throw new Error("malformed payload");
+    return {
+      riskFactors: data.riskFactors,
+      shapValues: data.shapValues,
+      gradeShapValues: data.gradeShapValues,
+      gradeFactors: Array.isArray(data.gradeFactors) ? data.gradeFactors : undefined
+    };
+  } catch (error) {
+    // Back off so we don't hammer a down service with per-request timeouts.
+    shapServiceDownUntil = Date.now() + SHAP_SERVICE_BACKOFF_MS;
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** In-process exact-Shapley explanation of the grade prediction (fallback path). */
+function buildGradeExplanation(
+  features: PredictionFeatures
+): { gradeShapValues: Record<string, number> | undefined; gradeFactors: RiskFactor[] | undefined } {
+  if (!MLPredictorService.isGradeReady()) {
+    return { gradeShapValues: undefined, gradeFactors: undefined };
+  }
+  try {
+    const { shapValues, factors } = explainGradeFactorsFromShap(
+      features,
+      (f) => MLPredictorService.predictGrade(f) ?? 0
+    );
+    return { gradeShapValues: shapValues, gradeFactors: factors };
+  } catch (error) {
+    console.warn("[ML] Grade SHAP computation failed:", error);
+    return { gradeShapValues: undefined, gradeFactors: undefined };
+  }
+}
+
+/**
+ * Resolves the risk + grade explanations, preferring the real `shap` library
+ * microservice and degrading gracefully to the in-process JS exact-Shapley
+ * (or rule-based) explanation when the service is unavailable.
+ */
+async function resolveRiskExplanation(features: PredictionFeatures): Promise<RiskExplanation> {
+  const remote = await fetchShapFromService(features);
+  if (remote) {
+    // Older service builds don't return grade fields — fill them locally.
+    const grade = remote.gradeShapValues ? { gradeShapValues: remote.gradeShapValues, gradeFactors: remote.gradeFactors } : buildGradeExplanation(features);
+    return { riskFactors: remote.riskFactors, shapValues: remote.shapValues, ...grade, explainSource: "shap-python" };
+  }
+  return {
+    riskFactors: buildRiskFactors(features),
+    shapValues: buildShapValues(features),
+    ...buildGradeExplanation(features),
+    explainSource: MLPredictorService.isReady() ? "shap-js" : "rules"
+  };
+}
 const publicRoot = path.join(process.cwd(), "public");
 const supportRoot = path.join(process.cwd(), "content", "Support_Cours_Préparation");
 const generatedQuizzesRoot = path.join(publicRoot, "generated-quizzes");
@@ -4348,7 +4481,11 @@ function normalizeChatHistory(raw: unknown, maxTurns = 6): StudentChatTurn[] {
 }
 
 /** Builds the shared system + user prompts used by both the buffered and streaming chat paths. */
-function buildStudentChatPrompts(question: string, topChunks: StudentRagChunk[]): { systemPrompt: string; userPrompt: string } {
+function buildStudentChatPrompts(
+  question: string,
+  topChunks: StudentRagChunk[],
+  lang: "fr" | "en" = "fr"
+): { systemPrompt: string; userPrompt: string } {
   const context = topChunks
     .slice(0, 6)
     .map((chunk, index) => {
@@ -4372,13 +4509,19 @@ function buildStudentChatPrompts(question: string, topChunks: StudentRagChunk[])
     "- Quand tu énumères des étapes ou des éléments, utilise une liste à puces courte plutôt qu'un long paragraphe.",
     "- Si le contexte contient du code C pertinent, illustre avec un petit bloc ```c ... ```.",
     "- Reste concis et naturel. Évite les formulations rigides comme « est défini comme suit » ou « le contexte indique ».",
-    "- N'ajoute PAS de section « Sources » : les sources sont affichées automatiquement sous ta réponse."
+    "- N'ajoute PAS de section « Sources » : les sources sont affichées automatiquement sous ta réponse.",
+    "",
+    lang === "en"
+      ? "Langue : l'étudiant utilise l'interface en ANGLAIS. Réponds intégralement en anglais, même si la question ou le contexte sont en français (le code C reste inchangé)."
+      : "Langue : réponds en français."
   ].join("\n");
   const userPrompt = [
     `Question de l'étudiant : ${question}`,
     "Contexte du module (seule source d'information autorisée) :",
     context,
-    "Réponds à la question de façon claire, pédagogique et naturelle, en t'appuyant uniquement sur ce contexte."
+    lang === "en"
+      ? "Answer the question clearly and naturally in English, relying only on this context."
+      : "Réponds à la question de façon claire, pédagogique et naturelle, en t'appuyant uniquement sur ce contexte."
   ].join("\n\n");
 
   return { systemPrompt, userPrompt };
@@ -4387,7 +4530,8 @@ function buildStudentChatPrompts(question: string, topChunks: StudentRagChunk[])
 async function generateStudentChatAnswer(
   question: string,
   topChunks: StudentRagChunk[],
-  history: StudentChatTurn[] = []
+  history: StudentChatTurn[] = [],
+  lang: "fr" | "en" = "fr"
 ): Promise<string | null> {
   if (!env.openaiApiKey && !env.geminiApiKey) {
     return null;
@@ -4397,7 +4541,7 @@ async function generateStudentChatAnswer(
     return null;
   }
 
-  const { systemPrompt, userPrompt } = buildStudentChatPrompts(question, topChunks);
+  const { systemPrompt, userPrompt } = buildStudentChatPrompts(question, topChunks, lang);
 
   if (env.geminiApiKey) {
     const chatModelName = await resolveGeminiModelForMethod(
@@ -4508,13 +4652,14 @@ async function streamStudentChatAnswer(
   question: string,
   topChunks: StudentRagChunk[],
   history: StudentChatTurn[],
-  onDelta: (delta: string) => void
+  onDelta: (delta: string) => void,
+  lang: "fr" | "en" = "fr"
 ): Promise<string | null> {
   if (!env.openaiApiKey || !topChunks.length) {
     return null;
   }
 
-  const { systemPrompt, userPrompt } = buildStudentChatPrompts(question, topChunks);
+  const { systemPrompt, userPrompt } = buildStudentChatPrompts(question, topChunks, lang);
 
   const response = await fetch(`${env.openaiChatBaseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
@@ -4699,6 +4844,7 @@ webRouter.post("/api/student/chatbot", async (req, res) => {
     const filterToModuleId = typeof req.body?.filterToModuleId === "string" ? req.body.filterToModuleId.trim() : undefined;
     const filterToSubAcquisId = typeof req.body?.filterToSubAcquisId === "string" ? req.body.filterToSubAcquisId.trim() : undefined;
     const history = normalizeChatHistory(req.body?.history);
+    const lang: "fr" | "en" = req.body?.lang === "en" ? "en" : "fr";
 
     const context = await buildStudentChatContext({ identifier, rawMessage, filterToModuleId, filterToSubAcquisId });
 
@@ -4719,7 +4865,7 @@ webRouter.post("/api/student/chatbot", async (req, res) => {
     let responseMode = context.responseMode;
 
     try {
-      const generated = await generateStudentChatAnswer(rawMessage, context.refinedChunks, history);
+      const generated = await generateStudentChatAnswer(rawMessage, context.refinedChunks, history, lang);
       if (generated && !isRefusalLikeAnswer(generated) && isAnswerGroundedInChunks(generated, context.refinedChunks)) {
         answer = generated;
         responseMode = `${responseMode}+llm`;
@@ -4765,6 +4911,7 @@ webRouter.post("/api/student/chatbot/stream", async (req, res) => {
     const filterToModuleId = typeof req.body?.filterToModuleId === "string" ? req.body.filterToModuleId.trim() : undefined;
     const filterToSubAcquisId = typeof req.body?.filterToSubAcquisId === "string" ? req.body.filterToSubAcquisId.trim() : undefined;
     const history = normalizeChatHistory(req.body?.history);
+    const lang: "fr" | "en" = req.body?.lang === "en" ? "en" : "fr";
 
     const context = await buildStudentChatContext({ identifier, rawMessage, filterToModuleId, filterToSubAcquisId });
 
@@ -4782,7 +4929,7 @@ webRouter.post("/api/student/chatbot/stream", async (req, res) => {
     try {
       streamed = await streamStudentChatAnswer(rawMessage, context.refinedChunks, history, (delta) => {
         send("delta", { text: delta });
-      });
+      }, lang);
     } catch (error) {
       console.warn("Chat stream failed; using deterministic fallback:", error);
     }
@@ -5820,14 +5967,21 @@ function extractMLFeatures(params: {
   totalSubAcquis?: number;
   /** Class schedule anchor — when present, delay is measured against the course timeline. */
   scheduleStartDate?: Date | string | null;
+  /** When set, features are scoped to a single module (lessons + quizzes of that module only). */
+  moduleId?: string;
 }): PredictionFeatures {
-  const { progress, profile, totalSubAcquis = 42, scheduleStartDate = null } = params;
+  const { progress, profile, totalSubAcquis = 42, scheduleStartDate = null, moduleId } = params;
 
-  const completedCount = Array.isArray(progress?.completedLessonKeys)
-    ? progress.completedLessonKeys.length
-    : 0;
+  const allCompletedKeys = Array.isArray(progress?.completedLessonKeys) ? progress.completedLessonKeys : [];
+  const completedKeys = moduleId
+    ? allCompletedKeys.filter((k) => typeof k === "string" && (k as string).startsWith(`${moduleId}::`))
+    : allCompletedKeys;
+  const completedCount = completedKeys.length;
 
-  const quizResults = Array.isArray(progress?.quizResults) ? progress.quizResults : [];
+  const allQuizResults = Array.isArray(progress?.quizResults) ? progress.quizResults : [];
+  const quizResults = moduleId
+    ? allQuizResults.filter((r) => String((r as any)?.moduleId || "") === moduleId)
+    : allQuizResults;
   const quizScores = quizResults.map((r) => Number(r?.score));
   const quizTimestamps = quizResults
     .map((r) => {
@@ -5853,6 +6007,92 @@ function extractMLFeatures(params: {
   });
 }
 
+type PredictionModuleInfo = { id: string; name: string; subAcquisCount: number };
+
+/** Modules that have content and can carry a meaningful prediction. */
+function listPredictionModules(moduleDocs: any[]): PredictionModuleInfo[] {
+  return moduleDocs
+    .filter((m) => m?.id && m?.name)
+    .map((m) => {
+      const acquisList = Array.isArray(m.acquis) ? m.acquis : [];
+      const subAcquisCount = acquisList.reduce(
+        (acc: number, ac: any) => acc + (Array.isArray(ac.sousAcquis) ? ac.sousAcquis.length : 0),
+        0
+      );
+      return { id: String(m.id), name: String(m.name), subAcquisCount };
+    })
+    .filter((m) => m.subAcquisCount > 0);
+}
+
+/** Picks the module the student is most active in (default for the dashboard selector). */
+function pickDefaultPredictionModule(
+  modules: PredictionModuleInfo[],
+  completedLessonKeys: string[],
+  quizResults: Array<{ moduleId?: unknown }>
+): PredictionModuleInfo | null {
+  if (!modules.length) return null;
+  const activity = new Map<string, number>();
+  for (const key of completedLessonKeys) {
+    const mid = String(key).split("::")[0];
+    if (mid) activity.set(mid, (activity.get(mid) || 0) + 1);
+  }
+  for (const quiz of quizResults) {
+    const mid = String((quiz as any)?.moduleId || "");
+    if (mid) activity.set(mid, (activity.get(mid) || 0) + 0.5);
+  }
+  return [...modules].sort((a, b) => (activity.get(b.id) || 0) - (activity.get(a.id) || 0))[0];
+}
+
+/**
+ * Computes a module-scoped risk + grade prediction (features restricted to one
+ * module's lessons/quizzes). Shared by the dashboard and the prediction endpoint
+ * so the two never diverge. When no requested module is valid, the student's
+ * most-active module is used.
+ */
+async function buildModuleScopedPrediction(params: {
+  progress: any;
+  profile: any;
+  scheduleStartDate: Date | null;
+  modules: PredictionModuleInfo[];
+  requestedModuleId?: string;
+}) {
+  const { progress, profile, scheduleStartDate, modules, requestedModuleId } = params;
+  const completedLessonKeys: string[] = Array.isArray(progress?.completedLessonKeys)
+    ? progress.completedLessonKeys.filter((k: unknown): k is string => typeof k === "string")
+    : [];
+  const quizResults = Array.isArray(progress?.quizResults) ? progress.quizResults : [];
+
+  const requested = requestedModuleId ? modules.find((m) => m.id === requestedModuleId) : null;
+  const target = requested || pickDefaultPredictionModule(modules, completedLessonKeys, quizResults);
+
+  const features = extractMLFeatures({
+    progress,
+    profile,
+    totalSubAcquis: target ? Math.max(target.subAcquisCount, 1) : 42,
+    scheduleStartDate,
+    moduleId: target?.id
+  });
+
+  const catchupProbability = MLPredictorService.predict(features);
+  const predictedGrade = MLPredictorService.predictGrade(features);
+  const explanation = await resolveRiskExplanation(features);
+
+  return {
+    moduleId: target?.id ?? null,
+    moduleName: target?.name ?? null,
+    modules: modules.map((m) => ({ id: m.id, name: m.name })),
+    catchupProbability,
+    probabilityPct: Math.round(catchupProbability * 100),
+    predictedGrade,
+    features,
+    riskFactors: explanation.riskFactors,
+    shapValues: explanation.shapValues,
+    gradeShapValues: explanation.gradeShapValues,
+    gradeFactors: explanation.gradeFactors,
+    explainSource: explanation.explainSource
+  };
+}
+
 webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
   try {
     const identifier = String(req.params.identifier || "").trim();
@@ -5860,10 +6100,12 @@ webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
       return res.status(400).json({ message: "Identifiant requis" });
     }
 
-    const [user, profile, totalSubAcquis] = await Promise.all([
+    const requestedModuleId = typeof req.query.moduleId === "string" ? req.query.moduleId.trim() : undefined;
+
+    const [user, profile, moduleDocs] = await Promise.all([
       User.findOne({ identifier }).select({ identifier: 1, progress: 1 }).lean(),
       StudentProfile.findOne({ identifier }).select({ loginCount: 1, lastLoginDate: 1, createdAt: 1, classId: 1 }).lean(),
-      resolveTotalSubAcquisCount()
+      CurriculumModule.find().select({ id: 1, name: 1, acquis: 1, sortOrder: 1 }).sort({ sortOrder: 1 }).lean()
     ]);
 
     if (!user) {
@@ -5876,22 +6118,15 @@ webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
       scheduleStartDate = (classRoom as any)?.scheduleStartDate || null;
     }
 
-    const features = extractMLFeatures({
+    const scoped = await buildModuleScopedPrediction({
       progress: (user as any).progress,
       profile: profile as any,
-      totalSubAcquis,
-      scheduleStartDate
+      scheduleStartDate,
+      modules: listPredictionModules(moduleDocs as any[]),
+      requestedModuleId
     });
 
-    const catchupProbability = MLPredictorService.predict(features);
-    const riskFactors = explainRiskFactors(features);
-
-    res.status(200).json({
-      identifier,
-      catchupProbability,
-      features,
-      riskFactors
-    });
+    res.status(200).json({ identifier, ...scoped });
   } catch (error) {
     console.error("Failed to compute prediction:", error);
     res.status(500).json({ message: "Impossible de calculer la prédiction" });
@@ -5901,7 +6136,7 @@ webRouter.get("/api/student/prediction/:identifier", async (req, res) => {
 // ---------------------------------------------------------------------------
 // ML Predictor — direct feature input endpoint (used by the test UI)
 // ---------------------------------------------------------------------------
-webRouter.post("/api/ml/predict", (req, res) => {
+webRouter.post("/api/ml/predict", async (req, res) => {
   try {
     const body = req.body ?? {};
     const parsed = {
@@ -5923,9 +6158,19 @@ webRouter.post("/api/ml/predict", (req, res) => {
 
     const probability = MLPredictorService.predict(parsed);
     const modelReady  = MLPredictorService.isReady();
-    const riskFactors = explainRiskFactors(parsed);
+    const explanation = await resolveRiskExplanation(parsed);
 
-    return res.status(200).json({ probability, modelReady, features: parsed, riskFactors });
+    return res.status(200).json({
+      probability,
+      modelReady,
+      predictedGrade: MLPredictorService.predictGrade(parsed),
+      features: parsed,
+      riskFactors: explanation.riskFactors,
+      shapValues: explanation.shapValues,
+      gradeShapValues: explanation.gradeShapValues,
+      gradeFactors: explanation.gradeFactors,
+      explainSource: explanation.explainSource
+    });
   } catch (err) {
     console.error("[ML] /api/ml/predict error:", err);
     return res.status(500).json({ message: "Prediction failed." });
@@ -7074,14 +7319,23 @@ webRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
       const classRoom = await ClassRoom.findById((profile as any).classId).select({ scheduleStartDate: 1 }).lean();
       predictionScheduleStart = (classRoom as any)?.scheduleStartDate || null;
     }
-    const features = extractMLFeatures({
+    const scopedPrediction = await buildModuleScopedPrediction({
+      progress: { completedLessonKeys, quizResults, selfEvaluationResults: selfEvalResults as any },
+      profile: profile as any,
+      scheduleStartDate: predictionScheduleStart,
+      modules: listPredictionModules(modulesRaw as any[]),
+      requestedModuleId: typeof req.query.moduleId === "string" ? req.query.moduleId.trim() : undefined
+    });
+    const catchupProbability = scopedPrediction.catchupProbability;
+
+    // Global (all-modules) activity metrics for the hero badges / insights —
+    // login frequency and pace are program-wide, unlike the scoped prediction.
+    const globalFeatures = extractMLFeatures({
       progress: { completedLessonKeys, quizResults, selfEvaluationResults: selfEvalResults as any },
       profile: profile as any,
       totalSubAcquis: Math.max(totalSubAcquis, 1),
       scheduleStartDate: predictionScheduleStart
     });
-    const catchupProbability = MLPredictorService.predict(features);
-    const riskFactors = explainRiskFactors(features);
 
     // Calendar
     let calendar: any[] = [];
@@ -7182,8 +7436,8 @@ webRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
       averageQuizScore: Math.round(avgQuizScore * 10) / 10,
       bestModule: bestModule ? { id: bestModule.id, name: bestModule.name, progressPct: bestModule.progressPct } : null,
       worstModule: worstModule ? { id: worstModule.id, name: worstModule.name, progressPct: worstModule.progressPct } : null,
-      loginFrequency: features.loginFrequency,
-      completionPace: features.completionPace,
+      loginFrequency: globalFeatures.loginFrequency,
+      completionPace: globalFeatures.completionPace,
       xp: Number(progress.xp || 0),
       streak: Math.min(Number(profile?.loginCount || 0), 30),
       totalLessons: stats.lessonsCompleted,
@@ -7203,10 +7457,18 @@ webRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
       progress: stats,
       overview,
       prediction: {
-        catchupProbability,
-        probabilityPct: Math.round(catchupProbability * 100),
-        features,
-        riskFactors
+        catchupProbability: scopedPrediction.catchupProbability,
+        probabilityPct: scopedPrediction.probabilityPct,
+        predictedGrade: scopedPrediction.predictedGrade,
+        moduleId: scopedPrediction.moduleId,
+        moduleName: scopedPrediction.moduleName,
+        modules: scopedPrediction.modules,
+        features: scopedPrediction.features,
+        riskFactors: scopedPrediction.riskFactors,
+        shapValues: scopedPrediction.shapValues,
+        gradeShapValues: scopedPrediction.gradeShapValues,
+        gradeFactors: scopedPrediction.gradeFactors,
+        explainSource: scopedPrediction.explainSource
       },
       calendarEntries: calendar.slice(0, 8),
       nextStep,

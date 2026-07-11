@@ -94,7 +94,22 @@ function labelFromPropensity(propensity: number, rng: () => number): number {
   return propensity + noise >= 0.5 ? 1 : 0;
 }
 
-function generateSyntheticRow(rng: () => number): { features: PredictionFeatures; label: number } {
+/**
+ * Exam-grade label (/20) from the same latent model, so the regression target
+ * is consistent with the classification label. The grade leans on the overall
+ * propensity but keeps a direct link to quiz performance (averageScore), plus
+ * noise so the mapping isn't a deterministic curve the forest can memorise.
+ */
+function gradeFromPropensity(propensity: number, f: PredictionFeatures, rng: () => number): number {
+  const base = 0.7 * propensity + 0.3 * (f.averageScore / 100);
+  const noise = (rng() - 0.5) * 3.5; // ±1.75 points
+  const grade = 1 + base * 18 + noise;
+  return Math.max(0, Math.min(20, Math.round(grade * 4) / 4));
+}
+
+type LabeledRow = { features: PredictionFeatures; label: number; grade: number };
+
+function generateSyntheticRow(rng: () => number): LabeledRow {
   const features: PredictionFeatures = {
     delayWeeks: randRange(rng, 0, 12),
     completionPace: randRange(rng, 0, 5),
@@ -104,12 +119,23 @@ function generateSyntheticRow(rng: () => number): { features: PredictionFeatures
     recencyRatio: randRange(rng, 0, 1),
     weakSkillRatio: randRange(rng, 0, 1)
   };
-  return { features, label: labelFromPropensity(successPropensity(features), rng) };
+  const propensity = successPropensity(features);
+  return {
+    features,
+    label: labelFromPropensity(propensity, rng),
+    grade: gradeFromPropensity(propensity, features, rng)
+  };
 }
 
 /** Proxy label for a real student (heuristic until true outcomes exist). */
 function proxyLabel(f: PredictionFeatures): number {
   return successPropensity(f) >= 0.5 ? 1 : 0;
+}
+
+/** Proxy grade for a real student — same mapping, no noise (deterministic). */
+function proxyGrade(f: PredictionFeatures): number {
+  const base = 0.7 * successPropensity(f) + 0.3 * (f.averageScore / 100);
+  return Math.max(0, Math.min(20, Math.round((1 + base * 18) * 4) / 4));
 }
 
 async function resolveTotalSubAcquis(): Promise<number> {
@@ -123,8 +149,8 @@ async function resolveTotalSubAcquis(): Promise<number> {
   return count > 0 ? count : 42;
 }
 
-async function collectRealStudentRows(): Promise<Array<{ features: PredictionFeatures; label: number }>> {
-  const rows: Array<{ features: PredictionFeatures; label: number }> = [];
+async function collectRealStudentRows(): Promise<LabeledRow[]> {
+  const rows: LabeledRow[] = [];
   try {
     const totalSubAcquis = await resolveTotalSubAcquis();
     const profiles = await StudentProfile.find()
@@ -162,7 +188,7 @@ async function collectRealStudentRows(): Promise<Array<{ features: PredictionFea
         now
       });
 
-      rows.push({ features, label: proxyLabel(features) });
+      rows.push({ features, label: proxyLabel(features), grade: proxyGrade(features) });
     }
   } catch (error) {
     console.warn("[gen] Could not collect real students (continuing with synthetic only):", error);
@@ -174,7 +200,7 @@ async function main(): Promise<void> {
   const rng = makeRng(SEED);
 
   console.log(`[gen] Generating ${SYNTHETIC_COUNT} synthetic rows (seed ${SEED}) …`);
-  const rows: Array<{ features: PredictionFeatures; label: number }> = [];
+  const rows: LabeledRow[] = [];
   for (let i = 0; i < SYNTHETIC_COUNT; i++) rows.push(generateSyntheticRow(rng));
 
   // Blend in real students when the database is reachable.
@@ -195,14 +221,14 @@ async function main(): Promise<void> {
     }
   }
 
-  const header = [...PREDICTION_FEATURE_KEYS, "caughtUp"].join(",");
+  const header = [...PREDICTION_FEATURE_KEYS, "caughtUp", "examGrade"].join(",");
   const lines = rows.map((row) => {
     const vals = PREDICTION_FEATURE_KEYS.map((key) => {
       const [min, max] = PREDICTION_FEATURE_RANGES[key];
       const v = Math.max(min, Math.min(max, Number(row.features[key]) || 0));
       return (Math.round(v * 1000) / 1000).toString();
     });
-    return [...vals, row.label].join(",");
+    return [...vals, row.label, row.grade].join(",");
   });
 
   await fs.writeFile(OUT_PATH, header + "\n" + lines.join("\n") + "\n", "utf8");

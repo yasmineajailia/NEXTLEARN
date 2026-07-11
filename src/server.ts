@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import { env } from "./config/env";
 import { webRouter, warmStudentVectorStore } from "./routes/web";
 import { clusteringRouter } from "./routes/backoffice/clustering";
+import { attentionRouter } from "./routes/backoffice/attention";
+import { attentionSessionRouter } from "./routes/student/attentionSession";
 import { MLPredictorService } from "./services/MLPredictorService";
 
 // App bootstrap.
@@ -30,6 +32,8 @@ app.use(
 // App routes.
 app.use(webRouter);
 app.use(clusteringRouter);
+app.use(attentionRouter);
+app.use(attentionSessionRouter);
 
 // Friendly 404 fallback for unknown routes.
 app.use((_req, res) => {

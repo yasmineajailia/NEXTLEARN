@@ -1,0 +1,7 @@
+shap>=0.52
+scikit-learn>=1.7
+pandas>=2.0
+numpy>=1.26
+fastapi>=0.115
+uvicorn[standard]>=0.30
+joblib>=1.3

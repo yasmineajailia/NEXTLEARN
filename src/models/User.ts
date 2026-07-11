@@ -28,6 +28,19 @@ type UserData = {
       xpEarned?: number;
       submittedAt?: Date;
     }>;
+    attentionSessions?: Array<{
+      sessionId: string;
+      context: "lesson" | "quiz";
+      moduleId?: string;
+      subAcquisId?: string;
+      duration: number;
+      avgFocusScore: number;
+      minFocusScore?: number;
+      distractionEvents?: Array<{ t: number; reason: string; duration: number }>;
+      focusTimeline?: Array<{ t: number; score: number }>;
+      completedAt?: Date;
+    }>;
+    avgFocusScore?: number | null;
   };
 };
 
@@ -107,7 +120,25 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
           }
         ],
         default: []
-      }
+      },
+      attentionSessions: {
+        type: [
+          {
+            sessionId: String,
+            context: { type: String, enum: ["lesson", "quiz"] },
+            moduleId: String,
+            subAcquisId: String,
+            duration: Number,
+            avgFocusScore: Number,
+            minFocusScore: Number,
+            distractionEvents: [{ t: Number, reason: String, duration: Number }],
+            focusTimeline: [{ t: Number, score: Number }],
+            completedAt: Date
+          }
+        ],
+        default: []
+      },
+      avgFocusScore: { type: Number, default: null }
     }
   },
   { timestamps: true }

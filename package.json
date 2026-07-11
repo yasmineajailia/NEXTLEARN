@@ -12,9 +12,15 @@
     "seed:modules": "tsx scripts/seed-modules.ts",
     "migrate:subject-modules": "tsx scripts/migrate-to-subject-modules.ts",
     "seed:clustering-demo": "tsx scripts/seed-clustering-demo.ts",
+    "resync:quizzes": "tsx scripts/resync-quizzes.ts",
     "generate:training-data": "tsx scripts/generate-training-data.ts",
     "train:model": "tsx scripts/train-model.ts",
-    "test:model": "tsx scripts/test-model.ts"
+    "train:grade-model": "tsx scripts/train-grade-model.ts",
+    "evaluate:models": "tsx scripts/evaluate-models.ts",
+    "test:fresh-data": "tsx scripts/test-on-fresh-data.ts",
+    "test:model": "tsx scripts/test-model.ts",
+    "shap:install": "python -m pip install -r ml/requirements.txt",
+    "shap:serve": "python ml/shap_service.py"
   },
   "keywords": [
     "node",

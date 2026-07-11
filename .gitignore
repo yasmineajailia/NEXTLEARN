@@ -8,3 +8,10 @@ yarn-error.log*
 /content/Support_Cours_Préparation/
 /public/generated-quizzes/
 
+# SHAP explainer — Python cache
+ml/__pycache__/
+__pycache__/
+
+# One-off DB backups produced by scripts/resync-quizzes.ts
+data/quizzes-backup-*.json
+
