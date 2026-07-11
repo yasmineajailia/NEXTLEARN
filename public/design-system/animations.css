@@ -1,0 +1,166 @@
+/* ==========================================================================
+   NextLearn Design System — animations.css
+   All keyframes + animation utility classes. Keyframe names are prefixed
+   ds- to avoid collisions with existing page stylesheets.
+   ========================================================================== */
+
+/* ==========================================================================
+   Keyframes
+   ========================================================================== */
+
+/* Skeleton shimmer — 200%-wide gradient sweeping left to right */
+@keyframes ds-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Button loading spinner */
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Toast entrance from the right */
+@keyframes ds-slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Toast / element dismissal */
+@keyframes ds-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Generic fade in (overlay, dropdown menus) */
+@keyframes ds-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal entrance */
+@keyframes ds-modal-in {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Page / section entrance */
+@keyframes ds-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Result card slide up */
+@keyframes ds-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Correct-answer reveal — border/background slides in from the left */
+@keyframes ds-reveal-left {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Wrong-answer horizontal shake */
+@keyframes ds-shake {
+  0%, 100% { transform: translateX(0); }
+  33% { transform: translateX(-5px); }
+  66% { transform: translateX(5px); }
+}
+
+/* Progress bar shimmer sweep (runs once after fill) */
+@keyframes ds-progress-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+/* Subtle attention pulse (e.g. a badge that just updated) */
+@keyframes ds-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ==========================================================================
+   Utility classes
+   ========================================================================== */
+
+.anim-page-enter {
+  animation: ds-page-enter 280ms ease both;
+}
+
+.anim-slide-up {
+  animation: ds-slide-up 350ms ease both;
+}
+
+.anim-fade-in {
+  animation: ds-fade-in 200ms ease both;
+}
+
+.anim-shake {
+  animation: ds-shake 200ms ease;
+}
+
+.anim-reveal-left {
+  animation: ds-reveal-left 300ms ease both;
+}
+
+.anim-pulse {
+  animation: ds-pulse 1.2s ease infinite;
+}
+
+/* Staggered list entrance: apply .anim-page-enter to children and add
+   .anim-stagger to the parent. Caps at 8 items to keep totals short. */
+.anim-stagger > :nth-child(1) { animation-delay: 0ms; }
+.anim-stagger > :nth-child(2) { animation-delay: 40ms; }
+.anim-stagger > :nth-child(3) { animation-delay: 80ms; }
+.anim-stagger > :nth-child(4) { animation-delay: 120ms; }
+.anim-stagger > :nth-child(5) { animation-delay: 160ms; }
+.anim-stagger > :nth-child(6) { animation-delay: 200ms; }
+.anim-stagger > :nth-child(7) { animation-delay: 240ms; }
+.anim-stagger > :nth-child(n + 8) { animation-delay: 280ms; }
+
+/* ==========================================================================
+   Reduced motion — collapse all movement to instant state changes.
+   Skeleton shimmer is kept (it conveys "loading", not decoration) but
+   slowed; every translate/scale/shake animation is disabled.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton {
+    animation: ds-pulse 2s ease infinite !important;
+    animation-duration: 2s !important;
+  }
+}

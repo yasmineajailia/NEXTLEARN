@@ -1,0 +1,155 @@
+/* ==========================================================================
+   NextLearn Design System — tokens.css
+   All design tokens as CSS custom properties.
+   Load this file BEFORE components.css / layouts.css / animations.css.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ---- Colors ------------------------------------------------------- */
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-surface-raised: #fafaf8;
+  --color-border: #e8e8e5;
+  --color-border-strong: #d4d4d0;
+
+  --color-ink: #111318;
+  --color-ink-secondary: #4a4f5c;
+  --color-ink-tertiary: #8a8f9c;
+
+  --color-accent: #c41d38;
+  --color-accent-dark: #8f1220;
+  --color-accent-subtle: #fdf0f2;
+
+  --color-success: #16a34a;
+  --color-success-subtle: #f0fdf4;
+  --color-warning: #d97706;
+  --color-warning-subtle: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-subtle: #fef2f2;
+  --color-info: #2563eb;
+  --color-info-subtle: #eff6ff;
+
+  /* Border tints used by badges (kept as tokens so dark mode can remap) */
+  --color-success-border: #bbf7d0;
+  --color-warning-border: #fed7aa;
+  --color-danger-border: #fecaca;
+  --color-info-border: #bfdbfe;
+  --color-accent-border: #fecdd3;
+
+  /* ---- Typography ---------------------------------------------------- */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-sans);
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs: 0.7rem;
+  --text-sm: 0.82rem;
+  --text-base: 0.95rem;
+  --text-md: 1.05rem;
+  --text-lg: 1.2rem;
+  --text-xl: 1.45rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: 2.2rem;
+
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.6;
+
+  /* ---- Spacing -------------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ---- Borders and radius --------------------------------------------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  /* ---- Shadows --------------------------------------------------------- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.09), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --shadow-focus: 0 0 0 3px rgba(196, 29, 56, 0.15);
+
+  /* ---- Transitions ------------------------------------------------------ */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
+}
+
+/* ==========================================================================
+   Dark theme remap — integrates with the existing site-wide theme toggle
+   (public/shared/theme.js sets data-theme="dark" on <html>).
+   Only the tokens change; every component inherits automatically.
+   ========================================================================== */
+:root[data-theme='dark'] {
+  --color-bg: #14161b;
+  --color-surface: #1b1e25;
+  --color-surface-raised: #22262e;
+  --color-border: #2c313b;
+  --color-border-strong: #3a4150;
+
+  --color-ink: #eceef2;
+  --color-ink-secondary: #a6adbb;
+  --color-ink-tertiary: #767d8c;
+
+  --color-accent: #e0435c;
+  --color-accent-dark: #c41d38;
+  --color-accent-subtle: rgba(224, 67, 92, 0.14);
+
+  --color-success: #34c46a;
+  --color-success-subtle: rgba(52, 196, 106, 0.12);
+  --color-warning: #e8940c;
+  --color-warning-subtle: rgba(232, 148, 12, 0.12);
+  --color-danger: #ef5350;
+  --color-danger-subtle: rgba(239, 83, 80, 0.12);
+  --color-info: #4f8ef7;
+  --color-info-subtle: rgba(79, 142, 247, 0.12);
+
+  --color-success-border: rgba(52, 196, 106, 0.35);
+  --color-warning-border: rgba(232, 148, 12, 0.35);
+  --color-danger-border: rgba(239, 83, 80, 0.35);
+  --color-info-border: rgba(79, 142, 247, 0.35);
+  --color-accent-border: rgba(224, 67, 92, 0.35);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-focus: 0 0 0 3px rgba(224, 67, 92, 0.28);
+}
+
+/* ==========================================================================
+   Color-blind-safe remap — integrates with the existing data-cvd="on" mode.
+   Success green is replaced by Okabe-Ito blue so success/danger never rely
+   on a red/green distinction.
+   ========================================================================== */
+:root[data-cvd='on'] {
+  --color-success: #0072b2;
+  --color-success-subtle: #eaf4fb;
+  --color-success-border: #b3d7ec;
+  --color-warning: #e69f00;
+  --color-warning-subtle: #fdf5e3;
+  --color-warning-border: #f2d491;
+}
+
+:root[data-theme='dark'][data-cvd='on'] {
+  --color-success: #3ba3dd;
+  --color-success-subtle: rgba(59, 163, 221, 0.12);
+  --color-success-border: rgba(59, 163, 221, 0.35);
+  --color-warning: #e6a817;
+  --color-warning-subtle: rgba(230, 168, 23, 0.12);
+  --color-warning-border: rgba(230, 168, 23, 0.35);
+}
