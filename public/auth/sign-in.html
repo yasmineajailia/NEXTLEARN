@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Connexion - NextLearn</title>
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
+    <title data-i18n="title.signIn">Connexion - NextLearn</title>
 
     <!-- Shared fonts keep visual consistency with the landing page. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,10 +29,10 @@
           <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
         </div>
 
-        <h1 id="signin-title">Se connecter</h1>
+        <h1 id="signin-title" data-i18n="auth.signInTitle">Se connecter</h1>
 
         <section id="student-signin-panel" class="auth-form-panel">
-          <p class="auth-subtitle">Accédez à vos modules, votre progression et vos évaluations.</p>
+          <p class="auth-subtitle" data-i18n="auth.studentSubtitle">Accédez à vos modules, votre progression et vos évaluations.</p>
 
           <form class="auth-form" id="signin-form-student" action="/api/sign-in" method="post">
             <div id="message-container-student" class="message-container" style="display: none;"></div>
@@ -37,21 +40,21 @@
             <input type="hidden" name="role" value="étudiant" />
 
             <label>
-              Email étudiant
+              <span data-i18n="auth.studentEmail">Email étudiant</span>
               <input type="email" name="email" placeholder="etudiant@esprit.tn" required />
             </label>
 
             <label>
-              Mot de passe
-              <input type="password" name="password" placeholder="Votre mot de passe étudiant" required />
+              <span data-i18n="auth.password">Mot de passe</span>
+              <input type="password" name="password" placeholder="Votre mot de passe étudiant" data-i18n-placeholder="auth.studentPwPh" required />
             </label>
 
-            <button class="auth-submit" type="submit">Se connecter</button>
+            <button class="auth-submit" type="submit" data-i18n="auth.signInTitle">Se connecter</button>
           </form>
         </section>
 
         <section id="teacher-signin-panel" class="auth-form-panel" hidden>
-          <p class="auth-subtitle">Accédez à l'espace enseignant pour gérer les classes et le contenu.</p>
+          <p class="auth-subtitle" data-i18n="auth.teacherSubtitle">Accédez à l'espace enseignant pour gérer les classes et le contenu.</p>
 
           <form class="auth-form" id="signin-form-teacher" action="/api/sign-in" method="post">
             <div id="message-container-teacher" class="message-container" style="display: none;"></div>
@@ -59,38 +62,38 @@
             <input type="hidden" name="role" value="enseignant" />
 
             <label>
-              Email enseignant
+              <span data-i18n="auth.teacherEmail">Email enseignant</span>
               <input type="email" name="email" placeholder="enseignant@esprit.tn" required />
             </label>
 
             <label>
-              Mot de passe
-              <input type="password" name="password" placeholder="Votre mot de passe enseignant" required />
+              <span data-i18n="auth.password">Mot de passe</span>
+              <input type="password" name="password" placeholder="Votre mot de passe enseignant" data-i18n-placeholder="auth.teacherPwPh" required />
             </label>
 
-            <button class="auth-submit" type="submit">Se connecter</button>
+            <button class="auth-submit" type="submit" data-i18n="auth.signInTitle">Se connecter</button>
           </form>
         </section>
 
         <div class="role-switch" id="role-switch" aria-label="Choix du type de compte">
-          <button type="button" class="role-switch-btn active" data-role="étudiant" aria-pressed="true">Étudiant</button>
-          <button type="button" class="role-switch-btn" data-role="enseignant" aria-pressed="false">Enseignant</button>
+          <button type="button" class="role-switch-btn active" data-role="étudiant" aria-pressed="true" data-i18n="auth.roleStudent">Étudiant</button>
+          <button type="button" class="role-switch-btn" data-role="enseignant" aria-pressed="false" data-i18n="auth.roleTeacher">Enseignant</button>
         </div>
 
         <p class="auth-alt">
-          Mot de passe oublié ?
-          <a href="/forgot-password">Réinitialiser mon mot de passe</a>
+          <span data-i18n="auth.forgotQ">Mot de passe oublié ?</span>
+          <a href="/forgot-password" data-i18n="auth.resetMyPw">Réinitialiser mon mot de passe</a>
         </p>
       </section>
 
       <!-- Right-side context panel to support the auth journey. -->
       <aside class="auth-aside" aria-label="Presentation NextLearn">
-        <h2>Apprenez avec un parcours adapté à votre niveau.</h2>
-        <p>
+        <h2 data-i18n="auth.signinAsideTitle">Apprenez avec un parcours adapté à votre niveau.</h2>
+        <p data-i18n="auth.signinAsideText">
           Connectez-vous pour retrouver vos cours, vos exercices personnalisés et vos indicateurs
           de progression.
         </p>
-        <a class="back-link" href="/">Retour à l'accueil</a>
+        <a class="back-link" href="/" data-i18n="auth.backHome">Retour à l'accueil</a>
       </aside>
     </main>
 
@@ -168,12 +171,12 @@
               }, 1500);
             } else {
               messageNode.className = 'message-container error';
-              messageNode.textContent = data.error || 'Erreur lors de la connexion';
+              messageNode.textContent = data.error || (window.I18N ? I18N.t('auth.errSignIn', 'Erreur lors de la connexion') : 'Erreur lors de la connexion');
               messageNode.style.display = 'block';
             }
           } catch (error) {
             messageNode.className = 'message-container error';
-            messageNode.textContent = 'Erreur reseau';
+            messageNode.textContent = window.I18N ? I18N.t('auth.errNetwork', 'Erreur reseau') : 'Erreur reseau';
             messageNode.style.display = 'block';
           }
         };

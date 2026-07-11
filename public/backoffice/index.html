@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Backoffice - NextLearn</title>
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
+    <title data-i18n="title.bo">Backoffice - NextLearn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -26,29 +29,45 @@
           </div>
 
           <article class="role-box" aria-label="Compte connecte">
-            <label>Connecté en tant que</label>
+            <label data-i18n="bo.connectedAs">Connecté en tant que</label>
             <strong id="sidebar-user-name">Utilisateur</strong>
-            <span id="sidebar-user-role" class="sidebar-role-chip">Enseignant</span>
+            <span id="sidebar-user-role" class="sidebar-role-chip" data-i18n="bo.teacher">Enseignant</span>
           </article>
         </div>
 
         <nav class="sidebar-nav" aria-label="Sections du back-office">
-          <button data-view="overview" class="nav-item active" type="button">Vue d'ensemble</button>
-          <button data-view="content" class="nav-item" type="button">Gestion des modules</button>
-          <button data-view="teachers" class="nav-item" type="button">Gestion des enseignants</button>
-          <button data-view="classes-create" class="nav-item" type="button">Gestion des classes</button>
-          <button data-view="classes-access" class="nav-item" type="button">Gérer l'accès aux modules</button>
-          <button data-view="clustering" class="nav-item" type="button">Profils d'apprentissage</button>
+          <button data-view="overview" class="nav-item active" type="button" data-i18n="bo.overview">Vue d'ensemble</button>
+          <button data-view="content" class="nav-item" type="button" data-i18n="bo.moduleMgmt">Gestion des modules</button>
+          <button data-view="teachers" class="nav-item" type="button" data-i18n="bo.teacherMgmt">Gestion des enseignants</button>
+          <button data-view="classes-create" class="nav-item" type="button" data-i18n="bo.classMgmt">Gestion des classes</button>
+          <button data-view="classes-access" class="nav-item" type="button" data-i18n="bo.accessMgmt">Gérer l'accès aux modules</button>
+          <button data-view="clustering" class="nav-item" type="button" data-i18n="bo.clustering">Profils d'apprentissage</button>
+          <button data-view="attention" class="nav-item" type="button" data-i18n="bo.attention">Suivi d'attention</button>
         </nav>
 
-        <a href="/" class="sidebar-home-link">Retour à l'accueil</a>
+        <!-- Pinned footer: display settings + home link, separated from navigation. -->
+        <div class="sidebar-footer">
+          <div class="theme-switch" role="group" aria-label="Options d'affichage">
+            <button type="button" class="theme-switch-btn" data-theme-toggle aria-pressed="false" title="Basculer clair / sombre">
+              <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
+            <button type="button" class="theme-switch-btn" data-cvd-toggle aria-pressed="false" title="Palette adaptée au daltonisme" data-i18n-title="sidebar.cvdToggle">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button type="button" class="theme-switch-btn theme-switch-lang" data-lang-toggle aria-pressed="false" title="Passer en français / Switch to English" data-i18n-title="sidebar.langToggle">
+              <span data-lang-label>EN</span>
+            </button>
+          </div>
+          <a href="/" class="sidebar-home-link" data-i18n="auth.backHome">Retour à l'accueil</a>
+        </div>
       </aside>
 
       <main class="main-panel">
         <header class="panel-header">
           <div>
-            <p class="eyebrow" id="panel-eyebrow">Vue d'ensemble</p>
-            <h2 id="panel-title">Tableau de bord de progression</h2>
+            <p class="eyebrow" id="panel-eyebrow" data-i18n="bo.overview">Vue d'ensemble</p>
+            <h2 id="panel-title" data-i18n="bo.overviewTitle">Tableau de bord de progression</h2>
           </div>
         </header>
 
@@ -68,28 +87,28 @@
 
           <div class="insights-row">
             <article class="card insight-card">
-              <h3 class="insight-title">Étudiants à risque</h3>
+              <h3 class="insight-title" data-i18n="bo.atRisk">Étudiants à risque</h3>
               <div id="at-risk-list" class="insight-list"></div>
             </article>
             <article class="card insight-card">
-              <h3 class="insight-title">Étudiants inactifs</h3>
+              <h3 class="insight-title" data-i18n="bo.inactive">Étudiants inactifs</h3>
               <div id="inactive-list" class="insight-list"></div>
             </article>
           </div>
 
           <div class="insights-row">
             <article class="card insight-card">
-              <h3 class="insight-title">Progression par classe</h3>
+              <h3 class="insight-title" data-i18n="bo.progressByClass">Progression par classe</h3>
               <div id="class-gauges" class="insight-list"></div>
             </article>
             <article class="card insight-card">
-              <h3 class="insight-title">Difficultés par module</h3>
+              <h3 class="insight-title" data-i18n="bo.difficultiesByModule">Difficultés par module</h3>
               <div id="quiz-struggle-list" class="insight-list"></div>
             </article>
           </div>
 
           <article class="card module-table-card">
-            <h3 class="insight-title">Vue des modules</h3>
+            <h3 class="insight-title" data-i18n="bo.modulesView">Vue des modules</h3>
             <div class="module-table-wrap">
               <table class="module-table">
                 <thead>
@@ -128,10 +147,10 @@
               <form id="module-insert-form" class="stack-form">
                 <label>
                   Nom du module
-                  <input type="text" id="module-insert-name" required placeholder="Exemple: Fonctions avancees" />
+                  <input type="text" id="module-insert-name" required placeholder="Exemple : Fonctions avancées" />
                 </label>
                 <div class="button-row">
-                  <button type="submit">Inserer le module</button>
+                  <button type="submit">Insérer le module</button>
                   <button type="button" id="module-insert-cancel-bottom" class="secondary-btn">Annuler</button>
                 </div>
               </form>
@@ -176,7 +195,7 @@
               <label>
                 Taxonomie de Bloom
                 <select name="bloomLevel" required>
-                  <option value="">Selectionner un niveau</option>
+                  <option value="">Sélectionner un niveau</option>
                   <option value="Memoriser">Memoriser</option>
                   <option value="Comprendre">Comprendre</option>
                   <option value="Appliquer">Appliquer</option>
@@ -198,7 +217,7 @@
                 <input type="url" name="videoUrl" placeholder="https://..." />
               </label>
               <div class="ai-quiz-panel full-row">
-                <button type="button" class="ai-quiz-toggle secondary-btn" id="add-ai-toggle">✨ Générer un quiz avec l'IA</button>
+                <button type="button" class="ai-quiz-toggle secondary-btn" id="add-ai-toggle">Générer un quiz avec l'IA</button>
                 <div class="ai-quiz-body" id="add-ai-body" hidden>
                   <div class="ai-quiz-config">
                     <label>Difficulté
@@ -250,7 +269,7 @@
                 <select id="sub-quiz-type">
                   <option value="qcm">QCM</option>
                   <option value="vrai-faux">Vrai/Faux</option>
-                  <option value="reponse-courte">Reponse courte</option>
+                  <option value="reponse-courte">Réponse courte</option>
                 </select>
               </label>
               <label class="full-row">
@@ -292,7 +311,7 @@
               <label>
                 Taxonomie de Bloom
                 <select id="sub-edit-bloom" required>
-                  <option value="">Selectionner un niveau</option>
+                  <option value="">Sélectionner un niveau</option>
                   <option value="Memoriser">Memoriser</option>
                   <option value="Comprendre">Comprendre</option>
                   <option value="Appliquer">Appliquer</option>
@@ -330,7 +349,7 @@
                 <select id="sub-edit-quiz-type">
                   <option value="qcm">QCM</option>
                   <option value="vrai-faux">Vrai/Faux</option>
-                  <option value="reponse-courte">Reponse courte</option>
+                  <option value="reponse-courte">Réponse courte</option>
                 </select>
               </label>
               <label class="full-row">
@@ -338,7 +357,7 @@
                 <textarea id="sub-edit-quiz-questions" rows="8" placeholder='[{"prompt":"...","options":["A","B","C","D"],"correctAnswerIndex":0}]'></textarea>
               </label>
               <div class="ai-quiz-panel full-row">
-                <button type="button" class="ai-quiz-toggle secondary-btn" id="edit-ai-toggle">✨ Générer un quiz avec l'IA</button>
+                <button type="button" class="ai-quiz-toggle secondary-btn" id="edit-ai-toggle">Générer un quiz avec l'IA</button>
                 <div class="ai-quiz-body" id="edit-ai-body" hidden>
                   <div class="ai-quiz-config">
                     <label>Difficulté
@@ -536,6 +555,16 @@
           </article>
         </section>
 
+        <section class="view" id="view-attention">
+          <div class="filters">
+            <label>
+              Classe
+              <select id="attention-class-select"></select>
+            </label>
+          </div>
+          <div id="attention-dashboard-root"></div>
+        </section>
+
         <section class="view" id="view-clustering">
           <div id="clustering-dashboard-root"></div>
         </section>
@@ -610,6 +639,7 @@
     </div>
 
     <script src="/backoffice/js/clusteringDashboard.js"></script>
+    <script src="/backoffice/js/attentionDashboard.js"></script>
     <script src="/backoffice/backoffice.js"></script>
   </body>
 </html>

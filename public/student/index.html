@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Espace Étudiant — NextLearn</title>
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
+    <title data-i18n="app.studentTitle">Espace Étudiant — NextLearn</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -1064,8 +1067,8 @@
 
       <main class="content">
         <header class="content-header" id="content-header">
-          <p class="eyebrow" id="page-eyebrow">Cours</p>
-          <h1 id="page-title">Mes cours disponibles</h1>
+          <p class="eyebrow" id="page-eyebrow" data-i18n="dash.eyebrowCourses">Cours</p>
+          <h1 id="page-title" data-i18n="dash.myCoursesTitle">Mes cours disponibles</h1>
         </header>
 
         <!-- ════════════════════════════════════════════════════════════════ -->
@@ -1079,8 +1082,8 @@
               <div class="hero-greeting">
                 <span class="hero-dot"></span>
                 <div>
-                  <p class="hero-eyebrow" id="dash-hero-eyebrow">Tableau de bord</p>
-                  <h2 class="hero-name" id="dash-hero-name">Bonjour !</h2>
+                  <p class="hero-eyebrow" id="dash-hero-eyebrow" data-i18n="dash.hero">Tableau de bord</p>
+                  <h2 class="hero-name" id="dash-hero-name" data-i18n="dash.hello">Bonjour !</h2>
                 </div>
               </div>
               <div class="hero-badges">
@@ -1094,20 +1097,20 @@
                 <div class="hero-badge hero-badge-streak" id="dash-hero-streak">
                   <span class="hero-badge-icon"></span>
                   <div>
-                    <span class="hero-badge-label">Serie</span>
+                    <span class="hero-badge-label" data-i18n="dash.streak">Série</span>
                     <strong class="hero-badge-value">0j</strong>
                   </div>
                 </div>
                 <div class="hero-badge hero-badge-login" id="dash-hero-login">
                   <span class="hero-badge-icon"></span>
                   <div>
-                    <span class="hero-badge-label">Progression</span>
+                    <span class="hero-badge-label" data-i18n="dash.progressLabel">Progression</span>
                     <strong class="hero-badge-value" id="dash-hero-progress">0%</strong>
                   </div>
                 </div>
               </div>
               <div class="hero-quote" id="dash-hero-quote">
-                <p>Continuez comme ca -- chaque petit pas compte !</p>
+                <p data-i18n="dash.heroQuote">Continuez comme ça — chaque petit pas compte.</p>
               </div>
             </article>
 
@@ -1115,8 +1118,12 @@
             <article class="dash-card card-prediction" id="dash-prediction">
               <div class="pred-header">
                 <span class="pred-dot"></span>
-                <h3>Prediction IA</h3>
+                <h3 data-i18n="dash.aiPrediction">Prédiction IA</h3>
               </div>
+              <label class="pred-module-select-wrap">
+                <span class="pred-module-select-label" data-i18n="common.module">Module</span>
+                <select id="dash-pred-module" class="pred-module-select" aria-label="Module concerné par la prédiction" data-i18n-aria="dash.predModuleAria" hidden></select>
+              </label>
               <div class="pred-gauge" id="dash-pred-gauge">
                 <svg viewBox="0 0 120 120" class="pred-svg">
                   <circle cx="60" cy="60" r="52" fill="none" stroke="var(--dash-line)" stroke-width="10"/>
@@ -1126,10 +1133,12 @@
                 </svg>
                 <div class="pred-center">
                   <span class="pred-pct" id="dash-pred-pct">--%</span>
-                  <span class="pred-label">rattrapage</span>
+                  <span class="pred-label" data-i18n="dash.ofSuccess">de réussite</span>
                 </div>
               </div>
-              <p class="pred-message" id="dash-pred-message">Analyse en cours...</p>
+              <p class="pred-grade" id="dash-pred-grade" hidden></p>
+              <p class="pred-grade-factors" id="dash-pred-grade-factors" hidden></p>
+              <p class="pred-message" id="dash-pred-message" data-i18n="dash.analyzing">Analyse en cours...</p>
               <div class="pred-features" id="dash-pred-features"></div>
             </article>
 
@@ -1137,13 +1146,13 @@
             <article class="dash-card card-action" id="dash-next-action">
               <div class="action-header">
                 <span class="action-dot"></span>
-                <h3>Prochaine etape</h3>
+                <h3 data-i18n="dash.nextStep">Prochaine étape</h3>
               </div>
               <div class="action-body" id="dash-action-body">
-                <p class="action-module" id="dash-action-module">Chargement...</p>
+                <p class="action-module" id="dash-action-module" data-i18n="common.loading">Chargement...</p>
                 <p class="action-sub" id="dash-action-sub"></p>
                 <button class="action-cta" id="dash-action-cta" type="button">
-                  <span>Continuer</span>
+                  <span data-i18n="dash.continue">Continuer</span>
                   <span class="action-arrow">→</span>
                 </button>
               </div>
@@ -1152,17 +1161,17 @@
             <!-- ── PROGRESS CHART (4/12) ── -->
             <article class="dash-card card-chart card-chart-overall">
               <div class="chart-head">
-                <h3>Progression globale</h3>
+                <h3 data-i18n="dash.overallProgress">Progression globale</h3>
               </div>
               <div class="chart-body" id="dash-radial-container">
-                <div class="radial-loading">Chargement...</div>
+                <div class="radial-loading" data-i18n="common.loading">Chargement...</div>
               </div>
             </article>
 
             <!-- ── WEAKEST MODULES ── -->
             <article class="dash-card card-weakest">
               <div class="chart-head">
-                <h3>Modules a renforcer</h3>
+                <h3 data-i18n="dash.weakModules">Modules à renforcer</h3>
               </div>
               <div id="dash-weakest-body" class="weakest-body"></div>
             </article>
@@ -1170,20 +1179,20 @@
             <!-- ── MODULE PROGRESS (13/13) ── -->
             <article class="dash-card card-module-progress">
               <div class="chart-head">
-                <h3>Progression par module</h3>
+                <h3 data-i18n="dash.moduleProgress">Progression par module</h3>
               </div>
               <div id="dash-module-progress-body" class="mod-prog-body"></div>
             </article>
 
             <!-- ── MISSION APPRENANT (full-width banner) ── -->
             <article class="dash-card card-vark" style="background:linear-gradient(135deg,#fdf2f4 0%,#fff 100%);border-color:rgba(196,29,56,.18);display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;">
-              <span style="font-size:2rem;line-height:1;">🚀</span>
+              <span style="flex-shrink:0;width:4px;height:44px;border-radius:2px;background:#c41d38;"></span>
               <div style="flex:1 1 260px;min-width:0;">
-                <h3 style="margin:0 0 0.15rem;font-size:1rem;">Mission Apprenant</h3>
-                <p style="margin:0;font-size:0.84rem;color:#6b7280;line-height:1.5;">4 défis pour découvrir ton profil d'équipier — et la meilleure façon d'apprendre sur NextLearn.</p>
+                <h3 style="margin:0 0 0.15rem;font-size:1rem;" data-i18n="sidebar.learnerMission">Mission Apprenant</h3>
+                <p style="margin:0;font-size:0.84rem;color:#6b7280;line-height:1.5;" data-i18n="dash.missionDesc">Huit mini-jeux pour découvrir ton profil d'apprentissage — et la meilleure façon de progresser sur NextLearn.</p>
               </div>
               <a href="/student/mission-apprenant" style="flex-shrink:0;display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.3rem;border-radius:999px;background:#c41d38;color:#fff;font-size:0.85rem;font-weight:700;text-decoration:none;transition:background .18s;" onmouseover="this.style.background='#a0152c'" onmouseout="this.style.background='#c41d38'">
-                Relever les défis →
+                <span data-i18n="dash.missionCta">Relever les défis →</span>
               </a>
             </article>
 
@@ -1198,15 +1207,15 @@
           <!-- Stats bar — module-scoped progress; shown only inside a module -->
           <article class="card cours-stats-bar" hidden>
             <div class="stat-line">
-              <span>Leçons complétées</span>
+              <span data-i18n="stats.lessonsCompleted">Leçons complétées</span>
               <strong id="stat-lessons-completed">0</strong>
             </div>
             <div class="stat-line">
-              <span>Quiz passés</span>
+              <span data-i18n="stats.quizzesPassed">Quiz passés</span>
               <strong id="stat-quizzes-passed">0</strong>
             </div>
             <div class="stat-line">
-              <span>Moyenne quiz</span>
+              <span data-i18n="stats.quizAverage">Moyenne quiz</span>
               <strong id="stat-quiz-average">0.0/20</strong>
             </div>
           </article>
@@ -1214,14 +1223,14 @@
           <!-- Module list (default) -->
           <div id="modules-list-section">
             <div id="modules-list-grid" class="modules-list-grid">
-              <p class="modules-loading">Chargement des modules…</p>
+              <p class="modules-loading" data-i18n="modules.loading">Chargement des modules…</p>
             </div>
           </div>
 
           <!-- Module detail (shown when a module is selected) -->
           <div id="module-detail-section" hidden>
             <div class="module-detail-header">
-              <button id="module-detail-back" type="button" class="module-back-btn">← Retour aux modules</button>
+              <button id="module-detail-back" type="button" class="module-back-btn" data-i18n="modules.back">← Retour aux modules</button>
               <h2 id="module-detail-title" class="module-detail-title"></h2>
             </div>
             <div id="course-embed-content" class="course-embed-content" aria-live="polite"></div>
@@ -1232,7 +1241,7 @@
         <!-- ── calendrier ── -->
         <section class="view" id="view-calendrier">
           <article class="card">
-            <h3>Calendrier des activités</h3>
+            <h3 data-i18n="calendar.title">Calendrier des activités</h3>
             <div class="calendar-term" id="calendar-list"></div>
           </article>
         </section>
@@ -1240,7 +1249,7 @@
         <!-- ── messages ── -->
         <section class="view" id="view-messages">
           <article class="card">
-            <h3>Messages des enseignants</h3>
+            <h3 data-i18n="dash.notifications">Notifications</h3>
             <div id="messages-list" class="messages-list"></div>
           </article>
         </section>

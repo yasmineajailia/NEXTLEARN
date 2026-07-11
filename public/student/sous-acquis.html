@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sous-acquis - Espace Etudiant</title>
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
+    <title data-i18n="title.lesson">Sous-acquis — Espace Étudiant</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -93,7 +96,7 @@
         transition: all 0.2s;
         box-shadow: 0 6px 16px rgba(178,31,45,.28);
       }
-      .video-button::before { content: "📹"; font-size: 0.85em; }
+      .video-button::before { content: "▸"; font-size: 1em; line-height: 1; }
       .video-button:hover {
         box-shadow: 0 8px 20px rgba(178,31,45,.38);
         transform: translateY(-1px);
@@ -286,12 +289,11 @@
         gap: 0.55rem;
       }
       .objectives-head h2::before {
-        content: "🎯";
-        font-size: 1rem;
-        width: 30px; height: 30px;
-        border-radius: 9px;
-        background: #fdecee;
-        display: inline-flex; align-items: center; justify-content: center;
+        content: "";
+        width: 4px; height: 20px;
+        border-radius: 2px;
+        background: #b21f2d;
+        display: inline-block;
         flex-shrink: 0;
       }
       .objectives-head {
@@ -335,6 +337,60 @@
       }
       .pill.pill-video .pill-dot { background: #ef4444; }
       .pill.pill-resources .pill-dot { background: #3b82f6; border: 2px solid #3b82f6; }
+
+      /* ── Learning-style recommendation banner ── */
+      .vark-reco {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        margin: 0 0 1.15rem;
+        padding: 0.8rem 1rem;
+        border-radius: 14px;
+        background: var(--vark-soft, rgba(50,102,173,.09));
+        border: 1px solid var(--vark-line, rgba(50,102,173,.28));
+      }
+      .vark-reco[hidden] { display: none; }
+      .vark-reco-badge {
+        flex-shrink: 0;
+        width: 40px; height: 40px;
+        border-radius: 11px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700; font-size: 1.05rem;
+        color: #fff;
+        background: var(--vark-color, #3266ad);
+      }
+      .vark-reco-body { flex: 1; min-width: 0; }
+      .vark-reco-title { margin: 0; font-weight: 700; font-size: 0.9rem; color: #182235; }
+      .vark-reco-text { margin: 0.12rem 0 0; font-size: 0.82rem; color: #5b6472; line-height: 1.45; }
+      .vark-reco-cta {
+        flex-shrink: 0;
+        text-decoration: none;
+        padding: 0.5rem 1.05rem;
+        border-radius: 999px;
+        background: var(--vark-color, #3266ad);
+        color: #fff;
+        font-weight: 700; font-size: 0.82rem;
+        white-space: nowrap;
+        transition: filter 0.15s ease;
+      }
+      .vark-reco-cta:hover { filter: brightness(1.08); }
+      .vark-reco-cta[hidden] { display: none; }
+      /* Recommended-for-you badge on video / quiz elements */
+      .reco-tag {
+        display: inline-flex; align-items: center;
+        margin-left: 0.4rem;
+        padding: 0.08rem 0.45rem;
+        border-radius: 999px;
+        font-size: 0.62rem; font-weight: 700;
+        letter-spacing: 0.03em; text-transform: uppercase;
+        background: var(--vark-color, #3266ad); color: #fff;
+        vertical-align: middle;
+      }
+      @media (max-width: 640px) {
+        .vark-reco { flex-wrap: wrap; }
+        .vark-reco-cta { width: 100%; text-align: center; }
+      }
 
       /* ── Resource grid ── */
       .resource-grid {
@@ -575,7 +631,9 @@
         width: 26px; height: 26px; border-radius: 50%;
         background: linear-gradient(135deg, #ef4444, #b21f2d);
         display: flex; align-items: center; justify-content: center;
-        font-size: 0.7rem; flex-shrink: 0; margin-top: 2px;
+        font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em;
+        color: #fff; font-family: "Space Grotesk", sans-serif;
+        flex-shrink: 0; margin-top: 2px;
       }
       .bubble-body { display: flex; flex-direction: column; gap: 0.2rem; max-width: 82%; }
       .chatbot-bubble-row.user .bubble-body { align-items: flex-end; }
@@ -817,18 +875,28 @@
         <!-- ── Left: lesson content ── -->
         <section class="lesson-content">
           <div class="top-bar">
-            <a class="back-link" id="back-to-modules-link" href="/student/?view=cours">← Retour aux modules</a>
+            <a class="back-link" id="back-to-modules-link" href="/student/?view=cours" data-i18n="modules.back">← Retour aux modules</a>
             <div class="top-actions">
-              <button type="button" id="focus-mode-btn" class="focus-mode-btn">Mode focus</button>
+              <button type="button" id="focus-mode-btn" class="focus-mode-btn" data-i18n="lesson.focusMode">Mode focus</button>
               <div id="video-links" class="resource-links"></div>
             </div>
           </div>
 
           <header class="lesson-header">
-            <span class="lesson-eyebrow">Sous-acquis</span>
+            <span class="lesson-eyebrow" data-i18n="lesson.subAcquis">Sous-acquis</span>
             <h1 class="title-line" id="title">Sous-acquis</h1>
             <div id="meta" class="meta"></div>
           </header>
+
+          <!-- Learning-style recommendation (filled by JS from the VARK result) -->
+          <div id="vark-reco" class="vark-reco" hidden>
+            <span class="vark-reco-badge" id="vark-reco-badge">V</span>
+            <div class="vark-reco-body">
+              <p class="vark-reco-title" id="vark-reco-title"></p>
+              <p class="vark-reco-text" id="vark-reco-text"></p>
+            </div>
+            <a class="vark-reco-cta" id="vark-reco-cta" href="#"></a>
+          </div>
 
           <section class="media-stage">
             <!-- Video thumbnail (shown when videoFiles present before play) -->
@@ -850,23 +918,23 @@
               <div class="viewer-toolbar">
                 <p class="viewer-title" id="viewer-title"></p>
                 <div class="viewer-controls" id="viewer-controls" hidden>
-                  <button type="button" id="prev-page-btn" aria-label="Page précédente">&#8592;</button>
+                  <button type="button" id="prev-page-btn" aria-label="Page précédente" data-i18n-aria="lesson.prevPage">&#8592;</button>
                   <span class="viewer-page-indicator" id="page-indicator">Page 1 / 1</span>
-                  <button type="button" id="next-page-btn" aria-label="Page suivante">&#8594;</button>
-                  <button type="button" id="fullscreen-btn" class="fullscreen-btn" aria-label="Plein écran PDF">&#x26F6;</button>
+                  <button type="button" id="next-page-btn" aria-label="Page suivante" data-i18n-aria="lesson.nextPage">&#8594;</button>
+                  <button type="button" id="fullscreen-btn" class="fullscreen-btn" aria-label="Plein écran PDF" data-i18n-aria="lesson.fullscreen">&#x26F6;</button>
                 </div>
               </div>
               <div id="pdf-canvas-wrap" class="pdf-canvas-wrap" hidden>
                 <canvas id="pdf-canvas"></canvas>
               </div>
-              <iframe id="viewer-frame" class="viewer-frame" title="Aperçu support de cours" scrolling="no" hidden></iframe>
+              <iframe id="viewer-frame" class="viewer-frame" title="Aperçu support de cours" data-i18n-title="lesson.pdfPreview" scrolling="no" hidden></iframe>
               <p id="viewer-note" class="viewer-note"></p>
             </section>
 
             <!-- Video player -->
             <section id="video-shell" class="video-shell" hidden>
               <div class="viewer-toolbar">
-                <p class="viewer-title" id="video-title">Aperçu vidéo</p>
+                <p class="viewer-title" id="video-title" data-i18n="lesson.videoPreview">Aperçu vidéo</p>
               </div>
               <video id="viewer-video" class="viewer-video" playsinline controls preload="metadata"></video>
               <p id="video-note" class="video-note"></p>
@@ -876,13 +944,13 @@
           <!-- Objectives card -->
           <section class="objectives-card">
             <div class="objectives-head">
-              <h2>Objectifs de la session</h2>
+              <h2 data-i18n="lesson.objectives">Objectifs de la session</h2>
               <div class="pill-row">
                 <span class="pill pill-video"><span class="pill-dot"></span>Video</span>
                 <span class="pill pill-resources"><span class="pill-dot"></span>Resources</span>
               </div>
             </div>
-            <p id="objectives-text" class="objectives-text">
+            <p id="objectives-text" class="objectives-text" data-i18n="lesson.objectivesText">
               Consultez le support de cours et la vidéo ci-dessus pour assimiler cette notion,
               puis validez vos acquis en passant le quiz. N'hésitez pas à interroger l'assistant si un point reste flou.
             </p>
@@ -891,22 +959,27 @@
 
           <div class="sub-nav-row">
             <a class="quiz-cta" id="quiz-cta" href="#" hidden>
-              <span class="quiz-cta-icon">📝</span>
+              <span class="quiz-cta-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 11l3 3L22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </span>
               <span class="quiz-cta-body">
-                <span class="quiz-cta-title">Passer le quiz</span>
-                <span class="quiz-cta-sub">Testez vos connaissances sur ce sous-acquis</span>
+                <span class="quiz-cta-title" data-i18n="lesson.takeQuiz">Passer le quiz</span>
+                <span class="quiz-cta-sub" data-i18n="lesson.testKnowledge">Testez vos connaissances sur ce sous-acquis</span>
               </span>
               <span class="quiz-cta-arrow">&#8594;</span>
             </a>
             <a class="sub-next-cta" id="next-sub-cta" href="#" hidden>
-              <span>Sous-acquis suivant</span><span>&#8594;</span>
+              <span data-i18n="lesson.nextSub">Sous-acquis suivant</span><span>&#8594;</span>
             </a>
           </div>
         </section>
 
         <!-- ── Right: chat panel ── -->
         <aside class="lesson-chat">
-          <button type="button" id="chatbot-reopen-btn" class="chatbot-reopen-btn" hidden>
+          <button type="button" id="chatbot-reopen-btn" class="chatbot-reopen-btn" data-i18n="chat.open" hidden>
             Ouvrir assistant
           </button>
 
@@ -915,11 +988,11 @@
             <header class="chatbot-panel-header">
               <div class="chatbot-header-left">
                 <div class="chatbot-avatar"></div>
-                <p class="chatbot-panel-title">Assistant NextLearn</p>
+                <p class="chatbot-panel-title" data-i18n="chat.title">Assistant NextLearn</p>
               </div>
               <div class="chatbot-panel-actions">
-                <button type="button" id="chatbot-clear-btn" class="chatbot-icon-btn" aria-label="Nouvelle conversation" title="Nouvelle conversation">↺</button>
-                <button type="button" id="chatbot-close-btn" class="chatbot-icon-btn" aria-label="Fermer l'assistant">×</button>
+                <button type="button" id="chatbot-clear-btn" class="chatbot-icon-btn" aria-label="Nouvelle conversation" title="Nouvelle conversation" data-i18n-aria="chat.newConv" data-i18n-title="chat.newConv">↺</button>
+                <button type="button" id="chatbot-close-btn" class="chatbot-icon-btn" aria-label="Fermer l'assistant" data-i18n-aria="chat.closeAssistant">×</button>
               </div>
             </header>
 
@@ -928,9 +1001,9 @@
 
             <!-- Quick actions -->
             <div class="chatbot-quick-actions">
-              <button type="button" class="chatbot-suggestion" data-prompt="Explique le mode 'append'">Explique le mode 'append'</button>
-              <button type="button" class="chatbot-suggestion" data-prompt="Erreur de lecture ?">Erreur de lecture ?</button>
-              <button type="button" class="chatbot-suggestion" data-prompt="Quiz rapide">Quiz rapide</button>
+              <button type="button" class="chatbot-suggestion" data-prompt="Explique cette leçon simplement" data-i18n="chat.sugExplain">Explique cette leçon simplement</button>
+              <button type="button" class="chatbot-suggestion" data-prompt="Donne un exemple de code" data-i18n="chat.sugExample">Donne un exemple de code</button>
+              <button type="button" class="chatbot-suggestion" data-prompt="Quels sont les points clés ?" data-i18n="chat.sugKeyPoints">Quels sont les points clés ?</button>
             </div>
 
             <!-- Input -->
@@ -941,10 +1014,10 @@
                   name="question"
                   type="text"
                   maxlength="280"
-                  placeholder="Posez votre question ici..."
+                  placeholder="Posez votre question ici..." data-i18n-placeholder="chat.inputPh"
                   required
                 />
-                <button type="submit" id="chatbot-send-btn" class="chatbot-send-btn" aria-label="Envoyer">
+                <button type="submit" id="chatbot-send-btn" class="chatbot-send-btn" aria-label="Envoyer" data-i18n-aria="common.send">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -953,7 +1026,7 @@
               </div>
             </form>
 
-            <p class="chatbot-disclaimer">L'IA peut générer des erreurs. Vérifiez les informations importantes.</p>
+            <p class="chatbot-disclaimer" data-i18n="chat.disclaimer">L'IA peut générer des erreurs. Vérifiez les informations importantes.</p>
           </section>
         </aside>
       </div>
@@ -961,6 +1034,7 @@
 
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script src="/student/sidebar-loader.js"></script>
+    <script src="/student/js/attentionTracker.js"></script>
     <script type="module">
       import * as pdfjsLib from "/vendor/pdfjs/pdf.min.mjs";
 
@@ -993,6 +1067,103 @@
 
       const quizCta       = document.getElementById("quiz-cta");
       const nextSubCta    = document.getElementById("next-sub-cta");
+
+      const varkReco      = document.getElementById("vark-reco");
+      const varkRecoBadge = document.getElementById("vark-reco-badge");
+      const varkRecoTitle = document.getElementById("vark-reco-title");
+      const varkRecoText  = document.getElementById("vark-reco-text");
+      const varkRecoCta   = document.getElementById("vark-reco-cta");
+
+      /* ── Learning-style (VARK) content recommendation ──
+         Maps the student's dominant VARK style (from Mission Apprenant) to the
+         content type best suited to them, given what this lesson actually has. */
+      const VARK_STYLES = {
+        visual:      { letter: "V", label: "Visuel",             color: "#3266ad", pref: ["video", "support", "quiz"], blurb: "Tu retiens mieux avec des images, des schémas et des vidéos." },
+        auditory:    { letter: "A", label: "Auditif",            color: "#7f77dd", pref: ["video", "support", "quiz"], blurb: "Tu apprends mieux en écoutant les explications." },
+        readwrite:   { letter: "R", label: "Lecture / écriture", color: "#1d9e75", pref: ["support", "video", "quiz"], blurb: "Tu retiens mieux en lisant le support et en prenant des notes." },
+        kinesthetic: { letter: "K", label: "Kinesthésique",      color: "#d85a30", pref: ["quiz", "video", "support"], blurb: "Tu apprends mieux en pratiquant." }
+      };
+      const VARK_TYPE = {
+        // video/support are opened automatically → informational (no button).
+        video:   { rec: "on a mis la vidéo en avant pour toi." },
+        support: { rec: "on a ouvert le support de cours pour toi." },
+        // quiz lives on another page → keep an action button.
+        quiz:    { rec: "teste-toi directement avec le quiz", cta: "Passer le quiz" }
+      };
+
+      function getVarkProfile() {
+        try {
+          const raw = JSON.parse(localStorage.getItem("nextlearn_vark_result") || "null");
+          if (raw && raw.dominant && VARK_STYLES[raw.dominant]) return raw;
+        } catch (_e) {}
+        return null;
+      }
+      function hexToRgba(hex, a) {
+        const m = String(hex).replace("#", "");
+        const full = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+        const n = parseInt(full, 16);
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+      }
+      function addRecoTag(el, color) {
+        if (!el || el.querySelector(".reco-tag")) return;
+        const tag = document.createElement("span");
+        tag.className = "reco-tag";
+        tag.textContent = "Pour toi";
+        tag.style.background = color;
+        el.appendChild(tag);
+      }
+
+      // Renders the banner and returns the recommended content type (or null).
+      function renderVarkRecommendation(avail, files, videoFiles) {
+        if (!varkReco) return null;
+        const profile = getVarkProfile();
+
+        // No profile yet → gentle nudge to take the Mission Apprenant game.
+        if (!profile) {
+          varkReco.style.setProperty("--vark-color", "#b21f2d");
+          varkReco.style.setProperty("--vark-soft", hexToRgba("#b21f2d", 0.08));
+          varkReco.style.setProperty("--vark-line", hexToRgba("#b21f2d", 0.25));
+          varkRecoBadge.textContent = "?";
+          varkRecoTitle.textContent = "Découvre ton style d'apprentissage";
+          varkRecoText.textContent = "Joue à « Mission Apprenant » pour qu'on adapte le contenu à ta façon d'apprendre.";
+          varkRecoCta.textContent = "Découvrir mon profil";
+          varkRecoCta.href = "/student/mission-apprenant";
+          varkRecoCta.onclick = null;
+          varkRecoCta.hidden = false;
+          varkReco.hidden = false;
+          return null;
+        }
+
+        const style = VARK_STYLES[profile.dominant];
+        const recType = style.pref.find((t) => avail[t]) || null;
+        if (!recType) { varkReco.hidden = true; return null; }
+        const info = VARK_TYPE[recType];
+
+        varkReco.style.setProperty("--vark-color", style.color);
+        varkReco.style.setProperty("--vark-soft", hexToRgba(style.color, 0.1));
+        varkReco.style.setProperty("--vark-line", hexToRgba(style.color, 0.3));
+        varkRecoBadge.textContent = style.letter;
+        varkRecoTitle.textContent = `Profil ${style.label} — ${info.rec}`;
+        varkRecoText.textContent = style.blurb;
+
+        // Only show an action button when it leads somewhere new (the quiz page).
+        // Video/support are already opened in the viewer, so a button is redundant.
+        if (info.cta) {
+          varkRecoCta.textContent = info.cta;
+          varkRecoCta.href = "#";
+          varkRecoCta.onclick = (e) => { e.preventDefault(); window.location.href = quizCta.href; };
+          varkRecoCta.hidden = false;
+        } else {
+          varkRecoCta.hidden = true;
+          varkRecoCta.onclick = null;
+        }
+        varkReco.hidden = false;
+
+        if (recType === "video") addRecoTag(videoLinks.querySelector(".video-button"), style.color);
+        else if (recType === "quiz") addRecoTag(quizCta.querySelector(".quiz-cta-title"), style.color);
+
+        return recType;
+      }
 
       const chatbotPanel      = document.getElementById("chatbot-panel");
       const chatbotCloseBtn   = document.getElementById("chatbot-close-btn");
@@ -1119,7 +1290,7 @@
 
       function iconForLabel(label) {
         const map = { PDF:"", PPT:"", ZIP:"", VIDEO:"" };
-        return map[label] || "📁";
+        return map[label] || "";
       }
       function iconClassForLabel(label) {
         const map = { PDF:"icon-pdf", PPT:"icon-ppt", ZIP:"icon-zip", VIDEO:"icon-video" };
@@ -1198,7 +1369,7 @@
         items.filter(Boolean).forEach(({ icon, text, cls }) => {
           const span = document.createElement("span");
           span.className = "meta-item" + (cls ? ` ${cls}` : "");
-          span.innerHTML = `<span class="meta-icon">${icon}</span>${text}`;
+          span.innerHTML = icon ? `<span class="meta-icon">${icon}</span>${text}` : text;
           meta.appendChild(span);
         });
       }
@@ -1402,7 +1573,7 @@
 
         const av = document.createElement("div");
         av.className = "bubble-avatar";
-        av.textContent = "⚡";
+        av.textContent = "IA";
 
         const body = document.createElement("div");
         body.className = "bubble-body";
@@ -1424,12 +1595,12 @@
         const row = document.createElement("div");
         row.className = `chatbot-bubble-row ${role}`;
 
-        const timeLabel = "Maintenant";
+        const timeLabel = window.I18N ? window.I18N.t("chat.now", "Maintenant") : "Maintenant";
 
         if (role === "bot") {
           const av = document.createElement("div");
           av.className = "bubble-avatar";
-          av.textContent = "⚡";
+          av.textContent = "IA";
 
           const body = document.createElement("div");
           body.className = "bubble-body";
@@ -1494,7 +1665,7 @@
 
         const av = document.createElement("div");
         av.className = "bubble-avatar";
-        av.textContent = "⚡";
+        av.textContent = "IA";
 
         const body = document.createElement("div");
         body.className = "bubble-body";
@@ -1543,7 +1714,7 @@
 
           const time = document.createElement("span");
           time.className = "bubble-time";
-          time.textContent = "Maintenant";
+          time.textContent = window.I18N ? window.I18N.t("chat.now", "Maintenant") : "Maintenant";
           body.appendChild(time);
           chatbotThread.scrollTop = chatbotThread.scrollHeight;
         };
@@ -1556,7 +1727,7 @@
         const lessonName = title?.textContent || "cette leçon";
         appendChatMessage(
           "bot",
-          `Bonjour 👋 Je suis là pour t'aider à comprendre la leçon sur ${lessonName}. As-tu des questions sur le contenu présenté ?`
+          window.I18N && window.I18N.isEn ? `Hello, I am here to help you understand the lesson on ${lessonName}. Any questions about the content?` : `Bonjour, je suis là pour t'aider à comprendre la leçon sur ${lessonName}. As-tu des questions sur le contenu présenté ?`
         );
         chatbotState.bootstrapped = true;
       }
@@ -1596,7 +1767,8 @@
             message: question,
             filterToModuleId: moduleId,
             filterToSubAcquisId: subAcquisId || undefined,
-            history
+            history,
+            lang: window.I18N ? window.I18N.lang : "fr"
           })
         });
         const payload = await res.json().catch(() => ({}));
@@ -1620,7 +1792,8 @@
               message: question,
               filterToModuleId: moduleId,
               filterToSubAcquisId: subAcquisId || undefined,
-              history
+              history,
+              lang: window.I18N ? window.I18N.lang : "fr"
             })
           });
         } catch {
@@ -1936,7 +2109,7 @@
 
         quizCta.href = `/student/questionnaire.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}`;
         title.textContent = `Module ${moduleId} – Sous-acquis ${subAcquisId}`;
-        setMetaItems([{ icon: "⏱", text: "Chargement..." }]);
+        setMetaItems([{ text: "Chargement…" }]);
 
         try {
           const id  = encodeURIComponent(getCurrentIdentifier());
@@ -1955,9 +2128,9 @@
           title.textContent = `${subName}`;
 
           const metaItems = [];
-          if (duration) metaItems.push({ icon: "⏱", text: `${duration}` });
-          metaItems.push({ icon: "📋", text: modName });
-          if (progress) metaItems.push({ icon: "✅", text: `Complété à ${progress}`, cls: "completed" });
+          if (duration) metaItems.push({ text: `${duration}` });
+          metaItems.push({ text: modName });
+          if (progress) metaItems.push({ icon: "✓", text: `Complété à ${progress}`, cls: "completed" });
 
           setMetaItems(metaItems);
           markLessonAsViewed();
@@ -1996,7 +2169,12 @@
             });
           }
 
-          if (files.length > 0)      previewCourseFile(files[0]);
+          // Learning-style recommendation — banner + which content to open first.
+          const varkAvail = { video: videoFiles.length > 0, support: files.length > 0, quiz: questions.length > 0 };
+          const recType = renderVarkRecommendation(varkAvail, files, videoFiles);
+
+          if (recType === "video" && videoFiles.length) previewCourseFile(videoFiles[0]);
+          else if (files.length > 0)  previewCourseFile(files[0]);
           else if (videoFiles.length) previewCourseFile(videoFiles[0]);
 
           refreshFocusTarget();
@@ -2062,6 +2240,18 @@
       setupNextSubAcquisLink();
       restoreChatHistory();
       if (moduleId) openChatbotPanel();
+
+      /* ── Attention tracking (opt-in, 100% local processing) ── */
+      if (window.AttentionTracker && moduleId && subAcquisId) {
+        AttentionTracker.init();
+        const attSessionId = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : "att-" + Date.now();
+        void AttentionTracker.start(attSessionId, "lesson", moduleId, subAcquisId);
+        // pagehide fires on both navigation and tab close (more reliable than
+        // beforeunload); the summary POST uses keepalive so it survives unload.
+        window.addEventListener("pagehide", () => { void AttentionTracker.stop(); }, { once: true });
+      }
     </script>
   </body>
 </html>

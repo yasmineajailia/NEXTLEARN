@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
     <title>Auto-evaluation | Quiz</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -332,7 +335,7 @@
       </section>
 
       <section class="card summary" id="summary-card" hidden>
-        <h2>Resultat final</h2>
+        <h2>Résultat final</h2>
         <p class="score-line" id="summary-score"></p>
         <p id="summary-xp" style="font-weight: 700; color: var(--accent); margin: 0.5rem 0; font-size: 1.1rem;"></p>
         <p id="summary-detail"></p>
@@ -502,7 +505,7 @@
         const correctLabel =
           correctIndex !== null && question.options[correctIndex]
             ? question.options[correctIndex]
-            : "Reponse indisponible";
+            : "Réponse indisponible";
 
         if (timedOut) {
           answerFeedback.textContent = `Temps ecoule. Bonne reponse: ${correctLabel}.`;

@@ -22,6 +22,66 @@ let dom = null;
 let dashCharts = { overall: null, modules: null, quizzes: null };
 let dashData = null;
 
+// i18n: tr(key, frenchFallback, vars) — English via shared/i18n.js, French inline.
+const tr = (key, fr, vars) => (window.I18N ? window.I18N.t(key, fr, vars) : fr);
+const NUM_LOCALE = window.I18N && window.I18N.isEn ? "en-US" : "fr-FR";
+if (window.I18N) {
+  window.I18N.extend({
+    "view.dashboardEyebrow": "Dashboard",
+    "view.dashboardTitle": "My progress",
+    "view.coursEyebrow": "Courses",
+    "view.coursTitle": "My available courses",
+    "view.calendarEyebrow": "Calendar",
+    "view.calendarTitle": "Activity calendar",
+    "view.messagesEyebrow": "Notifications",
+    "view.messagesTitle": "Notifications",
+    "dash.helloName": "Hello, {name}!",
+    "dash.heroLessons": "Dashboard • {n} lessons",
+    "dash.quoteHigh": "Great work — you are on track to succeed.",
+    "dash.quoteMid": "Keep up the effort — every lesson counts to catch up.",
+    "dash.quoteLow": "Don't give up: talk to your teacher to get help.",
+    "dash.actionIncomplete": "Sub-skill not completed yet",
+    "dash.allDone": "Everything is completed.",
+    "dash.allDoneSub": "You have finished every sub-skill.",
+    "pred.high": "High probability of success. Keep going!",
+    "pred.mid": "Extra effort is recommended.",
+    "pred.low": "Risk of falling behind detected. Talk to your teacher.",
+    "pred.grade": "Predicted exam grade <strong>{grade}/20</strong>",
+    "pred.badgeHigh": "You are on the right track — high probability of success!",
+    "pred.badgeMid": "Extra effort is recommended to catch up.",
+    "pred.badgeLow": "Risk of dropping behind detected — talk to your teacher.",
+    "chat.greeting": "Hello, I am the NextLearn assistant. Ask me about a course concept, a resource or your learning path: I answer from your module content.",
+    "chat.allModules": "All modules",
+    "chat.subAcquis": "Sub-skill",
+    "chat.switchToModules": "Switch to all available modules",
+    "chat.backToSub": "Back to sub-skill {id}",
+    "chat.shrink": "Shrink the assistant",
+    "chat.expand": "Expand the assistant",
+    "chat.cannotProcess": "I could not process your question.",
+    "chat.noAnswer": "I could not find a relevant answer.",
+    "chat.networkError": "A network error occurred. Please try again in a moment.",
+    "sidebar.expand": "Expand the sidebar",
+    "sidebar.collapse2": "Collapse the sidebar",
+    "cal.beforeStart": "Before start",
+    "cal.week": "Week {n}",
+    "notif.progressSubject": "Course progress",
+    "notif.progressBody": "You have completed {done} of {total} lessons ({pct}%).",
+    "notif.progressBodyShort": "You have completed {done} lesson(s) so far.",
+    "notif.autoUpdate": "Automatic update",
+    "notif.quizSubject": "Quiz results",
+    "notif.quizBody": "You passed {n} quizzes, with an average of {avg}.",
+    "quiz.notTaken": "Quiz not taken",
+    "mod.done": "Completed",
+    "mod.inProgress": "In progress",
+    "mod.notStarted": "Not started",
+    "next.timeLeft": "Time remaining: {mins} min",
+    "next.timeUnknown": "Estimated time: —",
+    "next.nothingPending": "No pending lessons — congratulations!",
+    "chart.lessonsPct": "Lessons completed (%)",
+    "chart.quizPct": "Quizzes passed (%)"
+  });
+}
+
 function buildDom() {
   return {
     shell: document.querySelector(".dashboard-shell"),
@@ -54,12 +114,16 @@ function buildDom() {
 
     // New dashboard refs
     dashHeroName: document.getElementById("dash-hero-name"),
+    dashPredGrade: document.getElementById("dash-pred-grade"),
+    dashPredGradeFactors: document.getElementById("dash-pred-grade-factors"),
     dashHeroEyebrow: document.getElementById("dash-hero-eyebrow"),
     dashHeroXp: document.querySelector("#dash-hero-xp .hero-badge-value"),
     dashHeroStreak: document.querySelector("#dash-hero-streak .hero-badge-value"),
     dashHeroProgress: document.getElementById("dash-hero-progress"),
     dashHeroQuote: document.querySelector("#dash-hero-quote p"),
     dashPredPct: document.getElementById("dash-pred-pct"),
+    dashPrediction: document.getElementById("dash-prediction"),
+    dashPredModule: document.getElementById("dash-pred-module"),
     dashPredRing: document.getElementById("dash-pred-ring"),
     dashPredMessage: document.getElementById("dash-pred-message"),
     dashPredFeatures: document.getElementById("dash-pred-features"),
@@ -111,10 +175,10 @@ function syncChatbotFilterButton() {
   }
 
   dom.chatbotFilterBtn.setAttribute("aria-pressed", String(chatbotFilteredMode));
-  dom.chatbotFilterBtn.textContent = chatbotFilteredMode ? "Tous les modules" : "Sous-acquis";
+  dom.chatbotFilterBtn.textContent = chatbotFilteredMode ? tr("chat.allModules", "Tous les modules") : tr("chat.subAcquis", "Sous-acquis");
   dom.chatbotFilterBtn.title = chatbotFilteredMode
-    ? "Passer aux modules disponibles"
-    : `Revenir au sous-acquis ${chatbotFilterSubAcquisId || "actuel"}`;
+    ? tr("chat.switchToModules", "Passer aux modules disponibles")
+    : tr("chat.backToSub", `Revenir au sous-acquis ${chatbotFilterSubAcquisId || "actuel"}`, { id: chatbotFilterSubAcquisId || "" });
 }
 
 function detectChatbotContext() {
@@ -249,7 +313,7 @@ function setSidebarCollapsed(collapsed) {
     dom.sidebarToggleBtn.setAttribute("aria-pressed", String(collapsed));
     dom.sidebarToggleBtn.setAttribute(
       "aria-label",
-      collapsed ? "Agrandir la barre latérale" : "Réduire la barre latérale"
+      collapsed ? tr("sidebar.expand", "Agrandir la barre latérale") : tr("sidebar.collapse2", "Réduire la barre latérale")
     );
   }
 }
@@ -325,20 +389,20 @@ function closeModuleDetail() {
 function switchView(viewKey) {
   const labels = {
     dashboard: {
-      eyebrow: "Dashboard",
-      title: "Ma progression interactive"
+      eyebrow: tr("view.dashboardEyebrow", "Tableau de bord"),
+      title: tr("view.dashboardTitle", "Ma progression")
     },
     cours: {
-      eyebrow: "Cours",
-      title: "Mes cours disponibles"
+      eyebrow: tr("view.coursEyebrow", "Cours"),
+      title: tr("view.coursTitle", "Mes cours disponibles")
     },
     calendrier: {
-      eyebrow: "Calendrier",
-      title: "Plan"
+      eyebrow: tr("view.calendarEyebrow", "Calendrier"),
+      title: tr("view.calendarTitle", "Calendrier des activités")
     },
     messages: {
-      eyebrow: "Messages",
-      title: "Mes messages enseignants"
+      eyebrow: tr("view.messagesEyebrow", "Notifications"),
+      title: tr("view.messagesTitle", "Notifications")
     }
   };
 
@@ -469,7 +533,7 @@ function setChatbotFullscreen(expanded) {
     dom.chatbotExpandBtn.textContent = chatbotExpanded ? "⤡" : "⤢";
     dom.chatbotExpandBtn.setAttribute(
       "aria-label",
-      chatbotExpanded ? "Réduire l'assistant" : "Agrandir l'assistant"
+      chatbotExpanded ? tr("chat.shrink", "Réduire l'assistant") : tr("chat.expand", "Agrandir l'assistant")
     );
   }
 }
@@ -485,7 +549,7 @@ function ensureChatbotWelcome() {
     return;
   }
 
-  appendChatMessage("bot", "Bonjour et bienvenue sur NextLearn 👋 Je suis votre assistant intelligent, conçu pour vous accompagner dans votre apprentissage personnalisé. Posez-moi votre question, que ce soit pour comprendre un concept, trouver des ressources adaptées ou construire votre parcours d’apprentissage et je vous répondrai immédiatement avec des recommandations sur mesure.");
+  appendChatMessage("bot", tr("chat.greeting", "Bonjour, je suis l'assistant NextLearn. Posez-moi une question sur un concept du cours, une ressource ou votre parcours : je vous réponds à partir du contenu de vos modules."));
 
   chatbotBootstrapped = true;
 }
@@ -510,7 +574,8 @@ async function submitChatbotQuestion() {
   try {
     const body = {
       identifier: currentUser?.identifier || "",
-      message: question
+      message: question,
+      lang: window.I18N ? window.I18N.lang : "fr"
     };
     
     if (chatbotFilteredMode && chatbotFilterModuleId && chatbotFilterSubAcquisId) {
@@ -529,15 +594,15 @@ async function submitChatbotQuestion() {
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      appendChatMessage("bot", String(payload?.message || "Je n'ai pas pu traiter votre question."));
+      appendChatMessage("bot", String(payload?.message || tr("chat.cannotProcess", "Je n'ai pas pu traiter votre question.")));
       return;
     }
 
-    appendChatMessage("bot", String(payload?.answer || "Je n'ai pas trouvé de réponse pertinente."));
+    appendChatMessage("bot", String(payload?.answer || tr("chat.noAnswer", "Je n'ai pas trouvé de réponse pertinente.")));
 
     // Keep the conversation focused on the answer; sources remain available in API payload if needed.
   } catch (_error) {
-    appendChatMessage("bot", "Une erreur réseau est survenue. Réessayez dans un instant.");
+    appendChatMessage("bot", tr("chat.networkError", "Une erreur réseau est survenue. Réessayez dans un instant."));
   } finally {
     if (dom.chatbotSendBtn instanceof HTMLButtonElement) {
       dom.chatbotSendBtn.disabled = false;
@@ -720,12 +785,12 @@ function renderCalendar(calendarEntries = [], scheduleStartDate = null) {
           }
 
           if (weekEnd.getTime() < normalizedStartDate.getTime()) {
-            return "Avant démarrage";
+            return tr("cal.beforeStart", "Avant démarrage");
           }
 
           const elapsed = weekEnd.getTime() - normalizedStartDate.getTime();
           const weekNumber = Math.floor(elapsed / weekMs) + 1;
-          return `Semaine ${Math.max(1, weekNumber)}`;
+          return tr("cal.week", `Semaine ${Math.max(1, weekNumber)}`, { n: Math.max(1, weekNumber) });
         })();
 
         weekBlocks.push(`
@@ -783,17 +848,17 @@ function renderMessages(stats, modules = []) {
 
   const systemMessages = [
     {
-      subject: "Progression du cours",
+      subject: tr("notif.progressSubject", "Progression du cours"),
       body:
         totalLessons > 0
-          ? `Vous avez complété ${lessonsCompleted} leçon(s) sur ${totalLessons} (${progressPercent}%).`
-          : `Votre progression actuelle est de ${lessonsCompleted} leçon(s) complétée(s).`,
-      date: "Mise à jour automatique"
+          ? tr("notif.progressBody", `Vous avez complété ${lessonsCompleted} leçon(s) sur ${totalLessons} (${progressPercent}%).`, { done: lessonsCompleted, total: totalLessons, pct: progressPercent })
+          : tr("notif.progressBodyShort", `Votre progression actuelle est de ${lessonsCompleted} leçon(s) complétée(s).`, { done: lessonsCompleted }),
+      date: tr("notif.autoUpdate", "Mise à jour automatique")
     },
     {
-      subject: "Resultats des quiz",
-      body: `Vous avez valide ${quizzesPassed} quiz, avec une moyenne de ${avgLabel}.`,
-      date: "Mise à jour automatique"
+      subject: tr("notif.quizSubject", "Résultats des quiz"),
+      body: tr("notif.quizBody", `Vous avez validé ${quizzesPassed} quiz, avec une moyenne de ${avgLabel}.`, { n: quizzesPassed, avg: avgLabel }),
+      date: tr("notif.autoUpdate", "Mise à jour automatique")
     }
   ];
 
@@ -851,13 +916,13 @@ async function fetchAndRenderPrediction() {
 
     let label, colorClass;
     if (pct >= 70) {
-      label = "Vous êtes sur la bonne voie — forte probabilité de rattrapage !";
+      label = tr("pred.badgeHigh", "Vous êtes sur la bonne voie — forte probabilité de réussite !");
       colorClass = "is-high";
     } else if (pct >= 40) {
-      label = "Des efforts supplémentaires sont recommandés pour rattraper votre niveau.";
+      label = tr("pred.badgeMid", "Des efforts supplémentaires sont recommandés pour rattraper votre niveau.");
       colorClass = "is-mid";
     } else {
-      label = "Risque de décrochage détecté — consultez votre enseignant.";
+      label = tr("pred.badgeLow", "Risque de décrochage détecté — consultez votre enseignant.");
       colorClass = "is-low";
     }
 
@@ -925,7 +990,7 @@ function buildLatestScoreMap(quizResults) {
 
 function getQuizBubbleStatus(score, average) {
   if (!Number.isFinite(score)) {
-    return { className: "is-gray", label: "Quiz", title: "Quiz non passe" };
+    return { className: "is-gray", label: "Quiz", title: tr("quiz.notTaken", "Quiz non passe") };
   }
   if (!Number.isFinite(average)) {
     return { className: "is-orange", label: "Quiz", title: `Score ${Math.round(score)}%` };
@@ -1121,7 +1186,7 @@ async function renderModuleList() {
     const avgLabel = avgScore !== null ? `${Math.round(avgScore)}%` : "—";
 
     const statusClass = pct === 100 ? "mcard-done" : done > 0 ? "mcard-progress" : "mcard-idle";
-    const statusLabel = pct === 100 ? "Terminé" : done > 0 ? "En cours" : "Non commencé";
+    const statusLabel = pct === 100 ? tr("mod.done", "Terminé") : done > 0 ? tr("mod.inProgress", "En cours") : tr("mod.notStarted", "Non commencé");
 
     const modId = String(mod.id || "");
     const modName = htmlEscape(mod.name || `Module ${modId}`);
@@ -1408,7 +1473,7 @@ function renderDashboardCharts(metrics) {
         labels: moduleLabels,
         datasets: [
           {
-            label: "Leçons complétées (%)",
+            label: tr("chart.lessonsPct", "Leçons complétées (%)"),
             data: metrics.moduleRows.map((row) => row.lessonPercent),
             backgroundColor: "rgba(201, 21, 42, 0.85)",
             borderRadius: 8
@@ -1443,7 +1508,7 @@ function renderDashboardCharts(metrics) {
         labels: moduleLabels,
         datasets: [
           {
-            label: "Leçons complétées (%)",
+            label: tr("chart.lessonsPct", "Leçons complétées (%)"),
             data: metrics.moduleRows.map((row) => row.lessonPercent),
             backgroundColor: "rgba(201, 21, 42, 0.18)",
             borderColor: "rgba(201, 21, 42, 0.95)",
@@ -1479,7 +1544,7 @@ function renderDashboardCharts(metrics) {
         labels: moduleLabels,
         datasets: [
           {
-            label: "Quiz valides (%)",
+            label: tr("chart.quizPct", "Quiz valides (%)"),
             data: metrics.moduleRows.map((row) => row.quizPercent),
             borderColor: "#f59e0b",
             backgroundColor: "rgba(245, 158, 11, 0.25)",
@@ -1543,7 +1608,7 @@ function renderNextStep(modules = [], stats = null) {
       if (!completedSet.has(key)) {
         dom.nextStepModule.textContent = `${moduleData.name || `Module ${moduleId}`} — ${sub.name || sub.id}`;
         const mins = sub.durationMinutes || sub.duration || null;
-        dom.nextStepMeta.textContent = mins ? `Temps restant: ${mins} min` : "Temps estimé: —";
+        dom.nextStepMeta.textContent = mins ? tr("next.timeLeft", `Temps restant: ${mins} min`, { mins }) : tr("next.timeUnknown", "Temps estimé: —");
         dom.nextStepCta.onclick = () => {
           window.location.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(String(sub.id || ""))}`;
         };
@@ -1552,8 +1617,8 @@ function renderNextStep(modules = [], stats = null) {
     }
   }
 
-  dom.nextStepModule.textContent = "Aucun cours en attente — félicitations !";
-  dom.nextStepMeta.textContent = "Vous avez complété tous les sous-acquis disponibles.";
+  dom.nextStepModule.textContent = tr("next.nothingPending", "Aucun cours en attente — félicitations !");
+  dom.nextStepMeta.textContent = tr("dash.allDoneSub", "Vous avez complété tous les sous-acquis disponibles.");
   dom.nextStepCta.onclick = () => { switchView("cours"); };
 }
 
@@ -1642,10 +1707,10 @@ function renderNewDashboard(data) {
 
   // ── Hero ──
   if (dom.dashHeroName) {
-    dom.dashHeroName.textContent = profile?.fullName ? `Bonjour, ${profile.fullName} !` : "Bonjour !";
+    dom.dashHeroName.textContent = profile?.fullName ? tr("dash.helloName", `Bonjour, ${profile.fullName} !`, { name: profile.fullName }) : tr("dash.hello", "Bonjour !");
   }
   if (dom.dashHeroEyebrow) {
-    dom.dashHeroEyebrow.textContent = `Tableau de bord • ${progress?.lessonsCompleted || 0} leçons`;
+    dom.dashHeroEyebrow.textContent = tr("dash.heroLessons", `Tableau de bord • ${progress?.lessonsCompleted || 0} leçons`, { n: progress?.lessonsCompleted || 0 });
   }
   if (dom.dashHeroXp) dom.dashHeroXp.textContent = `${insights?.xp || 0}`;
   if (dom.dashHeroStreak) dom.dashHeroStreak.textContent = `${insights?.streak || 0}j`;
@@ -1656,63 +1721,27 @@ function renderNewDashboard(data) {
   }
   if (dom.dashHeroQuote) {
     const pct = prediction?.probabilityPct || 0;
-    if (pct >= 70) dom.dashHeroQuote.textContent = "Excellent travail ! Vous etes sur la bonne voie pour reussir.";
-    else if (pct >= 40) dom.dashHeroQuote.textContent = "Continuez vos efforts -- chaque lecon compte pour rattraper.";
-    else dom.dashHeroQuote.textContent = "N'abandonnez pas ! Parlez a votre enseignant pour obtenir de l'aide.";
+    if (pct >= 70) dom.dashHeroQuote.textContent = tr("dash.quoteHigh", "Excellent travail, vous êtes sur la bonne voie pour réussir.");
+    else if (pct >= 40) dom.dashHeroQuote.textContent = tr("dash.quoteMid", "Continuez vos efforts — chaque leçon compte pour rattraper.");
+    else dom.dashHeroQuote.textContent = tr("dash.quoteLow", "N'abandonnez pas : parlez à votre enseignant pour obtenir de l'aide.");
   }
 
-  // ── Prediction gauge ──
-  if (dom.dashPredRing && dom.dashPredPct) {
-    const pct = prediction?.probabilityPct || 0;
-    const circumference = 326.7;
-    const offset = circumference - (pct / 100) * circumference;
-    dom.dashPredRing.style.strokeDashoffset = String(offset);
-    dom.dashPredRing.style.animation = `gaugeFill 1s ease forwards`;
-    const color = pct >= 70 ? "#c41d38" : pct >= 40 ? "#d93a4f" : "#8f1220";
-    dom.dashPredRing.style.stroke = color;
-    dom.dashPredPct.textContent = `${pct}%`;
-    dom.dashPredPct.style.color = color;
-  }
-  if (dom.dashPredMessage) {
-    const pct = prediction?.probabilityPct || 0;
-    if (pct >= 70) dom.dashPredMessage.textContent = "Forte probabilité de rattrapage. Continuez !";
-    else if (pct >= 40) dom.dashPredMessage.textContent = "Des efforts supplémentaires sont recommandés.";
-    else dom.dashPredMessage.textContent = "Risque de décrochage détecté. Consultez votre enseignant.";
-  }
-  if (dom.dashPredFeatures) {
-    const factors = Array.isArray(prediction?.riskFactors) ? prediction.riskFactors : [];
-    if (factors.length) {
-      // Explain *why* the score is what it is — the top risk (or protective) factors.
-      dom.dashPredFeatures.innerHTML = factors.map((factor) => {
-        const level = factor.level === "high" ? "pred-factor-high"
-          : factor.level === "good" ? "pred-factor-good" : "pred-factor-medium";
-        const icon = factor.level === "high" ? "🔴" : factor.level === "good" ? "🟢" : "🟡";
-        return `<div class="pred-factor ${level}"><span>${icon}</span>${htmlEscape(factor.label)}</div>`;
-      }).join("");
-    } else if (prediction?.features) {
-      const f = prediction.features;
-      dom.dashPredFeatures.innerHTML = `
-        <div class="pred-feat">Rythme<strong>${f.completionPace?.toFixed(1) || "0"}/sem</strong></div>
-        <div class="pred-feat">Moyenne<strong>${Math.round(f.averageScore || 0)}%</strong></div>
-        <div class="pred-feat">Connexions<strong>${f.loginFrequency?.toFixed(1) || "0"}/sem</strong></div>
-        <div class="pred-feat">Retard<strong>${Math.round(f.delayWeeks || 0)} sem</strong></div>
-      `;
-    }
-  }
+  // ── Prediction card (module-scoped) ──
+  updatePredictionCard(prediction);
 
   // ── Next Action ──
   if (dom.dashActionModule) {
     if (nextStep) {
       dom.dashActionModule.textContent = `${nextStep.moduleName} — ${nextStep.subAcquisName}`;
-      if (dom.dashActionSub) dom.dashActionSub.textContent = "Sous-acquis non complété";
+      if (dom.dashActionSub) dom.dashActionSub.textContent = tr("dash.actionIncomplete", "Sous-acquis non complété");
       if (dom.dashActionCta) {
         dom.dashActionCta.onclick = () => {
           window.location.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(nextStep.moduleId)}&subAcquisId=${encodeURIComponent(nextStep.subAcquisId)}`;
         };
       }
     } else {
-      dom.dashActionModule.textContent = "Tout est complete !";
-      if (dom.dashActionSub) dom.dashActionSub.textContent = "Vous avez terminé tous les sous-acquis.";
+      dom.dashActionModule.textContent = tr("dash.allDone", "Tout est complété.");
+      if (dom.dashActionSub) dom.dashActionSub.textContent = tr("dash.allDoneSub", "Vous avez terminé tous les sous-acquis.");
       if (dom.dashActionCta) {
         dom.dashActionCta.onclick = () => { switchView("cours"); };
       }
@@ -1742,6 +1771,168 @@ function renderNewDashboard(data) {
 
   // ── Module Progress ──
   renderDashModuleProgress(overview, quizTrend);
+}
+
+
+// Translates the closed set of server-side French SHAP/rule factor labels.
+// Unknown labels fall through unchanged (French), so this can never break.
+const FACTOR_LABEL_EN = [
+  [/^Bonne avance sur le planning$/, "Well ahead of schedule"],
+  [/^Retard d'environ (\d+) semaines?$/, (m) => `About ${m[1]} week${m[1] === "1" ? "" : "s"} behind schedule`],
+  [/^Bons scores aux quiz \((\d+)%\)$/, (m) => `Good quiz scores (${m[1]}%)`],
+  [/^Score moyen faible \((\d+)%\)$/, (m) => `Low average score (${m[1]}%)`],
+  [/^Activité régulière et récente$/, "Regular, recent activity"],
+  [/^Aucune activité récente$/, "No recent activity"],
+  [/^Peu d'activité récente$/, "Little recent activity"],
+  [/^Peu de quiz en difficulté$/, "Few quizzes in difficulty"],
+  [/^(\d+)% de quiz en difficulté$/, (m) => `${m[1]}% of quizzes in difficulty`],
+  [/^Bonne progression dans le programme$/, "Good progress through the curriculum"],
+  [/^(\d+)% du programme non commencé$/, (m) => `${m[1]}% of the curriculum not started`],
+  [/^Connexions fréquentes$/, "Frequent logins"],
+  [/^Connexions rares$/, "Infrequent logins"],
+  [/^Bon rythme \(([\d.,]+)\/sem\)$/, (m) => `Good pace (${m[1]}/week)`],
+  [/^Rythme lent \(([\d.,]+)\/sem\)$/, (m) => `Slow pace (${m[1]}/week)`],
+  [/^Progression saine, aucun signal de risque$/, "Healthy progress, no risk signals"]
+];
+function trFactor(label) {
+  if (!window.I18N || !window.I18N.isEn || typeof label !== "string") return label;
+  for (const [re, out] of FACTOR_LABEL_EN) {
+    const m = label.match(re);
+    if (m) return typeof out === "function" ? out(m) : out;
+  }
+  return label;
+}
+
+// Renders the risk gauge, predicted grade, and SHAP factors for one (module-scoped) prediction.
+function renderPredictionCard(prediction) {
+  if (dom.dashPredRing && dom.dashPredPct) {
+    const pct = prediction?.probabilityPct || 0;
+    const circumference = 326.7;
+    const offset = circumference - (pct / 100) * circumference;
+    dom.dashPredRing.style.strokeDashoffset = String(offset);
+    dom.dashPredRing.style.animation = `gaugeFill 1s ease forwards`;
+    const color = pct >= 70 ? "#c41d38" : pct >= 40 ? "#d93a4f" : "#8f1220";
+    dom.dashPredRing.style.stroke = color;
+    dom.dashPredPct.textContent = `${pct}%`;
+    dom.dashPredPct.style.color = color;
+  }
+  if (dom.dashPredMessage) {
+    const pct = prediction?.probabilityPct || 0;
+    if (pct >= 70) dom.dashPredMessage.textContent = tr("pred.high", "Forte probabilité de réussite. Continuez !");
+    else if (pct >= 40) dom.dashPredMessage.textContent = tr("pred.mid", "Des efforts supplémentaires sont recommandés.");
+    else dom.dashPredMessage.textContent = tr("pred.low", "Risque de décrochage détecté. Consultez votre enseignant.");
+  }
+  if (dom.dashPredGrade) {
+    const grade = prediction?.predictedGrade;
+    if (typeof grade === "number" && Number.isFinite(grade)) {
+      const gradeLabel = (Math.round(grade * 10) / 10).toLocaleString(NUM_LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      dom.dashPredGrade.innerHTML = tr("pred.grade", `Note prévue à l'examen <strong>${gradeLabel}/20</strong>`, { grade: gradeLabel });
+      dom.dashPredGrade.hidden = false;
+    } else {
+      dom.dashPredGrade.hidden = true;
+    }
+  }
+  if (dom.dashPredGradeFactors) {
+    // SHAP drivers of the predicted grade, in points /20.
+    const gradeFactors = Array.isArray(prediction?.gradeFactors) ? prediction.gradeFactors : [];
+    const parts = gradeFactors
+      .filter((f) => typeof f.impact === "number" && Math.abs(f.impact) >= 0.3)
+      .slice(0, 2)
+      .map((f) => {
+        const pts = (Math.round(f.impact * 10) / 10).toLocaleString(NUM_LOCALE, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        return `${htmlEscape(trFactor(f.label))} <strong>${f.impact > 0 ? "+" : ""}${pts} pt${Math.abs(f.impact) >= 2 ? "s" : ""}</strong>`;
+      });
+    if (parts.length) {
+      dom.dashPredGradeFactors.innerHTML = parts.join(" · ");
+      dom.dashPredGradeFactors.hidden = false;
+    } else {
+      dom.dashPredGradeFactors.hidden = true;
+    }
+  }
+  if (dom.dashPredFeatures) {
+    const factors = Array.isArray(prediction?.riskFactors) ? prediction.riskFactors : [];
+    if (factors.length) {
+      // Explain *why* the score is what it is — the top risk (or protective) factors.
+      // When the model is loaded these are EXACT SHAP contributions, so we show
+      // each factor's signed impact on the catch-up probability (e.g. −18%).
+      dom.dashPredFeatures.innerHTML = factors.map((factor) => {
+        const level = factor.level === "high" ? "pred-factor-high"
+          : factor.level === "good" ? "pred-factor-good" : "pred-factor-medium";
+        let impact = "";
+        if (typeof factor.impact === "number" && Math.abs(factor.impact) >= 0.005) {
+          const pts = Math.round(factor.impact * 100);
+          impact = `<span class="pred-factor-impact">${pts > 0 ? "+" : ""}${pts}%</span>`;
+        }
+        return `<div class="pred-factor ${level}"><span class="pred-factor-dot"></span><span class="pred-factor-label">${htmlEscape(trFactor(factor.label))}</span>${impact}</div>`;
+      }).join("");
+    } else if (prediction?.features) {
+      const f = prediction.features;
+      dom.dashPredFeatures.innerHTML = `
+        <div class="pred-feat">Rythme<strong>${f.completionPace?.toFixed(1) || "0"}/sem</strong></div>
+        <div class="pred-feat">Moyenne<strong>${Math.round(f.averageScore || 0)}%</strong></div>
+        <div class="pred-feat">Connexions<strong>${f.loginFrequency?.toFixed(1) || "0"}/sem</strong></div>
+        <div class="pred-feat">Retard<strong>${Math.round(f.delayWeeks || 0)} sem</strong></div>
+      `;
+    }
+  }
+}
+
+// Tracks the module the user explicitly selected, so dashboard auto-refresh keeps it.
+let selectedPredictionModuleId = null;
+let predictionSelectorBound = false;
+
+async function fetchScopedPrediction(moduleId) {
+  const id = currentUser?.identifier;
+  if (!id) return;
+  if (dom.dashPrediction) dom.dashPrediction.classList.add("is-loading");
+  try {
+    const res = await fetch(`/api/student/prediction/${encodeURIComponent(id)}?moduleId=${encodeURIComponent(moduleId)}`);
+    if (res.ok) renderPredictionCard(await res.json());
+  } catch (_e) {
+    /* keep last render on failure */
+  } finally {
+    if (dom.dashPrediction) dom.dashPrediction.classList.remove("is-loading");
+  }
+}
+
+// Populates the module selector and renders the card for the active module.
+// The prediction in the dashboard payload is already scoped to the default module.
+function updatePredictionCard(defaultPrediction) {
+  const sel = dom.dashPredModule;
+  const modules = Array.isArray(defaultPrediction?.modules) ? defaultPrediction.modules : [];
+
+  if (sel) {
+    if (modules.length) {
+      sel.innerHTML = modules
+        .map((m) => `<option value="${htmlEscape(m.id)}">${htmlEscape(m.name)}</option>`)
+        .join("");
+      sel.hidden = false;
+      sel.disabled = modules.length <= 1;
+    } else {
+      sel.hidden = true;
+    }
+
+    if (!predictionSelectorBound) {
+      predictionSelectorBound = true;
+      sel.addEventListener("change", () => {
+        selectedPredictionModuleId = sel.value;
+        void fetchScopedPrediction(sel.value);
+      });
+    }
+  }
+
+  // Keep the user's chosen module across auto-refreshes when it's still available.
+  const chosen = selectedPredictionModuleId && modules.some((m) => m.id === selectedPredictionModuleId)
+    ? selectedPredictionModuleId
+    : defaultPrediction?.moduleId || null;
+
+  if (sel && chosen) sel.value = chosen;
+
+  if (chosen && defaultPrediction?.moduleId && chosen !== defaultPrediction.moduleId) {
+    void fetchScopedPrediction(chosen);
+  } else {
+    renderPredictionCard(defaultPrediction);
+  }
 }
 
 function renderDashCharts(data) {
@@ -1793,7 +1984,7 @@ function renderDashCharts(data) {
       
       timelineHTML += `
         <div class="path-node ${statusClass}">
-          <div class="path-icon">${isDone ? '✓' : isCurrent ? '★' : '🔒'}</div>
+          <div class="path-icon">${isDone ? '✓' : isCurrent ? '●' : '○'}</div>
           <div class="path-info">
             <span class="path-title">${mName}</span>
             <span class="path-prog">${m.completedCount} / ${m.subAcquisCount}</span>
@@ -2002,7 +2193,7 @@ function renderDashModuleProgress(overview, quizTrend) {
 
     const barColor = pct >= 70 ? "#c41d38" : pct >= 40 ? "#d93a4f" : "#8f1220";
     const statusClass = pct === 100 ? "mod-prog-done" : done > 0 ? "mod-prog-partial" : "mod-prog-idle";
-    const statusLabel = pct === 100 ? "Terminé" : done > 0 ? "En cours" : "Non commencé";
+    const statusLabel = pct === 100 ? tr("mod.done", "Terminé") : done > 0 ? tr("mod.inProgress", "En cours") : tr("mod.notStarted", "Non commencé");
 
     return `<div class="mod-prog-row">
       <div class="mod-prog-left">

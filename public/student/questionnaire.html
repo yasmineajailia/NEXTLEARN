@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Questionnaire - Espace Etudiant</title>
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
+    <title data-i18n="title.quiz">Questionnaire — Espace Étudiant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -63,7 +66,14 @@
         font-weight: 600;
         color: #4f5971;
       }
-      .quiz-module::before { content: "📋"; font-size: 0.9em; }
+      .quiz-module::before {
+        content: "";
+        width: 3px; height: 14px;
+        border-radius: 2px;
+        background: #b21f2d;
+        display: inline-block;
+        flex-shrink: 0;
+      }
       .quiz-module[hidden] { display: none; }
 
       .back-link { flex-shrink: 0; }
@@ -360,18 +370,18 @@
     <main class="page">
       <header class="head">
         <div class="head-titles">
-          <span class="quiz-eyebrow">Questionnaire</span>
-          <h1 id="title">Chargement…</h1>
+          <span class="quiz-eyebrow" data-i18n="qz.title">Questionnaire</span>
+          <h1 id="title" data-i18n="common.loading2">Chargement…</h1>
           <p class="quiz-module" id="quiz-module" hidden></p>
         </div>
-        <a id="back-link" class="back-link" href="/student/">Retour au sous-acquis</a>
+        <a id="back-link" class="back-link" href="/student/" data-i18n="qz.backToSub">Retour au sous-acquis</a>
       </header>
 
       <section class="card">
-        <p id="meta" class="meta">Chargement du questionnaire...</p>
+        <p id="meta" class="meta" data-i18n="qz.loading">Chargement du questionnaire...</p>
         <form id="quiz-form" class="quiz-form"></form>
         <p id="quiz-result" class="quiz-result"></p>
-        <button id="quiz-retry" type="button" class="quiz-retry" hidden>Reprendre le quiz</button>
+        <button id="quiz-retry" type="button" class="quiz-retry" hidden data-i18n="qz.retake">Reprendre le quiz</button>
 
         <!-- recommendations injected here after submit -->
         <div id="rec-panel" class="rec-panel">
@@ -383,7 +393,44 @@
       </section>
     </main>
 
+    <script src="/student/js/attentionTracker.js"></script>
     <script>
+      const tr = (key, fr, vars) => (window.I18N ? window.I18N.t(key, fr, vars) : fr);
+      if (window.I18N) window.I18N.extend({
+        "title.quiz": "Quiz — Student Area",
+        "qz.title": "Quiz",
+        "common.loading2": "Loading…",
+        "qz.backToSub": "Back to the sub-skill",
+        "qz.loading": "Loading the quiz...",
+        "qz.retake": "Retake the quiz",
+        "qz.recPassTitle": "Well done! Here is the next part of your path",
+        "qz.recPassSub": "These sub-skills are unlocked thanks to your success.",
+        "qz.recFailTitle": "Insufficient score after 2 attempts — review these prerequisites",
+        "qz.recFailSub": "Master these sub-skills first before retrying this one.",
+        "qz.recNoneUnlock": "No additional sub-skill to unlock for now.",
+        "qz.recNoPrereq": "No prerequisite found for this sub-skill.",
+        "qz.alreadyValidated": "This quiz is already validated.",
+        "qz.maxAttempts": "Maximum number of attempts reached.",
+        "qz.gradeError": "Unable to grade this quiz right now.",
+        "qz.summary": "Result: {c}/{t} — Score {s}%",
+        "qz.allCorrect": "Bravo, every answer is correct!",
+        "qz.validated": "Well done, you validated this sub-skill.",
+        "qz.insufficient": "Insufficient score — you have {n} attempt(s) left.",
+        "qz.retryLast": "Try again (final attempt)",
+        "qz.exhausted": "No attempts left — here is how to progress.",
+        "qz.notFound": "Quiz not found",
+        "qz.noSubSpecified": "No sub-skill was specified.",
+        "qz.loading2": "Loading the quiz…",
+        "qz.noneAvailable": "No quiz available for this sub-skill.",
+        "qz.submit": "Submit the quiz",
+        "qz.metaValidated": "{n} question(s) · sub-skill already validated",
+        "qz.metaExhausted": "{n} question(s) · no attempts left",
+        "qz.metaOpen": "{n} question(s) · {r} attempt(s) remaining · pass mark {p}%",
+        "qz.unavailable": "Quiz unavailable",
+        "qz.loadError": "Unable to load the quiz right now.",
+        "qz.subValidated": "This sub-skill is already validated.",
+        "qz.usedAttempts": "You have used your 2 attempts for this quiz."
+      });
       const title     = document.getElementById("title");
       const quizModule = document.getElementById("quiz-module");
       const backLink  = document.getElementById("back-link");
@@ -531,11 +578,11 @@
         recPanel.style.display = "block";
 
         if (passed) {
-          recPanelTitle.textContent    = "Bien joué ! Voici la suite de votre parcours";
-          recPanelSubtitle.textContent = "Ces sous-acquis sont débloqués grâce à votre réussite.";
+          recPanelTitle.textContent    = tr("qz.recPassTitle", "Bien joué ! Voici la suite de votre parcours");
+          recPanelSubtitle.textContent = tr("qz.recPassSub", "Ces sous-acquis sont débloqués grâce à votre réussite.");
         } else {
-          recPanelTitle.textContent    = "Score insuffisant après 2 tentatives — révisez ces prérequis";
-          recPanelSubtitle.textContent = "Maîtrisez d'abord ces sous-acquis avant de retenter celui-ci.";
+          recPanelTitle.textContent    = tr("qz.recFailTitle", "Score insuffisant après 2 tentatives — révisez ces prérequis");
+          recPanelSubtitle.textContent = tr("qz.recFailSub", "Maîtrisez d'abord ces sous-acquis avant de retenter celui-ci.");
         }
 
         recList.innerHTML = "";
@@ -543,8 +590,8 @@
         if (ids.length === 0) {
           recEmpty.hidden = false;
           recEmpty.textContent = passed
-            ? "Aucun sous-acquis supplémentaire à débloquer pour le moment."
-            : "Aucun prérequis trouvé pour ce sous-acquis.";
+            ? tr("qz.recNoneUnlock", "Aucun sous-acquis supplémentaire à débloquer pour le moment.")
+            : tr("qz.recNoPrereq", "Aucun prérequis trouvé pour ce sous-acquis.");
           return;
         }
 
@@ -600,22 +647,22 @@
           lockQuiz();
           quizRetry.hidden = true;
           if (info.validated) {
-            quizResult.textContent = "Ce quiz est déjà validé.";
+            quizResult.textContent = tr("qz.alreadyValidated", "Ce quiz est déjà validé.");
             await showRecommendations(true);
           } else {
-            quizResult.textContent = "Nombre maximal de tentatives atteint.";
+            quizResult.textContent = tr("qz.maxAttempts", "Nombre maximal de tentatives atteint.");
             await showRecommendations(false);
           }
           return;
         }
 
         if (!response.ok) {
-          quizResult.textContent = "Impossible de corriger ce questionnaire pour le moment.";
+          quizResult.textContent = tr("qz.gradeError", "Impossible de corriger ce questionnaire pour le moment.");
           return;
         }
 
         const result = await response.json();
-        const summary = `Résultat : ${result.correct}/${result.total} — Score ${result.score}%`;
+        const summary = tr("qz.summary", `Résultat : ${result.correct}/${result.total} — Score ${result.score}%`, { c: result.correct, t: result.total, s: result.score });
 
         // colour the labels
         if (Array.isArray(result.review)) {
@@ -648,21 +695,21 @@
         if (isGood) {
           // Passed on this attempt → unlock the next sous-acquis, no more tries.
           quizResult.textContent = result.passed
-            ? `${summary}. Bravo, toutes les réponses sont correctes !`
-            : `${summary}. Bien joué, vous avez validé ce sous-acquis.`;
+            ? `${summary}. ${tr("qz.allCorrect", "Bravo, toutes les réponses sont correctes !")}`
+            : `${summary}. ${tr("qz.validated", "Bien joué, vous avez validé ce sous-acquis.")}`;
           quizRetry.hidden = true;
           lockQuiz();
           await showRecommendations(true);
         } else if (!result.locked && attemptsLeft > 0) {
           // Failed this attempt but tries remain → offer the final attempt, no recommendations yet.
           quizResult.textContent =
-            `${summary}. Score insuffisant — il vous reste ${attemptsLeft} tentative${attemptsLeft > 1 ? "s" : ""}.`;
+            `${summary}. ${tr("qz.insufficient", `Score insuffisant — il vous reste ${attemptsLeft} tentative${attemptsLeft > 1 ? "s" : ""}.`, { n: attemptsLeft })}`;
           quizRetry.hidden = false;
-          quizRetry.textContent = "Réessayer (dernière tentative)";
+          quizRetry.textContent = tr("qz.retryLast", "Réessayer (dernière tentative)");
           recPanel.style.display = "none";
         } else {
           // Failed both attempts → show the remediation recommendations.
-          quizResult.textContent = `${summary}. Tentatives épuisées — voici comment progresser.`;
+          quizResult.textContent = `${summary}. ${tr("qz.exhausted", "Tentatives épuisées — voici comment progresser.")}`;
           quizRetry.hidden = true;
           lockQuiz();
           await showRecommendations(false);
@@ -699,12 +746,12 @@
 
       async function loadQuestions() {
         if (!moduleId || !subAcquisId) {
-          title.textContent = "Questionnaire introuvable";
-          meta.textContent = "Aucun sous-acquis n'a été spécifié.";
+          title.textContent = tr("qz.notFound", "Questionnaire introuvable");
+          meta.textContent = tr("qz.noSubSpecified", "Aucun sous-acquis n'a été spécifié.");
           return;
         }
 
-        title.textContent = "Chargement du questionnaire…";
+        title.textContent = tr("qz.loading2", "Chargement du questionnaire…");
         quizModule.hidden = true;
         backLink.href = `/student/sous-acquis.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}`;
 
@@ -734,7 +781,7 @@
           quizRetry.hidden = true;
 
           if (questions.length === 0) {
-            meta.textContent = "Aucun questionnaire disponible pour ce sous-acquis.";
+            meta.textContent = tr("qz.noneAvailable", "Aucun questionnaire disponible pour ce sous-acquis.");
             return;
           }
 
@@ -760,25 +807,25 @@
           const submitBtn = document.createElement("button");
           submitBtn.type = "submit";
           submitBtn.className = "quiz-submit";
-          submitBtn.textContent = "Valider le questionnaire";
+          submitBtn.textContent = tr("qz.submit", "Valider le questionnaire");
           quizForm.appendChild(submitBtn);
 
           // Restore attempt state from the server (survives page reloads).
           if (quizState.locked) {
             meta.textContent = quizState.validated
-              ? `${questions.length} question(s) · sous-acquis déjà validé`
-              : `${questions.length} question(s) · tentatives épuisées`;
+              ? tr("qz.metaValidated", `${questions.length} question(s) · sous-acquis déjà validé`, { n: questions.length })
+              : tr("qz.metaExhausted", `${questions.length} question(s) · tentatives épuisées`, { n: questions.length });
             await applyLockedState(quizState.validated);
           } else {
             const remaining = Number.isFinite(quizState.attemptsRemaining)
               ? quizState.attemptsRemaining : MAX_ATTEMPTS;
             meta.textContent =
-              `${questions.length} question(s) · ${remaining} tentative${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} · réussite dès ${PASS_SCORE}%`;
+              tr("qz.metaOpen", `${questions.length} question(s) · ${remaining} tentative${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} · réussite dès ${PASS_SCORE}%`, { n: questions.length, r: remaining, p: PASS_SCORE });
           }
         } catch (_err) {
-          title.textContent = "Questionnaire indisponible";
+          title.textContent = tr("qz.unavailable", "Questionnaire indisponible");
           quizModule.hidden = true;
-          meta.textContent = "Impossible de charger le questionnaire pour le moment.";
+          meta.textContent = tr("qz.loadError", "Impossible de charger le questionnaire pour le moment.");
         }
       }
 
@@ -788,10 +835,10 @@
         lockQuiz();
         quizRetry.hidden = true;
         if (validated) {
-          quizResult.textContent = "Ce sous-acquis est déjà validé.";
+          quizResult.textContent = tr("qz.subValidated", "Ce sous-acquis est déjà validé.");
           await showRecommendations(true);
         } else {
-          quizResult.textContent = "Vous avez utilisé vos 2 tentatives pour ce quiz.";
+          quizResult.textContent = tr("qz.usedAttempts", "Vous avez utilisé vos 2 tentatives pour ce quiz.");
           await showRecommendations(false);
         }
       }
@@ -799,6 +846,16 @@
       quizForm.addEventListener("submit", submitQuiz);
       quizRetry.addEventListener("click", resetQuiz);
       loadQuestions();
+
+      /* ── Attention tracking (opt-in, 100% local processing) ── */
+      if (window.AttentionTracker && moduleId && subAcquisId) {
+        AttentionTracker.init();
+        const attSessionId = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : "att-" + Date.now();
+        void AttentionTracker.start(attSessionId, "quiz", moduleId, subAcquisId);
+        window.addEventListener("pagehide", () => { void AttentionTracker.stop(); }, { once: true });
+      }
     </script>
     <script src="/student/sidebar-loader.js"></script>
   </body>

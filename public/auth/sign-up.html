@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Inscription - NextLearn</title>
+    <script src="/shared/theme.js"></script>
+    <script src="/shared/i18n.js"></script>
+    <link rel="stylesheet" href="/shared/theme.css" />
+    <title data-i18n="title.signUp">Inscription - NextLearn</title>
 
     <!-- Shared fonts keep visual consistency with the landing page. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,44 +29,44 @@
           <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
         </div>
 
-        <h1 id="signup-title">Créer un compte</h1>
-        <p class="auth-subtitle">Créez votre compte avec un identifiant et un mot de passe.</p>
+        <h1 id="signup-title" data-i18n="auth.signUpTitle">Créer un compte</h1>
+        <p class="auth-subtitle" data-i18n="auth.signUpSubtitle">Créez votre compte avec un identifiant et un mot de passe.</p>
 
         <!-- Sign-up form bound to client-side registration logic below. -->
         <form class="auth-form" id="signup-form">
           <div id="message-container" class="message-container" style="display: none;"></div>
           <label>
-            Nom complet
-            <input type="text" name="fullName" placeholder="Votre nom complet" required />
+            <span data-i18n="auth.fullName">Nom complet</span>
+            <input type="text" name="fullName" placeholder="Votre nom complet" data-i18n-placeholder="auth.fullNamePh" required />
           </label>
 
           <label>
-            Identifiant
-            <input type="text" name="identifier" placeholder="Choisissez un identifiant" required />
+            <span data-i18n="auth.identifier">Identifiant</span>
+            <input type="text" name="identifier" placeholder="Choisissez un identifiant" data-i18n-placeholder="auth.identifierPh" required />
           </label>
 
           <label>
-            Mot de passe
-            <input type="password" name="password" placeholder="Choisissez un mot de passe" required />
+            <span data-i18n="auth.password">Mot de passe</span>
+            <input type="password" name="password" placeholder="Choisissez un mot de passe" data-i18n-placeholder="auth.pwChoosePh" required />
           </label>
 
-          <button class="auth-submit" type="submit">Créer mon compte</button>
+          <button class="auth-submit" type="submit" data-i18n="auth.createBtn">Créer mon compte</button>
         </form>
 
         <p class="auth-alt">
-          Vous avez deja un compte ?
-          <a href="/sign-in">Connectez-vous</a>
+          <span data-i18n="auth.alreadyAccount">Vous avez déjà un compte ?</span>
+          <a href="/sign-in" data-i18n="auth.signInLink">Connectez-vous</a>
         </p>
       </section>
 
       <!-- Right-side context panel to support account creation intent. -->
       <aside class="auth-aside" aria-label="Presentation NextLearn">
-        <h2>Transformez vos objectifs en progression mesurable.</h2>
-        <p>
+        <h2 data-i18n="auth.signupAsideTitle">Transformez vos objectifs en progression mesurable.</h2>
+        <p data-i18n="auth.signupAsideText">
           Inscrivez-vous pour obtenir des recommandations de contenu, suivre votre évolution et
           apprendre a votre rythme.
         </p>
-        <a class="back-link" href="/">Retour à l'accueil</a>
+        <a class="back-link" href="/" data-i18n="auth.backHome">Retour à l'accueil</a>
       </aside>
     </main>
 
@@ -101,7 +104,7 @@
             }, 1500);
           } else {
             messageContainer.className = 'message-container error';
-            messageContainer.textContent = data.error || 'Erreur lors de la creation du compte';
+            messageContainer.textContent = data.error || (window.I18N ? I18N.t('auth.errSignUp', 'Erreur lors de la creation du compte') : 'Erreur lors de la creation du compte');
             messageContainer.style.display = 'block';
           }
         } catch (error) {

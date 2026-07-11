@@ -1,0 +1,276 @@
+/* =====================================================================
+   NextLearn — dark theme + colour-blind (CVD) palette
+   Additive overrides: [data-theme="dark"] / [data-cvd="on"] selectors
+   out-specify the base rules, so the light theme is never touched.
+   ===================================================================== */
+
+/* ---------- DARK: variable overrides (flips everything variable-driven) ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* student.css — dark-surface set (already dark; kept consistent) */
+  --bg: #0d1117;
+  --surface: #161b22;
+  --ink: #e6edf3;
+  --muted: #9aa4b0;
+  --line: #2a313c;
+  --sidebar: #12151b;
+  --accent: #ff5f6d;
+  --accent-dark: #ff8088;
+
+  /* student dashboard */
+  --dash-bg: #0d1117;
+  --dash-surface: #161b22;
+  --dash-ink: #e6edf3;
+  --dash-muted: #9aa4b0;
+  --dash-line: #2a313c;
+  --dash-accent: #ff5f6d;
+  --dash-accent-dark: #ff8088;
+  --dash-accent-light: rgba(255, 95, 109, 0.14);
+  --dash-accent-mid: rgba(255, 95, 109, 0.26);
+  --dash-red-strong: #ff5f6d;
+  --dash-red-soft: rgba(255, 95, 109, 0.09);
+  --dash-red-warm: rgba(255, 95, 109, 0.09);
+
+  /* sidebar.css */
+  --sidebar-bg: #12151b;
+  --sidebar-ink: #e6edf3;
+  --sidebar-line: #242c36;
+  --sidebar-accent: #ff6b78;
+  --sidebar-accent-muted: rgba(255, 107, 120, 0.14);
+  --sidebar-hover-bg: #1b212a;
+
+  /* backoffice.css (shares --surface/--ink/--muted/--line/--accent above) */
+  --bg-1: #0d1117;
+  --bg-2: #161b22;
+  --shadow-soft: 0 20px 40px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 14px 28px rgba(0, 0, 0, 0.45);
+
+  /* auth.css */
+  --auth-bg: #0d1117;
+  --auth-surface: #161b22;
+  --auth-ink: #e6edf3;
+  --auth-muted: #9aa4b0;
+  --auth-line: #2a313c;
+  --auth-shadow: 0 22px 44px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- DARK: hardcoded-surface component overrides ---------- */
+:root[data-theme="dark"] body { background: #0d1117; color: #e6edf3; }
+
+:root[data-theme="dark"] .dash-card,
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .kpi-card,
+:root[data-theme="dark"] .module-card,
+:root[data-theme="dark"] .message-item,
+:root[data-theme="dark"] .path-node,
+:root[data-theme="dark"] .hero-badge,
+:root[data-theme="dark"] .cours-stats-bar,
+:root[data-theme="dark"] .acquis-section,
+:root[data-theme="dark"] .calendar-week,
+:root[data-theme="dark"] .calendar-month,
+:root[data-theme="dark"] .module-detail-progress,
+:root[data-theme="dark"] .dashboard-intro-card,
+:root[data-theme="dark"] .resource-card,
+:root[data-theme="dark"] .question-box,
+:root[data-theme="dark"] .quiz-form .card,
+:root[data-theme="dark"] .chatbot-panel,
+:root[data-theme="dark"] .viewer-shell,
+:root[data-theme="dark"] .video-thumb,
+:root[data-theme="dark"] .meta,
+:root[data-theme="dark"] .rec-panel,
+:root[data-theme="dark"] .summary,
+:root[data-theme="dark"] .insight-card,
+:root[data-theme="dark"] .module-table-card,
+:root[data-theme="dark"] .role-box,
+:root[data-theme="dark"] .kpi-tile {
+  background: #161b22;
+  border-color: #2a313c;
+  color: #e6edf3;
+}
+
+/* Lesson / quiz pages set their own light body + text; darken them. */
+:root[data-theme="dark"] .page,
+:root[data-theme="dark"] .content,
+:root[data-theme="dark"] .main-panel { color: #e6edf3; }
+
+:root[data-theme="dark"] h1,
+:root[data-theme="dark"] h2,
+:root[data-theme="dark"] h3,
+:root[data-theme="dark"] h4,
+:root[data-theme="dark"] .head h1,
+:root[data-theme="dark"] .question-prompt,
+:root[data-theme="dark"] .insight-title,
+:root[data-theme="dark"] .panel-header h2 { color: #f2f5f9; }
+
+:root[data-theme="dark"] .lesson-intro,
+:root[data-theme="dark"] .objectives-list li,
+:root[data-theme="dark"] .quiz-result,
+:root[data-theme="dark"] .message-item p,
+:root[data-theme="dark"] .option-text,
+:root[data-theme="dark"] td,
+:root[data-theme="dark"] th { color: #cdd6e0; }
+
+/* Muted text tends to sit on dark surfaces fine, nudge for contrast. */
+:root[data-theme="dark"] .quiz-module,
+:root[data-theme="dark"] .meta-item,
+:root[data-theme="dark"] .back-link,
+:root[data-theme="dark"] .message-meta,
+:root[data-theme="dark"] .hero-badge-label,
+:root[data-theme="dark"] .card-label { color: #9aa4b0; }
+
+/* Form controls */
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea,
+:root[data-theme="dark"] .pred-module-select {
+  background: #1c222b;
+  color: #e6edf3;
+  border-color: #2a313c;
+}
+:root[data-theme="dark"] input::placeholder,
+:root[data-theme="dark"] textarea::placeholder { color: #6b7482; }
+:root[data-theme="dark"] option { background: #161b22; color: #e6edf3; }
+
+/* Question option cards + subtle nested surfaces */
+:root[data-theme="dark"] .question-box label {
+  background: #1c222b;
+  border-color: #2a313c;
+  color: #e6edf3;
+}
+:root[data-theme="dark"] .question-box label:hover { background: #222a34; }
+
+/* Tables (backoffice) */
+:root[data-theme="dark"] .module-table thead th { background: #1c222b; color: #cdd6e0; }
+:root[data-theme="dark"] .module-table tbody tr { border-color: #2a313c; }
+
+/* Backoffice sidebar (hardcoded white glass) + its nav items */
+:root[data-theme="dark"] .backoffice-shell .sidebar { background: rgba(18, 21, 27, 0.9); border-color: #2a313c; }
+:root[data-theme="dark"] .sidebar-nav .nav-item,
+:root[data-theme="dark"] .sidebar-display-options .nav-item { background: #1a2029; color: #cdd6e0; border-color: #2a313c; }
+:root[data-theme="dark"] .sidebar-nav .nav-item:hover,
+:root[data-theme="dark"] .sidebar-display-options .nav-item:hover { background: #222c37; }
+:root[data-theme="dark"] .role-box strong { color: #f2f5f9; }
+:root[data-theme="dark"] .role-box label { color: #9aa4b0; }
+:root[data-theme="dark"] .sidebar-home-link { color: #cdd6e0; }
+
+/* Light pills / chips / badges → dark chip surface */
+:root[data-theme="dark"] .quiz-bubble,
+:root[data-theme="dark"] .meta,
+:root[data-theme="dark"] .sub-badge,
+:root[data-theme="dark"] .kpi-tag,
+:root[data-theme="dark"] .status-chip {
+  background: #232a33;
+  color: #cdd6e0;
+  border-color: #2f3844;
+}
+
+/* Sidebar student card (light pink gradient by default) */
+:root[data-theme="dark"] .student-card {
+  background: #191f28;
+  border-color: #2a313c;
+}
+:root[data-theme="dark"] .student-card #student-name { color: #f2f5f9; }
+
+/* Mission Apprenant banner uses inline light gradient + inline text colours. */
+:root[data-theme="dark"] .card-vark { background: #161b22 !important; border-color: #2a313c !important; }
+:root[data-theme="dark"] .card-vark h3 { color: #f2f5f9 !important; }
+:root[data-theme="dark"] .card-vark p { color: #9aa4b0 !important; }
+
+/* Learning-style recommendation banner text */
+:root[data-theme="dark"] .vark-reco-title { color: #f2f5f9; }
+:root[data-theme="dark"] .vark-reco-text { color: #aab3bf; }
+
+/* Chatbot bubbles */
+:root[data-theme="dark"] .chatbot-bubble.bot { background: #1c222b; color: #e6edf3; }
+:root[data-theme="dark"] code.inline-code { background: #232a33; border-color: #333c47; color: #ff8a94; }
+
+/* Inline code-block already dark — leave. */
+
+/* Pinned sidebar footer: display settings + logout / home link.
+   Sits at the bottom, divided from the nav, so the toggles read as settings. */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--sidebar-line, var(--line, #e4e6eb));
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* Compact display switch: small icon buttons for dark + colour-blind. */
+.theme-switch {
+  display: flex;
+  gap: 0.4rem;
+}
+.theme-switch-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--sidebar-line, #e4e6eb);
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.theme-switch-btn:hover { background: var(--sidebar-hover-bg, #f4f6fa); }
+.theme-switch-btn svg { width: 17px; height: 17px; display: block; }
+.theme-switch-btn[aria-pressed="true"] {
+  border-color: var(--sidebar-accent, #b21f2d);
+  color: var(--sidebar-accent, #b21f2d);
+  background: var(--sidebar-accent-muted, #fff2f3);
+}
+/* Sun/moon swap: moon while light (click → dark), sun while dark (click → light). */
+.theme-switch-btn .icon-sun { display: none; }
+.theme-switch-btn[aria-pressed="true"] .icon-moon { display: none; }
+.theme-switch-btn[aria-pressed="true"] .icon-sun { display: block; }
+/* Language switch: shows the language you would switch TO (EN while French). */
+.theme-switch-lang [data-lang-label] {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+/* Collapsed student sidebar: stack + centre the buttons so they fit the rail. */
+body.sidebar-collapsed .theme-switch { flex-direction: column; align-items: center; }
+body.sidebar-collapsed .sidebar-footer { align-items: center; }
+:root[data-theme="dark"] .theme-switch-btn { border-color: #2a313c; }
+
+/* ---------- COLOUR-BLIND: swap green success → blue (Okabe–Ito) ---------- */
+/* Red stays for danger/brand; success moves to blue so red/green never clash. */
+:root[data-cvd="on"] {
+  --dash-good: #0072b2;
+  --dash-good-soft: rgba(0, 114, 178, 0.14);
+}
+
+:root[data-cvd="on"] .pred-factor-good {
+  background: rgba(0, 114, 178, 0.12) !important;
+  border-color: rgba(0, 114, 178, 0.35) !important;
+  color: #0072b2 !important;
+}
+:root[data-cvd="on"][data-theme="dark"] .pred-factor-good { color: #5cb3e6 !important; }
+
+:root[data-cvd="on"] .answer-correct,
+:root[data-cvd="on"] .quiz-bubble.is-green,
+:root[data-cvd="on"] .sub-badge-quiz.is-green {
+  background: #e4f1fb !important;
+  border-color: #0072b2 !important;
+  color: #00537f !important;
+}
+:root[data-cvd="on"][data-theme="dark"] .answer-correct {
+  background: rgba(0, 114, 178, 0.18) !important;
+  border-color: #2f8fc7 !important;
+  color: #bfe2f7 !important;
+}
+
+:root[data-cvd="on"] .meta-item.completed,
+:root[data-cvd="on"] .acq-status-done,
+:root[data-cvd="on"] .path-node.done .path-icon {
+  color: #0072b2 !important;
+}
+
+/* Success/progress bars & positive dots → blue in CVD mode. */
+:root[data-cvd="on"] .pred-factor-good .pred-factor-dot { background: #0072b2 !important; }

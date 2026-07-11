@@ -248,6 +248,7 @@ const dom = {
     "classes-access": document.getElementById("view-classes-access"),
     students: document.getElementById("view-students"),
     clustering: document.getElementById("view-clustering"),
+    attention: document.getElementById("view-attention"),
     "classes-detail": document.getElementById("view-class-detail"),
     "sub-add": document.getElementById("view-sub-add"),
     "sub-editor": document.getElementById("view-sub-editor")
@@ -768,6 +769,7 @@ async function hydrateCurriculumNamesFromFile() {
 
 function bindEvents() {
   dom.navItems.forEach((button) => {
+    if (!button.dataset.view) return; // skip non-view buttons (theme/CVD toggles)
     button.addEventListener("click", () => switchView(button.dataset.view));
   });
 
@@ -963,41 +965,46 @@ function switchView(viewKey) {
     viewKey = "overview";
   }
 
+  const boTr = (key, fr) => (window.I18N ? window.I18N.t(key, fr) : fr);
   const titles = {
     overview: {
-      eyebrow: "Vue d'ensemble",
-      title: "Tableau de bord de progression"
+      eyebrow: boTr("bo.overview", "Vue d'ensemble"),
+      title: boTr("bo.overviewTitle", "Tableau de bord de progression")
     },
     content: {
-      eyebrow: "Gestion des modules",
+      eyebrow: boTr("bo.moduleMgmt", "Gestion des modules"),
       title: ""
     },
     teachers: {
-      eyebrow: "Gestion des enseignants",
+      eyebrow: boTr("bo.teacherMgmt", "Gestion des enseignants"),
       title: ""
     },
     "classes-create": {
-      eyebrow: "Gestion des classes",
+      eyebrow: boTr("bo.classMgmt", "Gestion des classes"),
       title: ""
     },
     "classes-access": {
-      eyebrow: "Gestion des classes",
+      eyebrow: boTr("bo.classMgmt", "Gestion des classes"),
       title: ""
     },
     students: {
-      eyebrow: "Gestion des étudiants",
+      eyebrow: boTr("bo.studentMgmt", "Gestion des étudiants"),
       title: ""
     },
     clustering: {
-      eyebrow: "Profils d'apprentissage",
+      eyebrow: boTr("bo.clustering", "Profils d'apprentissage"),
       title: ""
     },
+    attention: {
+      eyebrow: boTr("bo.attention", "Suivi d'attention"),
+      title: boTr("bo.attentionTitle", "Concentration des étudiants")
+    },
     "sub-add": {
-      eyebrow: "Gestion des modules",
+      eyebrow: boTr("bo.moduleMgmt", "Gestion des modules"),
       title: ""
     },
     "sub-editor": {
-      eyebrow: "Gestion des modules",
+      eyebrow: boTr("bo.moduleMgmt", "Gestion des modules"),
       title: ""
     }
   };
@@ -1021,6 +1028,53 @@ function switchView(viewKey) {
     closeStudentModal();
   } else if (viewKey === "clustering") {
     initClusteringViewOnce();
+  } else if (viewKey === "attention") {
+    initAttentionViewOnce();
+  }
+}
+
+let attentionViewInitialized = false;
+
+/**
+ * First-visit setup of the attention view: loads the teacher's classes into
+ * the selector and renders the dashboard for the first class. Subsequent
+ * visits keep the current selection.
+ */
+async function initAttentionViewOnce() {
+  if (attentionViewInitialized) return;
+  if (typeof window.renderAttentionDashboard !== "function") {
+    console.error("renderAttentionDashboard is not available — check that attentionDashboard.js loaded correctly.");
+    return;
+  }
+  attentionViewInitialized = true;
+
+  const select = document.getElementById("attention-class-select");
+  const root = document.getElementById("attention-dashboard-root");
+  if (!select || !root) return;
+
+  try {
+    const res = await fetch("/api/backoffice/classes", {
+      headers: { "X-Teacher-Id": backofficeUser?.id || backofficeUser?._id || "" }
+    });
+    const data = res.ok ? await res.json() : { classes: [] };
+    const classes = Array.isArray(data.classes) ? data.classes : [];
+
+    if (!classes.length) {
+      root.innerHTML = '<p style="color:#676c77">Aucune classe disponible.</p>';
+      return;
+    }
+
+    select.innerHTML = classes
+      .map((c) => `<option value="${htmlEscape(String(c.id))}">${htmlEscape(String(c.name || c.id))}</option>`)
+      .join("");
+    select.addEventListener("change", () => {
+      window.renderAttentionDashboard("attention-dashboard-root", select.value);
+    });
+
+    window.renderAttentionDashboard("attention-dashboard-root", classes[0].id);
+  } catch (error) {
+    console.error("Failed to initialize attention view:", error);
+    root.innerHTML = '<p style="color:#676c77">Impossible de charger les classes.</p>';
   }
 }
 
@@ -3793,7 +3847,7 @@ async function onAddTeacher(event) {
   );
 
   if (emailExists || phoneExists) {
-    showToast("Cet enseignant existe deja (email ou telephone)");
+    showToast("Cet enseignant existe déjà (email ou téléphone)");
     return;
   }
 
@@ -4166,7 +4220,7 @@ function onRenameAcquis() {
   );
 
   if (duplicate) {
-    showToast("Un acquis avec ce nom existe deja");
+    showToast("Un acquis avec ce nom existe déjà");
     return;
   }
 
@@ -4227,7 +4281,7 @@ function onRenameSousAcquis() {
   );
 
   if (duplicate) {
-    showToast("Un sous-acquis avec ce nom existe deja");
+    showToast("Un sous-acquis avec ce nom existe déjà");
     return;
   }
 
@@ -4294,7 +4348,7 @@ function onRenameQuiz() {
   );
 
   if (duplicate) {
-    showToast("Un quiz avec ce titre existe deja");
+    showToast("Un quiz avec ce titre existe déjà");
     return;
   }
 
