@@ -7,6 +7,7 @@
     <script src="/shared/i18n.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
     <title data-i18n="app.studentTitle">Espace Étudiant — NextLearn</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -1158,6 +1159,24 @@
               </div>
             </article>
 
+            <!-- ── KEY STATS STRIP ── -->
+            <article class="dash-card card-insights">
+              <div class="chart-head">
+                <h3 data-i18n="dash.keyStats">Statistiques clés</h3>
+              </div>
+              <div id="dash-insights-body" class="insights-body"></div>
+            </article>
+
+            <!-- ── QUIZ SCORE TREND ── -->
+            <article class="dash-card card-quiz-trend">
+              <div class="chart-head">
+                <h3 data-i18n="dash.quizTrend">Évolution des scores aux quiz</h3>
+              </div>
+              <div class="quiz-trend-wrap">
+                <canvas id="dash-quiz-trend"></canvas>
+              </div>
+            </article>
+
             <!-- ── PROGRESS CHART (4/12) ── -->
             <article class="dash-card card-chart card-chart-overall">
               <div class="chart-head">
@@ -1182,6 +1201,30 @@
                 <h3 data-i18n="dash.moduleProgress">Progression par module</h3>
               </div>
               <div id="dash-module-progress-body" class="mod-prog-body"></div>
+            </article>
+
+            <!-- ── WEEKLY ACTIVITY HEATMAP ── -->
+            <article class="dash-card card-heatmap">
+              <div class="chart-head">
+                <h3 data-i18n="dash.weeklyActivity">Activité hebdomadaire</h3>
+              </div>
+              <div id="dash-heatmap-body" class="heatmap-body"></div>
+            </article>
+
+            <!-- ── UPCOMING DEADLINES ── -->
+            <article class="dash-card card-deadlines">
+              <div class="chart-head">
+                <h3 data-i18n="dash.deadlines">Prochaines échéances</h3>
+              </div>
+              <ul id="dash-deadlines-list" class="deadlines-list"></ul>
+            </article>
+
+            <!-- ── ACHIEVEMENTS ── -->
+            <article class="dash-card card-achievements">
+              <div class="chart-head">
+                <h3 data-i18n="dash.achievements">Succès</h3>
+              </div>
+              <div id="dash-achievements-body" class="ach-body"></div>
             </article>
 
             <!-- ── MISSION APPRENANT (full-width banner) ── -->

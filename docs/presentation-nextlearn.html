@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextLearn — Présentation du projet</title>
+<style>
+  :root {
+    --paper: #f7f6f3;
+    --surface: #ffffff;
+    --ink: #131b2c;
+    --slate: #5b6374;
+    --faint: #9aa1b0;
+    --line: #e6e4de;
+    --crimson: #c41d38;
+    --crimson-deep: #8f1220;
+    --rose: #fdf0f2;
+    --rose-line: #f3d2d8;
+    --navy-panel: #182235;
+    --navy-panel-ink: #eef1f7;
+    --ok: #0072b2;
+    --shadow: 0 10px 34px rgba(19, 27, 44, 0.08);
+    --font-display: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: Consolas, "Courier New", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #10151f;
+      --surface: #1a212e;
+      --ink: #e9ecf3;
+      --slate: #a7aebc;
+      --faint: #6d7484;
+      --line: #2a3242;
+      --crimson: #e0435c;
+      --crimson-deep: #c41d38;
+      --rose: rgba(224, 67, 92, 0.1);
+      --rose-line: rgba(224, 67, 92, 0.3);
+      --navy-panel: #101827;
+      --navy-panel-ink: #eef1f7;
+      --ok: #3ba3dd;
+      --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #f7f6f3; --surface: #ffffff; --ink: #131b2c; --slate: #5b6374;
+    --faint: #9aa1b0; --line: #e6e4de; --crimson: #c41d38; --crimson-deep: #8f1220;
+    --rose: #fdf0f2; --rose-line: #f3d2d8; --navy-panel: #182235; --navy-panel-ink: #eef1f7;
+    --ok: #0072b2; --shadow: 0 10px 34px rgba(19, 27, 44, 0.08);
+  }
+  :root[data-theme="dark"] {
+    --paper: #10151f; --surface: #1a212e; --ink: #e9ecf3; --slate: #a7aebc;
+    --faint: #6d7484; --line: #2a3242; --crimson: #e0435c; --crimson-deep: #c41d38;
+    --rose: rgba(224, 67, 92, 0.1); --rose-line: rgba(224, 67, 92, 0.3);
+    --navy-panel: #101827; --navy-panel-ink: #eef1f7; --ok: #3ba3dd;
+    --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  /* ---------- Deck mechanics ---------- */
+  .slide {
+    display: none;
+    min-height: 100vh;
+    padding: 4.5rem 6vw 5.5rem;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .slide.active { display: flex; }
+
+  .deck-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 1.1rem;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+    z-index: 50;
+    font-size: 0.78rem;
+    color: var(--slate);
+  }
+  .deck-nav .brand { font-weight: 700; letter-spacing: 0.02em; }
+  .deck-nav .brand b { color: var(--crimson); }
+  .nav-controls { display: flex; align-items: center; gap: 0.6rem; }
+  .nav-btn {
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+  .nav-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+  .nav-btn:focus-visible { outline: 2px solid var(--crimson); outline-offset: 2px; }
+  .counter { font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--crimson);
+    width: 0;
+    z-index: 60;
+    transition: width 260ms ease;
+  }
+
+  /* ---------- Typography ---------- */
+  .eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--crimson);
+    margin: 0 0 0.9rem;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.04;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0 0 1.6rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
+    letter-spacing: -0.01em;
+  }
+  p { margin: 0; }
+  .lede {
+    font-size: clamp(1.02rem, 1.6vw, 1.25rem);
+    color: var(--slate);
+    max-width: 62ch;
+  }
+
+  /* ---------- Components ---------- */
+  .grid { display: grid; gap: 1rem; }
+  .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+  }
+  .card p { font-size: 0.88rem; color: var(--slate); }
+  .card.flag { border-left: 3px solid var(--crimson); }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--crimson);
+    background: var(--rose);
+    border: 1px solid var(--rose-line);
+    border-radius: 999px;
+    padding: 0.18rem 0.6rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .metric { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    font-size: 0.86rem;
+  }
+  .table-scroll { overflow-x: auto; border-radius: 14px; box-shadow: var(--shadow); }
+  th, td { padding: 0.6rem 0.85rem; text-align: center; border-bottom: 1px solid var(--line); }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
+  th { font-weight: 700; }
+  thead th { background: var(--navy-panel); color: var(--navy-panel-ink); border-bottom: none; }
+  thead th:first-child { text-align: left; }
+  tbody th { text-align: left; font-weight: 600; color: var(--ink); background: transparent; }
+  td.yes { color: var(--crimson); font-weight: 800; }
+  td.no { color: var(--faint); }
+  td.partial { color: var(--slate); font-size: 0.78rem; }
+  col.next-col { background: var(--rose); }
+  .footnote { font-size: 0.72rem; color: var(--faint); margin-top: 0.7rem; }
+
+  .num-list { counter-reset: obj; display: grid; gap: 0.7rem; padding: 0; margin: 0; list-style: none; }
+  .num-list li {
+    counter-increment: obj;
+    display: flex;
+    gap: 0.85rem;
+    align-items: baseline;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.7rem 0.95rem;
+    font-size: 0.92rem;
+  }
+  .num-list li::before {
+    content: "F" counter(obj);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--crimson);
+    flex-shrink: 0;
+  }
+  .num-list.nf li::before { content: "NF" counter(obj); }
+  .num-list li b { font-weight: 700; }
+  .num-list li span { color: var(--slate); }
+
+  /* Architecture diagram */
+  .arch {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+  }
+  .arch-box h3 { font-size: 0.92rem; }
+  .arch-box.core { border-color: var(--rose-line); background: var(--rose); }
+  .arch-box ul { margin: 0.4rem 0 0; padding-left: 1rem; font-size: 0.82rem; color: var(--slate); }
+  .arch-box ul li { margin-bottom: 0.2rem; }
+  .arch-flow {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+  }
+
+  /* Cover */
+  .cover { text-align: left; }
+  .cover .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+    margin-bottom: 2.2rem;
+  }
+  .cover .mark .chev {
+    width: 30px; height: 30px;
+    background: var(--crimson);
+    clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%);
+  }
+  .cover h1 em { font-style: normal; color: var(--crimson); }
+  .cover .meta {
+    margin-top: 2.6rem;
+    display: flex;
+    gap: 2.4rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--slate);
+  }
+  .cover .meta b { display: block; color: var(--ink); font-size: 0.95rem; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1rem; margin-top: 1.4rem; }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+  }
+  .stat .v {
+    font-family: var(--font-mono);
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--crimson);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+  .stat .l { font-size: 0.76rem; color: var(--slate); margin-top: 0.2rem; }
+
+  .kbd-hint { color: var(--faint); }
+  .kbd-hint kbd {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 0.05rem 0.35rem;
+    background: var(--surface);
+  }
+
+  .closing { text-align: center; align-items: center; }
+  .closing h1 { margin-bottom: 1rem; }
+
+  @media (max-width: 860px) {
+    .cols-3, .cols-4, .arch, .stat-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .slide { padding: 3rem 5vw 5rem; }
+  }
+  @media (max-width: 560px) {
+    .cols-2, .cols-3, .cols-4, .arch, .stat-row { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Print: one slide per page ---------- */
+  @media print {
+    .deck-nav, .progress, .kbd-hint { display: none !important; }
+    .slide { display: flex !important; min-height: auto; page-break-after: always; padding: 2.2rem 2.6rem; }
+    body { background: #fff; }
+    .table-scroll { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- 1 ── COVER ─────────────────────────────────────────────── -->
+<section class="slide cover active">
+  <div class="mark"><span class="chev"></span>NEXTLEARN <span style="color:var(--faint);font-weight:400">by ESPRIT</span></div>
+  <p class="eyebrow">Projet — Plateforme e-learning intelligente</p>
+  <h1>Apprendre le C avec une plateforme qui <em>comprend l'étudiant</em>.</h1>
+  <p class="lede" style="margin-top:1.4rem">
+    Prédiction du risque de décrochage expliquée par le modèle, assistant de cours ancré
+    dans le contenu réel, recommandations selon le style d'apprentissage et suivi
+    d'attention respectueux de la vie privée.
+  </p>
+  <div class="meta">
+    <div><b>Yasmine Laajailia</b>Étudiante — ESPRIT</div>
+    <div><b>2025 – 2026</b>Année universitaire</div>
+    <div><b>Node.js · MongoDB · Python</b>Stack technique</div>
+  </div>
+  <p class="kbd-hint" style="margin-top:2.4rem;font-size:0.8rem">
+    Naviguer avec <kbd>←</kbd> <kbd>→</kbd> ou les flèches en bas — <kbd>Ctrl</kbd>+<kbd>P</kbd> pour exporter en PDF (une diapositive par page).
+  </p>
+</section>
+
+<!-- 2 ── CONTEXTE ──────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">01 — Contexte &amp; problématique</p>
+  <h2>L'e-learning classique diffuse du contenu, mais ne voit pas l'étudiant.</h2>
+  <div class="grid cols-3">
+    <div class="card flag">
+      <h3>Décrochage détecté trop tard</h3>
+      <p>L'enseignant découvre les difficultés à l'examen, quand il n'est plus temps d'agir. Aucun signal d'alerte précoce, aucune explication du « pourquoi ».</p>
+    </div>
+    <div class="card flag">
+      <h3>Un parcours identique pour tous</h3>
+      <p>Même ordre, mêmes supports, même rythme — alors que les étudiants n'apprennent ni de la même façon (visuel, lecture, pratique…) ni à la même vitesse.</p>
+    </div>
+    <div class="card flag">
+      <h3>Aide générique, hors contexte</h3>
+      <p>Les chatbots répondent depuis Internet, pas depuis le cours de l'école : réponses hors programme, parfois fausses, jamais reliées aux supports officiels.</p>
+    </div>
+  </div>
+  <p class="lede" style="margin-top:1.6rem">
+    <b style="color:var(--ink)">Problématique :</b> comment transformer une plateforme de cours en un
+    système qui <b style="color:var(--ink)">anticipe</b> les difficultés, <b style="color:var(--ink)">explique</b> ses alertes
+    et <b style="color:var(--ink)">adapte</b> l'accompagnement à chaque étudiant ?
+  </p>
+</section>
+
+<!-- 3 ── SOLUTIONS EXISTANTES ──────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">02 — Étude de l'existant</p>
+  <h2>Quatre familles de solutions dominent le marché.</h2>
+  <div class="grid cols-4">
+    <div class="card">
+      <span class="tag">LMS</span>
+      <h3>Moodle</h3>
+      <p>Le LMS open source de référence : cours, quiz, notes, plugins. Très complet mais lourd à administrer, et son analytique reste descriptive (taux de complétion, notes).</p>
+    </div>
+    <div class="card">
+      <span class="tag">Classe virtuelle</span>
+      <h3>Google Classroom</h3>
+      <p>Distribution de devoirs et communication, adoption immédiate. Aucune intelligence pédagogique : pas de prédiction, pas de recommandation, pas d'adaptation.</p>
+    </div>
+    <div class="card">
+      <span class="tag">MOOC</span>
+      <h3>Coursera / OpenClassrooms</h3>
+      <p>Catalogues massifs et parcours diplômants. Le contenu est générique : impossible d'y suivre le programme précis d'une école avec ses propres supports et évaluations.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Adaptatif</span>
+      <h3>Khan Academy</h3>
+      <p>Exercices adaptatifs et maîtrise par compétence — le plus proche de notre vision. Mais catalogue fermé, sans contenu d'établissement ni explication des décisions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 ── LIMITES ───────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">03 — Ce qui leur manque</p>
+  <h2>Quatre angles morts communs à ces solutions.</h2>
+  <div class="grid cols-2">
+    <div class="card flag">
+      <h3>Prédiction sans explication — ou pas de prédiction du tout</h3>
+      <p>Quand une alerte « étudiant à risque » existe (plugins Moodle), c'est une boîte noire : ni l'enseignant ni l'étudiant ne savent quel comportement corriger.</p>
+    </div>
+    <div class="card flag">
+      <h3>Recommandations déconnectées du profil cognitif</h3>
+      <p>Les suggestions servent le catalogue (« cours suivants populaires »), pas la manière dont l'étudiant apprend le mieux — vidéo, lecture ou pratique.</p>
+    </div>
+    <div class="card flag">
+      <h3>Aucune mesure de l'engagement réel</h3>
+      <p>Une vidéo « vue » ne veut pas dire une vidéo regardée. Aucune plateforme grand public ne mesure la concentration effective — et celles qui filment posent un problème éthique.</p>
+    </div>
+    <div class="card flag">
+      <h3>Assistant non ancré dans le cours de l'école</h3>
+      <p>Les IA intégrées (quand il y en a) répondent depuis leurs connaissances générales, sans citer les supports du module ni respecter le périmètre du programme.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 ── NOTRE RÉPONSE ─────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">04 — Notre réponse</p>
+  <h2>NextLearn : quatre piliers d'intelligence au-dessus d'un LMS complet.</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <span class="tag">Prédire &amp; expliquer</span>
+      <h3>Double prédiction explicable par SHAP</h3>
+      <p>Probabilité de rattrapage <b>et</b> note prévue à l'examen (/20), par module. Chaque prédiction est décomposée en facteurs signés (« Connexions rares : −4 % ») calculés sur les arbres réellement déployés.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Assister</span>
+      <h3>Chatbot RAG ancré dans le cours</h3>
+      <p>Réponses en streaming, construites uniquement à partir des supports du module (recherche vectorielle), avec sources affichées, mémoire de conversation et refus du hors-programme.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Personnaliser</span>
+      <h3>Profil VARK &amp; parcours adapté</h3>
+      <p>Huit mini-jeux déterminent le style d'apprentissage ; chaque leçon recommande alors le support le plus efficace (vidéo, lecture, quiz) et le clustering K-means regroupe les profils pour l'enseignant.</p>
+    </div>
+    <div class="card">
+      <span class="tag">Mesurer</span>
+      <h3>Suivi d'attention 100 % local</h3>
+      <p>Vision par ordinateur dans le navigateur (MediaPipe) : yeux, orientation de la tête, regard. La vidéo ne quitte jamais la machine — seul un score de concentration dérivé est transmis, après consentement.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 ── MATRICE COMPARATIVE ───────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">05 — Positionnement</p>
+  <h2>Matrice comparative.</h2>
+  <div class="table-scroll">
+    <table>
+      <colgroup>
+        <col><col><col><col><col class="next-col">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Capacité</th><th>Moodle</th><th>Classroom</th><th>Coursera</th><th>NextLearn</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th>Contenu propre à l'établissement</th><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Prédiction du risque de décrochage</th><td class="partial">plugin</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Explication des prédictions (SHAP)</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Note prévue à l'examen (/20)</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Chatbot ancré dans le cours (RAG)</th><td class="no">—</td><td class="no">—</td><td class="partial">générique</td><td class="yes">✓</td></tr>
+        <tr><th>Recommandation selon style VARK</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Suivi d'attention (local, consenti)</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Génération de quiz par IA</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><th>Accessibilité daltonisme + FR/EN</th><td class="partial">partiel</td><td class="partial">partiel</td><td class="partial">partiel</td><td class="yes">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="footnote">« plugin » : possible via extensions tierces payantes ou à configurer, sans explicabilité. « générique » : assistant non limité au contenu du cours suivi.</p>
+</section>
+
+<!-- 7 ── OBJECTIFS FONCTIONNELS ────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">06 — Objectifs fonctionnels</p>
+  <h2>Ce que le système fait.</h2>
+  <div class="grid cols-2">
+    <ul class="num-list">
+      <li><span><b>Gérer les comptes</b> — inscription, connexion étudiant / enseignant, réinitialisation du mot de passe par e-mail.</span></li>
+      <li><span><b>Consulter les cours</b> — modules structurés en acquis / sous-acquis, supports PDF et vidéos intégrés, progression persistée.</span></li>
+      <li><span><b>Évaluer</b> — quiz par sous-acquis (2 tentatives, seuil de réussite, déblocage des prérequis), auto-évaluation.</span></li>
+      <li><span><b>Assister</b> — chatbot RAG en streaming avec sources, mémoire et périmètre limité au module consulté.</span></li>
+      <li><span><b>Prédire</b> — risque de rattrapage et note prévue par module, avec facteurs explicatifs SHAP.</span></li>
+    </ul>
+    <ul class="num-list" style="counter-reset: obj 5">
+      <li><span><b>Personnaliser</b> — Mission Apprenant (8 mini-jeux VARK) et recommandation du support adapté sur chaque leçon.</span></li>
+      <li><span><b>Mesurer l'attention</b> — suivi webcam consenti pendant leçons et quiz, tableau de bord de concentration par classe.</span></li>
+      <li><span><b>Administrer</b> — back-office enseignant : modules, classes, accès, profils d'apprentissage (clustering), vue d'ensemble.</span></li>
+      <li><span><b>Générer des quiz par IA</b> — questions proposées par LLM, validées puis publiées par l'enseignant.</span></li>
+      <li><span><b>Basculer FR / EN</b> — interface bilingue, réponses du chatbot dans la langue choisie.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8 ── OBJECTIFS NON FONCTIONNELS ────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">07 — Objectifs non fonctionnels</p>
+  <h2>Comment le système doit se comporter.</h2>
+  <div class="grid cols-2">
+    <ul class="num-list nf">
+      <li><span><b>Performance</b> — modèles préchargés en mémoire (prédiction &lt; 100 ms), réponses du chatbot en streaming SSE, traitement vidéo throttlé à 8 img/s.</span></li>
+      <li><span><b>Fiabilité</b> — chaîne de repli pour l'explicabilité : service Python SHAP → Shapley exact JS → règles métier, avec disjoncteur ; l'app fonctionne même si un composant IA tombe.</span></li>
+      <li><span><b>Confidentialité</b> — la vidéo webcam ne quitte jamais le navigateur ; consentement explicite ; seules des métriques dérivées (scores, événements) sont stockées.</span></li>
+      <li><span><b>Accessibilité</b> — mode sombre, palette adaptée au daltonisme (Okabe-Ito), navigation clavier, <span class="metric">prefers-reduced-motion</span> respecté.</span></li>
+    </ul>
+    <ul class="num-list nf" style="counter-reset: obj 4">
+      <li><span><b>Utilisabilité</b> — design system unifié (tokens, composants), interface bilingue FR/EN, cohérence étudiant / back-office.</span></li>
+      <li><span><b>Maintenabilité</b> — TypeScript, services découplés, entraînement des modèles reproductible (graine fixe, scripts versionnés).</span></li>
+      <li><span><b>Honnêteté scientifique</b> — métriques mesurées sur données de test indépendantes, jamais sur l'entraînement ; écart Python/JS du modèle vérifié ≤ 0,01.</span></li>
+      <li><span><b>Sécurité</b> — secrets hors dépôt, liens de réinitialisation à expiration, validation des entrées côté serveur.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9 ── ARCHITECTURE ──────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">08 — Architecture technique</p>
+  <h2>Trois couches, deux moteurs d'IA.</h2>
+  <div class="arch">
+    <div class="arch-box">
+      <span class="tag">Client</span>
+      <h3>Navigateur</h3>
+      <ul>
+        <li>Front étudiant &amp; back-office (JS natif)</li>
+        <li>MediaPipe FaceMesh — vision locale</li>
+        <li>Chart.js — visualisations</li>
+        <li>Thèmes sombre / daltonien, i18n FR-EN</li>
+      </ul>
+    </div>
+    <div class="arch-box core">
+      <span class="tag">Serveur</span>
+      <h3>API Express / TypeScript</h3>
+      <ul>
+        <li>Random Forest ×2 en mémoire (risque + note)</li>
+        <li>RAG : embeddings + recherche vectorielle</li>
+        <li>Sessions d'attention, quiz, progression</li>
+        <li>MongoDB (Mongoose)</li>
+      </ul>
+    </div>
+    <div class="arch-box">
+      <span class="tag">Services IA</span>
+      <h3>Python &amp; LLM</h3>
+      <ul>
+        <li>FastAPI + SHAP <i>TreeExplainer</i> (arbres exacts reconstruits)</li>
+        <li>OpenRouter — LLM (chat, génération de quiz)</li>
+        <li>OpenRouter — embeddings (text-embedding-3)</li>
+      </ul>
+    </div>
+    <div class="arch-flow">NAVIGATEUR&nbsp;&nbsp;⇄&nbsp;&nbsp;API EXPRESS&nbsp;&nbsp;⇄&nbsp;&nbsp;MONGODB · SERVICE SHAP · LLM — la vidéo webcam, elle, ne franchit jamais la première flèche.</div>
+  </div>
+</section>
+
+<!-- 10 ── MOTEUR IA & CHIFFRES ─────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">09 — Le moteur IA, en chiffres honnêtes</p>
+  <h2>Des métriques mesurées sur données de test, pas sur l'entraînement.</h2>
+  <div class="stat-row">
+    <div class="stat"><div class="v">72–76 %</div><div class="l">Exactitude du classifieur de risque (validation croisée + données fraîches)</div></div>
+    <div class="stat"><div class="v">0,81–0,84</div><div class="l">AUC — pouvoir discriminant du classifieur</div></div>
+    <div class="stat"><div class="v">±0,95 pt</div><div class="l">Erreur moyenne absolue de la note prévue (/20)</div></div>
+    <div class="stat"><div class="v">≤ 0,01</div><div class="l">Écart maximal entre le modèle JS déployé et sa reconstruction Python pour SHAP</div></div>
+  </div>
+  <div class="grid cols-3" style="margin-top:1.4rem">
+    <div class="card">
+      <h3>7 variables comportementales</h3>
+      <p>Retard, rythme, score moyen, fréquence de connexion, profondeur des lacunes, récence, taux de quiz en difficulté — calculées par module.</p>
+    </div>
+    <div class="card">
+      <h3>SHAP exact, pas approché</h3>
+      <p>Les arbres du modèle déployé sont reconstruits en scikit-learn : les contributions affichées sont celles du modèle qui prédit réellement.</p>
+    </div>
+    <div class="card">
+      <h3>Frontière assumée</h3>
+      <p>Entraînement sur données synthétiques calibrées + traces réelles ; l'exactitude plafonne près de la limite théorique imposée par le bruit des étiquettes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 11 ── SUIVI D'ATTENTION ────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">10 — Zoom : suivi d'attention éthique</p>
+  <h2>Mesurer la concentration sans jamais transmettre d'image.</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <h3>Côté étudiant</h3>
+      <p>Consentement explicite avant toute activation. Détection locale : yeux fermés (EAR &gt; 2 s), tête tournée (±35°), regard hors écran, absence. Score de concentration sur fenêtre glissante de 30 s, widget discret, pause automatique quand l'onglet est masqué.</p>
+    </div>
+    <div class="card">
+      <h3>Côté enseignant</h3>
+      <p>Tableau de bord par classe : concentration moyenne, distraction dominante, tendance par étudiant, chronologie des sessions et carte de chaleur — pour repérer quand et où l'attention décroche, jamais pour surveiller un visage.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:1rem;border-left:3px solid var(--ok)">
+    <h3 style="color:var(--ok)">Garantie de conception</h3>
+    <p>Le flux vidéo est consommé par le réseau de neurones <b>dans le navigateur</b> (MediaPipe FaceMesh, 478 points). Seuls des nombres dérivés — scores, types d'événements, durées — atteignent le serveur. Ce choix rend la fonctionnalité présentable à un comité d'éthique, là où les solutions de « proctoring » filment.</p>
+  </div>
+</section>
+
+<!-- 12 ── PERSPECTIVES ─────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">11 — Perspectives</p>
+  <h2>La feuille de route s'appuie sur les données déjà collectées.</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <h3>Révision espacée</h3>
+      <p>Re-proposer automatiquement les questions échouées selon une planification type SM-2 — l'historique de quiz nécessaire existe déjà.</p>
+    </div>
+    <div class="card">
+      <h3>Exercices de C auto-corrigés</h3>
+      <p>Éditeur intégré, compilation et jeux de tests, retour pédagogique du LLM sur les erreurs de compilation — l'étape qui fait écrire du code.</p>
+    </div>
+    <div class="card">
+      <h3>Difficulté adaptative</h3>
+      <p>Sélection de la prochaine question par bandit multi-bras (entrée douce vers l'apprentissage par renforcement), calibrée par un score Elo par compétence.</p>
+    </div>
+    <div class="card">
+      <h3>Alerte hebdomadaire enseignant</h3>
+      <p>Courriel automatique listant les étudiants passés en risque élevé, avec leurs facteurs SHAP — l'infrastructure e-mail est en place.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 13 ── CONCLUSION ───────────────────────────────────────── -->
+<section class="slide closing">
+  <p class="eyebrow">Conclusion</p>
+  <h1>Un LMS qui prédit, explique <br>et s'adapte — <em style="font-style:normal;color:var(--crimson)">NextLearn</em>.</h1>
+  <p class="lede" style="margin:0 auto; max-width:56ch">
+    Là où l'existant distribue du contenu, NextLearn ferme la boucle pédagogique :
+    détecter tôt, expliquer pourquoi, recommander quoi faire — et le prouver avec des
+    métriques honnêtes.
+  </p>
+  <p style="margin-top:2.4rem;color:var(--slate);font-size:0.9rem"><b style="color:var(--ink)">Merci de votre attention.</b> — Questions bienvenues.</p>
+</section>
+
+<div class="deck-nav">
+  <span class="brand"><b>›</b> NextLearn — soutenance</span>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prev" aria-label="Diapositive précédente">←</button>
+    <span class="counter" id="counter">1 / 13</span>
+    <button class="nav-btn" id="next" aria-label="Diapositive suivante">→</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+    var counter = document.getElementById("counter");
+    var progress = document.getElementById("progress");
+    var i = 0;
+
+    var m = location.hash.match(/^#s(\d+)$/);
+    if (m) i = Math.min(slides.length - 1, Math.max(0, parseInt(m[1], 10) - 1));
+
+    function go(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach(function (s, k) { s.classList.toggle("active", k === i); });
+      counter.textContent = (i + 1) + " / " + slides.length;
+      progress.style.width = ((i + 1) / slides.length * 100) + "%";
+      try { history.replaceState(null, "", "#s" + (i + 1)); } catch (e) {}
+      window.scrollTo(0, 0);
+    }
+
+    document.getElementById("prev").addEventListener("click", function () { go(i - 1); });
+    document.getElementById("next").addEventListener("click", function () { go(i + 1); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); go(i + 1); }
+      else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(i - 1); }
+      else if (e.key === "Home") { go(0); }
+      else if (e.key === "End") { go(slides.length - 1); }
+    });
+
+    go(i);
+  })();
+</script>
+
+</body>
+</html>

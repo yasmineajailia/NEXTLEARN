@@ -78,7 +78,24 @@ if (window.I18N) {
     "next.timeUnknown": "Estimated time: —",
     "next.nothingPending": "No pending lessons — congratulations!",
     "chart.lessonsPct": "Lessons completed (%)",
-    "chart.quizPct": "Quizzes passed (%)"
+    "chart.quizPct": "Quizzes passed (%)",
+    "dash.keyStats": "Key stats",
+    "dash.quizTrend": "Quiz score trend",
+    "dash.weeklyActivity": "Weekly activity",
+    "dash.deadlines": "Upcoming deadlines",
+    "dash.achievements": "Achievements",
+    "dash.noQuizYet": "Take your first quiz to see your progress here.",
+    "dash.scorePct": "Score (%)",
+    "dash.weekTip": "Week of {week}: {q} quizzes, {l} lessons",
+    "ins.perWeek": "wk",
+    "ins.quizAttempts": "Quizzes attempted",
+    "ins.avgScore": "Average score",
+    "ins.pace": "Pace",
+    "ins.logins": "Logins",
+    "dash.less": "Less",
+    "dash.more": "More",
+    "dash.completed": "Completed",
+    "dash.lessonsWord": "lessons completed"
   });
 }
 
@@ -1750,6 +1767,7 @@ function renderNewDashboard(data) {
 
   // ── Charts ──
   renderDashCharts(data);
+  renderDashQuizTrend(quizTrend);
 
   // ── Heatmap ──
   renderDashHeatmap(weeklyActivity);
@@ -1967,9 +1985,10 @@ function renderDashCharts(data) {
         </svg>
         <div class="custom-radial-center">
           <span class="radial-pct">${pct}%</span>
-          <span class="radial-label">Complété</span>
+          <span class="radial-label">${tr("dash.completed", "Complété")}</span>
         </div>
       </div>
+      <p class="radial-caption">${totalDone}/${totalAll} ${tr("dash.lessonsWord", "leçons complétées")}</p>
     `;
   }
 
@@ -2020,6 +2039,99 @@ function renderDashCharts(data) {
   }
 }
 
+// Line chart of the student's recent quiz scores (Chart.js). Re-renders on
+// every dashboard refresh, so the previous chart instance is destroyed first.
+function renderDashQuizTrend(quizTrend) {
+  const canvas = document.getElementById("dash-quiz-trend");
+  if (!canvas || typeof Chart === "undefined") return;
+
+  if (dashCharts.quizzes) {
+    dashCharts.quizzes.destroy();
+    dashCharts.quizzes = null;
+  }
+
+  const points = (Array.isArray(quizTrend) ? [...quizTrend] : [])
+    .filter((q) => Number.isFinite(q?.score) && q?.date)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-15);
+
+  const wrap = canvas.parentElement;
+  const oldEmpty = wrap?.querySelector(".quiz-trend-empty");
+  if (oldEmpty) oldEmpty.remove();
+  if (!points.length) {
+    canvas.style.display = "none";
+    if (wrap) {
+      const msg = document.createElement("p");
+      msg.className = "quiz-trend-empty";
+      msg.textContent = tr("dash.noQuizYet", "Passez votre premier quiz pour voir votre progression ici.");
+      wrap.appendChild(msg);
+    }
+    return;
+  }
+  canvas.style.display = "";
+
+  const labels = points.map((q) => {
+    const d = new Date(q.date);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 0, 230);
+  gradient.addColorStop(0, "rgba(196, 29, 56, 0.18)");
+  gradient.addColorStop(1, "rgba(196, 29, 56, 0)");
+
+  dashCharts.quizzes = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: tr("dash.scorePct", "Score (%)"),
+        data: points.map((q) => q.score),
+        borderColor: "#c41d38",
+        borderWidth: 2,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3.5,
+        pointHoverRadius: 5,
+        pointBackgroundColor: points.map((q) => (q.score >= 50 ? "#c41d38" : "#8f1220")),
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1.5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: { callback: (v) => `${v}%`, font: { size: 10 } },
+          grid: { color: "rgba(0,0,0,0.05)" }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, maxRotation: 0, autoSkipPadding: 12 }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          callbacks: {
+            title: (items) => items[0]?.label || "",
+            label: (item) => {
+              const q = points[item.dataIndex];
+              const sub = q?.subAcquisId ? ` · ${tr("chat.subAcquis", "Sous-acquis")} ${q.subAcquisId}` : "";
+              return `${q?.score ?? item.parsed.y}%${sub}`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 function renderDashHeatmap(weeklyActivity) {
   if (!dom.dashHeatmapBody) return;
   if (!weeklyActivity?.length) {
@@ -2030,14 +2142,26 @@ function renderDashHeatmap(weeklyActivity) {
   const last7 = weeklyActivity.slice(-7);
   const maxVal = Math.max(...last7.map((w) => w.quizzes), 1);
   let html = '<div class="heatmap-month-labels">';
-  const days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-  days.forEach((d) => { html += `<span class="heatmap-month-label">${d}</span>`; });
+  last7.forEach((w) => {
+    const d = new Date(w.week);
+    const label = Number.isNaN(d.getTime())
+      ? ""
+      : `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+    html += `<span class="heatmap-month-label">${label}</span>`;
+  });
   html += '</div><div class="heatmap-grid">';
   last7.forEach((w) => {
     const level = Math.min(5, Math.ceil((w.quizzes / maxVal) * 5) || 0);
-    html += `<div class="heatmap-cell l${level}" title="Semaine ${w.week}: ${w.quizzes} quiz, ${w.lessons} leçons"></div>`;
+    html += `<div class="heatmap-cell l${level}" title="${tr("dash.weekTip", `Semaine du ${w.week} : ${w.quizzes} quiz, ${w.lessons} leçons`, { week: w.week, q: w.quizzes, l: w.lessons })}"></div>`;
   });
   html += '</div>';
+  html += '<div class="heatmap-legend">'
+    + `<span class="heatmap-legend-label">${tr("dash.less", "Moins")}</span>`
+    + '<span class="heatmap-legend-cell l1"></span><span class="heatmap-legend-cell l2"></span>'
+    + '<span class="heatmap-legend-cell l3"></span><span class="heatmap-legend-cell l4"></span>'
+    + '<span class="heatmap-legend-cell l5"></span>'
+    + `<span class="heatmap-legend-label">${tr("dash.more", "Plus")}</span>`
+    + '</div>';
   dom.dashHeatmapBody.innerHTML = html;
 }
 
@@ -2105,7 +2229,7 @@ function renderDashDeadlines(calendarEntries) {
   dom.dashDeadlinesList.innerHTML = sorted.map((entry) => {
     const date = entry.unlockAt ? new Date(entry.unlockAt) : null;
     const day = date ? String(date.getDate()).padStart(2, "0") : "--";
-    const month = date ? date.toLocaleString("fr-FR", { month: "short" }) : "";
+    const month = date ? date.toLocaleString(NUM_LOCALE, { month: "short" }) : "";
     const title = entry.subAcquisName || `Sous-acquis ${entry.subAcquisId || ""}`;
     const moduleName = entry.moduleName || `Module ${entry.moduleId || ""}`;
     return `<li class="deadline-item">
@@ -2124,11 +2248,12 @@ function renderDashDeadlines(calendarEntries) {
 function renderDashInsights(insights) {
   if (!dom.dashInsightsBody || !insights) return;
 
+  const week = tr("ins.perWeek", "sem");
   const items = [
-    { label: "Quiz tentés", value: insights.totalQuizAttempts || 0, cls: "" },
-    { label: "Score moyen", value: `${Math.round(insights.averageQuizScore || 0)}%`, cls: "" },
-    { label: "Rythme", value: `${insights.completionPace?.toFixed(1) || "0"}/sem`, cls: "" },
-    { label: "Connexions", value: `${insights.loginFrequency?.toFixed(1) || "0"}/sem`, cls: insights.loginFrequency >= 3 ? "highlight" : "" }
+    { label: tr("ins.quizAttempts", "Quiz tentés"), value: insights.totalQuizAttempts || 0, cls: "" },
+    { label: tr("ins.avgScore", "Score moyen"), value: `${Math.round(insights.averageQuizScore || 0)}%`, cls: "" },
+    { label: tr("ins.pace", "Rythme"), value: `${insights.completionPace?.toFixed(1) || "0"}/${week}`, cls: "" },
+    { label: tr("ins.logins", "Connexions"), value: `${insights.loginFrequency?.toFixed(1) || "0"}/${week}`, cls: insights.loginFrequency >= 3 ? "highlight" : "" }
   ];
 
   dom.dashInsightsBody.innerHTML = items.map((item) => `

@@ -2115,14 +2115,62 @@ body.chatbot-open {
 .card-hero { grid-column: 1 / 2; grid-row: 1; }
 .card-prediction { grid-column: 2 / 3; grid-row: 1; }
 .card-action { grid-column: 3 / 4; grid-row: 1; }
-.card-module-progress { grid-column: 1 / 2; grid-row: 2; }
-.card-chart-overall { grid-column: 2 / 3; grid-row: 2; }
-.card-weakest { grid-column: 3 / 4; grid-row: 2; }
-.card-vark { grid-column: 1 / -1; grid-row: 3; }
+.card-insights { grid-column: 1 / -1; grid-row: 2; }
+.card-quiz-trend { grid-column: 1 / 2; grid-row: 3; }
+.card-chart-overall { grid-column: 2 / 3; grid-row: 3; }
+.card-weakest { grid-column: 3 / 4; grid-row: 3; }
+.card-module-progress { grid-column: 1 / 2; grid-row: 4; }
+.card-heatmap { grid-column: 2 / 3; grid-row: 4; }
+.card-deadlines { grid-column: 3 / 4; grid-row: 4; }
+.card-achievements { grid-column: 1 / -1; grid-row: 5; }
+.card-vark { grid-column: 1 / -1; grid-row: 6; }
+
+/* KPI strip: compact, tiles share the row with the title */
+.card-insights {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+.card-insights .chart-head {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  flex-shrink: 0;
+}
+.card-insights .insights-body { flex: 1; }
+
+/* Quiz trend line chart */
+.quiz-trend-wrap {
+  position: relative;
+  height: 230px;
+}
+.quiz-trend-empty {
+  color: var(--dash-muted);
+  font-size: 0.78rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+/* Achievements: 6 badges in a 3-column grid */
+.card-achievements .ach-body { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 /* ── Hero ── */
 .card-hero {
   background: linear-gradient(150deg, #ffffff 0%, #fff7f7 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.card-hero .hero-quote { margin-top: 0.95rem; }
+
+/* Overall-progress card: ring on top, caption underneath */
+#dash-radial-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .hero-greeting { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.1rem; }
@@ -2445,7 +2493,28 @@ body.chatbot-open {
 }
 .action-arrow { transition: transform 150ms ease; }
 .action-cta:hover .action-arrow { transform: translateX(4px); }
-.action-body { flex: 1; display: flex; flex-direction: column; }
+.action-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
+.card-action { display: flex; flex-direction: column; }
+.action-body .action-cta { margin-top: 1rem; }
+
+/* Heatmap legend */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 0.75rem;
+}
+.heatmap-legend-label { font-size: 0.6rem; color: var(--dash-muted); }
+.heatmap-legend-cell { width: 11px; height: 11px; border-radius: 3px; }
+
+/* Radial caption under the overall progress ring */
+.radial-caption {
+  margin: 0.65rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--dash-muted);
+}
 
 /* ── Chart cards ── */
 .card-chart { display: flex; flex-direction: column; }
@@ -2477,11 +2546,11 @@ body.chatbot-open {
   cursor: pointer;
 }
 .heatmap-cell:hover { transform: scale(1.3); z-index: 2; }
-.heatmap-cell.l1 { background: #fde8ea; }
-.heatmap-cell.l2 { background: #f5b7be; }
-.heatmap-cell.l3 { background: #ec7b87; }
-.heatmap-cell.l4 { background: #d93a4f; }
-.heatmap-cell.l5 { background: #a31025; }
+.heatmap-cell.l1, .heatmap-legend-cell.l1 { background: #fde8ea; }
+.heatmap-cell.l2, .heatmap-legend-cell.l2 { background: #f5b7be; }
+.heatmap-cell.l3, .heatmap-legend-cell.l3 { background: #ec7b87; }
+.heatmap-cell.l4, .heatmap-legend-cell.l4 { background: #d93a4f; }
+.heatmap-cell.l5, .heatmap-legend-cell.l5 { background: #a31025; }
 .heatmap-month-labels {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -2805,9 +2874,15 @@ body.chatbot-open {
   .card-hero { grid-column: 1 / 3; grid-row: auto; }
   .card-prediction { grid-column: 1 / 2; grid-row: auto; }
   .card-action { grid-column: 2 / 3; grid-row: auto; }
+  .card-insights { grid-column: 1 / 3; grid-row: auto; }
+  .card-quiz-trend { grid-column: 1 / 3; grid-row: auto; }
   .card-module-progress { grid-column: 1 / 3; grid-row: auto; }
   .card-chart-overall { grid-column: 1 / 2; grid-row: auto; }
   .card-weakest { grid-column: 2 / 3; grid-row: auto; }
+  .card-heatmap { grid-column: 1 / 2; grid-row: auto; }
+  .card-deadlines { grid-column: 2 / 3; grid-row: auto; }
+  .card-achievements { grid-column: 1 / 3; grid-row: auto; }
+  .card-achievements .ach-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .card-vark { grid-column: 1 / 3; grid-row: auto; }
   .mod-prog-row { grid-template-columns: 1fr 1fr 80px; }
 }
@@ -2817,10 +2892,18 @@ body.chatbot-open {
   .card-hero,
   .card-prediction,
   .card-action,
+  .card-insights,
+  .card-quiz-trend,
   .card-chart-overall,
   .card-weakest,
   .card-module-progress,
+  .card-heatmap,
+  .card-deadlines,
+  .card-achievements,
   .card-vark { grid-column: 1; }
+  .card-insights { flex-direction: column; align-items: stretch; }
+  .card-insights .insights-body { grid-template-columns: repeat(2, 1fr); }
+  .card-achievements .ach-body { grid-template-columns: 1fr; }
   .mod-prog-row { grid-template-columns: 1fr; gap: 0.4rem; }
   .hero-badges { flex-direction: column; }
 }
