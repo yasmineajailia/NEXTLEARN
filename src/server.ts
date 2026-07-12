@@ -2,7 +2,8 @@ import express from "express";
 import path from "node:path";
 import mongoose from "mongoose";
 import { env } from "./config/env";
-import { webRouter, warmStudentVectorStore } from "./routes/web";
+import { webRouter } from "./routes/web";
+import { chatbotRouter, warmStudentVectorStore } from "./routes/student/chatbot";
 import { organizationRouter } from "./routes/backoffice/organization";
 import { pagesRouter } from "./routes/pages";
 import { clusteringRouter } from "./routes/backoffice/clustering";
@@ -33,6 +34,7 @@ app.use(
 
 // App routes.
 app.use(webRouter);
+app.use(chatbotRouter);
 app.use(pagesRouter);
 app.use(organizationRouter);
 app.use(clusteringRouter);

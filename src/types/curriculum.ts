@@ -33,3 +33,73 @@ export type StudentCalendarEntry = {
   unlocked: boolean;
 };
 
+/* Curriculum data shapes persisted in Mongo (see models/CurriculumModule). */
+export type QuizQuestion = {
+  prompt: string;
+  options: string[];
+  correctOptionIndex: number | null;
+};
+
+export type QuizJsonPayload = {
+  questions?: Array<{
+    prompt?: string;
+    options?: string[];
+    correctOptionIndex?: number | null;
+  }>;
+};
+
+export type CurriculumQuizQuestion = {
+  prompt: string;
+  options: string[];
+  correctAnswerIndex: number | null;
+};
+
+export type CurriculumQuiz = {
+  id: string;
+  type: string;
+  title: string;
+  questions: CurriculumQuizQuestion[];
+};
+
+export type CurriculumCourseFile = {
+  id: string;
+  title: string;
+  url: string;
+  fileType: string;
+};
+
+export type CurriculumVideo = {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+};
+
+export type CurriculumSubAcquis = {
+  id: string;
+  name: string;
+  bloomLevel?: string;
+  resource?: {
+    type?: string;
+    ref?: string;
+  };
+  lessonsCount?: number;
+  courseFiles?: CurriculumCourseFile[];
+  videos?: CurriculumVideo[];
+  quizzes?: CurriculumQuiz[];
+};
+
+export type CurriculumAcquis = {
+  id: string;
+  name: string;
+  isDefaultBucket?: boolean;
+  sousAcquis: CurriculumSubAcquis[];
+};
+
+export type CurriculumModuleDoc = {
+  id: string;
+  name: string;
+  sortOrder?: number;
+  acquis: CurriculumAcquis[];
+};
+

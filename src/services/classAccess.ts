@@ -8,7 +8,7 @@
  */
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { ClassAccessContext, ModuleOverview } from "../types/curriculum";
+import type { ClassAccessContext, ModuleOverview, StudentCalendarEntry } from "../types/curriculum";
 
 export const SCHEDULE_KEY_DOT_TOKEN = "__dot__";
 
@@ -224,5 +224,53 @@ export function buildScheduleBySubAcquis(params: {
   });
 
   return schedule;
+}
+
+export function filterOverviewByAccess(overview: ModuleOverview[], access: ClassAccessContext | null): ModuleOverview[] {
+  if (!access) {
+    return overview;
+  }
+
+  return overview
+    .map((moduleData) => {
+      const filteredSubAcquis = moduleData.subAcquis.filter((entry) =>
+        isSubAcquisAccessibleByAccessRules(access, moduleData.id, entry.id)
+      );
+
+      if (!filteredSubAcquis.length) {
+        return null;
+      }
+
+      return {
+        ...moduleData,
+        subAcquisCount: filteredSubAcquis.length,
+        subAcquis: filteredSubAcquis
+      };
+    })
+    .filter((moduleData): moduleData is ModuleOverview => Boolean(moduleData));
+}
+
+export function toStudentCalendarEntries(overview: ModuleOverview[], access: ClassAccessContext | null): StudentCalendarEntry[] {
+  const entries = overview.flatMap((moduleData) => {
+    return moduleData.subAcquis.map((subAcquis) => {
+      const unlockAt = access ? access.accessScheduleBySubAcquis[subAcquis.id] || null : null;
+      const accessible = isSubAcquisAccessibleByAccessRules(access, moduleData.id, subAcquis.id);
+
+      return {
+        moduleId: moduleData.id,
+        moduleName: moduleData.name,
+        subAcquisId: subAcquis.id,
+        subAcquisName: subAcquis.name,
+        unlockAt,
+        unlocked: accessible
+      };
+    });
+  });
+
+  return entries.sort((a, b) => {
+    const aDate = a.unlockAt ? new Date(a.unlockAt).getTime() : 0;
+    const bDate = b.unlockAt ? new Date(b.unlockAt).getTime() : 0;
+    return aDate - bDate;
+  });
 }
 

@@ -20,13 +20,14 @@ src/
   config/env.ts             Env access
   models/                   Mongoose schemas (User holds progress + attentionSessions)
   routes/
-    web.ts                  LEGACY MONOLITH (~6k lines): curriculum/content machinery,
-                            chatbot+RAG, quizzes, self-eval, teacher quiz generation,
-                            student dashboard/prediction routes. Shrink it by extracting
-                            domains into the pattern below — never grow it.
+    web.ts                  LEGACY MONOLITH (~4.3k lines): curriculum read/seed/persist
+                            machinery, quizzes + self-eval, teacher quiz generation,
+                            student dashboard/prediction/progress routes. Shrink it by
+                            extracting domains into the pattern below — never grow it.
     auth.ts                 Sign-in/up, password reset (mounted inside webRouter)
     pages.ts                Static page routes (/sign-in, /backoffice, ...)
-    student/                attentionSession.ts
+    student/                chatbot.ts (RAG routes + context orchestration + vector
+                            warm-up), attentionSession.ts
     backoffice/             organization.ts (teachers/classes/students/access),
                             clustering.ts, attention.ts
   services/
@@ -36,7 +37,16 @@ src/
     prediction/explain.ts   Explanation resolution: shap-python -> shap-js -> rules
                             (circuit breaker on the Python service)
     studentProgress.ts      Pure progress math (lesson keys, quiz averages)
-    classAccess.ts          Module access rules + unlock schedules (data/calendar.txt)
+    classAccess.ts          Module access rules + unlock schedules (data/calendar.txt),
+                            overview filtering + student calendar entries
+    chatbot/rag.ts          RAG engine: vector store (StudentChatbotVector), lexical
+                            fallback, grounding checks, prompts, generate/stream.
+                            Takes persisted modules as params — no curriculum reads.
+    llm.ts                  Provider plumbing: embeddings, Gemini catalog, answer text
+    courseContent.ts        GridFS + filesystem course files, PDF/DOCX/PPTX text
+                            extraction (cached) for the RAG index
+    textNormalize.ts        Shared text normalization utils
+    curriculum.ts           moduleDocToOverview (seed of the future curriculum service)
     clustering/, recommendation/
   types/curriculum.ts       Shared ModuleOverview / ClassAccessContext shapes
 ml/                         Python: js_forest.py reconstructs the EXACT deployed
@@ -80,7 +90,10 @@ public/
 
 `src/routes/web.ts` is being decomposed incrementally. Extraction pattern: move pure
 helpers into `src/services/`, shared shapes into `src/types/`, then lift the route block
-into a focused router mounted in `server.ts`. Remaining candidates, largest first:
-curriculum/content machinery, chatbot+RAG, teacher quiz generation, student dashboard.
+into a focused router mounted in `server.ts`. Done so far: organization, pages, chatbot
+(routes/student/chatbot.ts + services/chatbot/rag.ts + llm.ts + courseContent.ts).
+Remaining candidates, largest first: curriculum read/seed/persist machinery (the
+`readPersistedCurriculumModules` cluster — several extracted modules import it from
+web.ts transitionally), teacher quiz generation, quiz submit/progress, student dashboard.
 The frontend monoliths (`public/backoffice/backoffice.js` ~4.6k lines,
 `public/student/student.js` ~2.5k) are the same story on the client side.
