@@ -3,6 +3,8 @@ import path from "node:path";
 import mongoose from "mongoose";
 import { env } from "./config/env";
 import { webRouter, warmStudentVectorStore } from "./routes/web";
+import { organizationRouter } from "./routes/backoffice/organization";
+import { pagesRouter } from "./routes/pages";
 import { clusteringRouter } from "./routes/backoffice/clustering";
 import { attentionRouter } from "./routes/backoffice/attention";
 import { attentionSessionRouter } from "./routes/student/attentionSession";
@@ -31,6 +33,8 @@ app.use(
 
 // App routes.
 app.use(webRouter);
+app.use(pagesRouter);
+app.use(organizationRouter);
 app.use(clusteringRouter);
 app.use(attentionRouter);
 app.use(attentionSessionRouter);

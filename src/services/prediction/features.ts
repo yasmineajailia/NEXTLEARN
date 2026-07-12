@@ -418,3 +418,63 @@ export function explainRiskFactors(features: PredictionFeatures): RiskFactor[] {
     .slice(0, 3)
     .map(({ label, level }) => ({ label, level }));
 }
+
+/**
+ * Derive the ML prediction feature vector from a user's raw progress data and
+ * profile. Thin adapter over the shared {@link computePredictionFeatures}.
+ */
+export function extractMLFeatures(params: {
+  progress?: {
+    completedLessonKeys?: unknown[];
+    quizResults?: Array<{ score?: unknown; submittedAt?: unknown }>;
+    selfEvaluationResults?: Array<{ score?: unknown }>;
+  };
+  profile?: {
+    loginCount?: number;
+    lastLoginDate?: Date | null;
+    createdAt?: Date;
+  } | null;
+  totalSubAcquis?: number;
+  /** Class schedule anchor — when present, delay is measured against the course timeline. */
+  scheduleStartDate?: Date | string | null;
+  /** When set, features are scoped to a single module (lessons + quizzes of that module only). */
+  moduleId?: string;
+}): PredictionFeatures {
+  const { progress, profile, totalSubAcquis = 42, scheduleStartDate = null, moduleId } = params;
+
+  const allCompletedKeys = Array.isArray(progress?.completedLessonKeys) ? progress.completedLessonKeys : [];
+  const completedKeys = moduleId
+    ? allCompletedKeys.filter((k) => typeof k === "string" && (k as string).startsWith(`${moduleId}::`))
+    : allCompletedKeys;
+  const completedCount = completedKeys.length;
+
+  const allQuizResults = Array.isArray(progress?.quizResults) ? progress.quizResults : [];
+  const quizResults = moduleId
+    ? allQuizResults.filter((r) => String((r as any)?.moduleId || "") === moduleId)
+    : allQuizResults;
+  const quizScores = quizResults.map((r) => Number(r?.score));
+  const quizTimestamps = quizResults
+    .map((r) => {
+      const d = r?.submittedAt ? new Date(r.submittedAt as any) : null;
+      return d && !Number.isNaN(d.getTime()) ? d.getTime() : NaN;
+    })
+    .filter((t) => Number.isFinite(t));
+
+  const createdAt = profile?.createdAt ? new Date(profile.createdAt).getTime() : Date.now();
+  const lastLoginAt = profile?.lastLoginDate ? new Date(profile.lastLoginDate).getTime() : null;
+  const scheduleStartAt = scheduleStartDate ? new Date(scheduleStartDate).getTime() : null;
+
+  return computePredictionFeatures({
+    completedCount,
+    totalSubAcquis,
+    quizScores,
+    quizTimestamps,
+    loginCount: Number(profile?.loginCount || 0),
+    createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
+    lastLoginAt: lastLoginAt && Number.isFinite(lastLoginAt) ? lastLoginAt : null,
+    scheduleStartAt: scheduleStartAt && Number.isFinite(scheduleStartAt) ? scheduleStartAt : null,
+    now: Date.now()
+  });
+}
+
+export type PredictionModuleInfo = { id: string; name: string; subAcquisCount: number };
