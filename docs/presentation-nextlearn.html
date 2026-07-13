@@ -26,24 +26,38 @@
   }
 
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; height: 100%; }
   body {
     font-family: var(--font-body);
     background: var(--paper);
     color: var(--ink);
     font-size: 16px;
     line-height: 1.55;
+    overflow: hidden;
   }
 
-  /* ---------- Deck mechanics ---------- */
+  /* ---------- Deck mechanics ----------
+     Slides are stacked layers: the active one is on top, the leaving one
+     animates out underneath. Each slide scrolls internally when the
+     viewport (e.g. an embedded canvas) is shorter than its content. */
   .slide {
+    position: fixed;
+    inset: 0 0 46px 0;
     display: none;
-    min-height: 100vh;
-    padding: 4.5rem 6vw 5.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4rem 6vw 3rem;
     flex-direction: column;
     justify-content: center;
+    justify-content: safe center;
+    background: var(--paper);
   }
-  .slide.active { display: flex; }
+  .slide.active { display: flex; z-index: 2; }
+  .slide.leaving { display: flex; z-index: 1; pointer-events: none; }
+  .slide.active.from-right { animation: slideInRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .slide.active.from-left { animation: slideInLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .slide.leaving.to-left { animation: slideOutLeft 0.5s cubic-bezier(0.55, 0, 0.55, 0.2) both; }
+  .slide.leaving.to-right { animation: slideOutRight 0.5s cubic-bezier(0.55, 0, 0.55, 0.2) both; }
 
   .deck-nav {
     position: fixed;
@@ -86,6 +100,22 @@
   }
 
   /* ---------- Animations ---------- */
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(9vw) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-9vw) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes slideOutLeft {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: translateX(-7vw) scale(0.99); }
+  }
+  @keyframes slideOutRight {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: translateX(7vw) scale(0.99); }
+  }
   @keyframes rise {
     from { opacity: 0; transform: translateY(18px); }
     to { opacity: 1; transform: translateY(0); }
@@ -400,9 +430,19 @@
     .cols-2, .cols-3, .cols-4, .cols-5, .stat-row, .tdsp, .agenda { grid-template-columns: 1fr; }
   }
 
+  @media (max-height: 720px) {
+    .slide { padding-top: 2.4rem; padding-bottom: 2.4rem; }
+    h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); }
+    h2 { font-size: clamp(1.4rem, 2.8vw, 2rem); margin-bottom: 1rem; }
+    .card, .stat { padding: 0.85rem 0.95rem; }
+    .agenda { margin-top: 1.2rem; }
+    .cover .meta { margin-top: 1.4rem; }
+  }
+
   @media print {
     .deck-nav, .progress, .kbd-hint { display: none !important; }
-    .slide { display: flex !important; min-height: auto; page-break-after: always; padding: 2.2rem 2.6rem; }
+    body { overflow: visible; }
+    .slide { position: static; display: flex !important; min-height: auto; page-break-after: always; padding: 2.2rem 2.6rem; overflow: visible; }
     body { background: #fff; }
     .slide .eyebrow, .slide h1, .slide h2, .slide .rv, .cover .chev { animation: none !important; opacity: 1 !important; transform: none !important; }
     .table-scroll { box-shadow: none; }
@@ -414,7 +454,7 @@
 <div class="progress" id="progress"></div>
 
 <!-- 1 ── COVER / INTRODUCTION ─────────────────────────────── -->
-<section class="slide cover active">
+<section class="slide cover">
   <div class="mark"><span class="chev"></span>NEXTLEARN <span style="color:var(--faint);font-weight:400">by ESPRIT</span></div>
   <p class="eyebrow">Introduction</p>
   <h1>An e-learning platform that <em>understands the student</em>.</h1>
@@ -699,21 +739,51 @@
     var counter = document.getElementById("counter");
     var progress = document.getElementById("progress");
     var i = 0;
+    var leaveTimer = null;
 
     var m = location.hash.match(/^#s(\d+)$/);
     if (m) i = Math.min(slides.length - 1, Math.max(0, parseInt(m[1], 10) - 1));
 
-    function go(n) {
-      i = Math.max(0, Math.min(slides.length - 1, n));
-      slides.forEach(function (s, k) { s.classList.toggle("active", k === i); });
+    function clearTransientClasses() {
+      slides.forEach(function (s) {
+        s.classList.remove("leaving", "to-left", "to-right", "from-left", "from-right");
+      });
+    }
+
+    function reflect() {
       counter.textContent = (i + 1) + " / " + slides.length;
       progress.style.width = ((i + 1) / slides.length * 100) + "%";
       try { history.replaceState(null, "", "#s" + (i + 1)); } catch (e) {}
-      window.scrollTo(0, 0);
     }
 
-    document.getElementById("prev").addEventListener("click", function () { go(i - 1); });
-    document.getElementById("next").addEventListener("click", function () { go(i + 1); });
+    function go(n) {
+      var target = Math.max(0, Math.min(slides.length - 1, n));
+      if (target === i) return;
+      var forward = target > i;
+      var prev = slides[i];
+      var next = slides[target];
+
+      if (leaveTimer) clearTimeout(leaveTimer);
+      clearTransientClasses();
+
+      prev.classList.remove("active");
+      prev.classList.add("leaving", forward ? "to-left" : "to-right");
+      next.classList.add("active", forward ? "from-right" : "from-left");
+      next.scrollTop = 0;
+
+      leaveTimer = setTimeout(function () {
+        prev.classList.remove("leaving", "to-left", "to-right");
+      }, 550);
+
+      i = target;
+      reflect();
+    }
+
+    // Buttons
+    document.getElementById("prev").addEventListener("click", function (e) { e.stopPropagation(); go(i - 1); });
+    document.getElementById("next").addEventListener("click", function (e) { e.stopPropagation(); go(i + 1); });
+
+    // Keyboard
     document.addEventListener("keydown", function (e) {
       if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); go(i + 1); }
       else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(i - 1); }
@@ -721,7 +791,32 @@
       else if (e.key === "End") { go(slides.length - 1); }
     });
 
-    go(i);
+    // Click anywhere advances (canvas/iframe friendly: no keyboard focus
+    // needed). Interactive elements and text selections are respected.
+    document.addEventListener("click", function (e) {
+      if (e.target.closest("button, a, input, select, textarea, .deck-nav")) return;
+      if (window.getSelection && String(window.getSelection())) return;
+      go(i + 1);
+    });
+
+    // Touch swipe
+    var touchX = null;
+    document.addEventListener("touchstart", function (e) {
+      touchX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (touchX == null) return;
+      var dx = e.changedTouches[0].clientX - touchX;
+      touchX = null;
+      if (Math.abs(dx) > 60) go(i + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+
+    // Grab keyboard focus when embedded in an iframe.
+    document.body.tabIndex = -1;
+    try { document.body.focus({ preventScroll: true }); } catch (e) { document.body.focus(); }
+
+    slides[i].classList.add("active");
+    reflect();
   })();
 </script>
 
