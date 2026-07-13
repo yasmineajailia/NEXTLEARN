@@ -53,6 +53,7 @@
     background: var(--paper);
   }
   .slide.active { display: flex; z-index: 2; }
+  .cover, .closing { isolation: isolate; }
   .slide.leaving { display: flex; z-index: 1; pointer-events: none; }
   .slide.active.from-right { animation: slideInRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
   .slide.active.from-left { animation: slideInLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -143,6 +144,111 @@
   .slide.active .rv:nth-of-type(5), .slide.active .rv-5 { animation-delay: 0.66s; }
   .slide.active .rv:nth-of-type(6), .slide.active .rv-6 { animation-delay: 0.78s; }
   .cover .chev { animation: chevPulse 2.6s ease-in-out infinite; }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.9) translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sweepInRight {
+    from { opacity: 0; transform: translateX(26px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes drawBar {
+    from { width: 0; }
+    to { width: 44px; }
+  }
+  @keyframes arrowIn {
+    from { opacity: 0; transform: translate(-8px, -50%); }
+    to { opacity: 1; transform: translate(0, -50%); }
+  }
+  @keyframes tick {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.3); color: var(--crimson); }
+    100% { transform: scale(1); }
+  }
+  @keyframes floatChev {
+    from { transform: translate(0, 0) rotate(0deg); }
+    to { transform: translate(26px, -38px) rotate(7deg); }
+  }
+
+  /* Section titles draw a small crimson bar under themselves */
+  .slide.active h2::after {
+    content: "";
+    display: block;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--crimson);
+    margin-top: 0.55rem;
+    animation: drawBar 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+  }
+
+  /* Ambient chevrons drifting on the cover and closing slides */
+  .cover::before, .cover::after, .closing::before {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    background: var(--crimson);
+    clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%);
+    z-index: -1;
+  }
+  .cover::before {
+    width: 430px; height: 430px;
+    right: -130px; top: 8%;
+    opacity: 0.05;
+    animation: floatChev 11s ease-in-out infinite alternate;
+  }
+  .cover::after {
+    width: 280px; height: 280px;
+    right: 180px; bottom: -70px;
+    opacity: 0.04;
+    animation: floatChev 15s ease-in-out infinite alternate-reverse;
+  }
+  .closing::before {
+    width: 460px; height: 460px;
+    left: -160px; bottom: -110px;
+    opacity: 0.05;
+    animation: floatChev 13s ease-in-out infinite alternate;
+  }
+
+  /* BO/DSO pairs: halves sweep in from opposite sides, arrow pops between */
+  .slide.active .pair.rv { animation: none; opacity: 1; }
+  .slide.active .pair .half.bo { animation: sweepIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .slide.active .pair .half.dso { animation: sweepInRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .slide.active .pair .link { animation: popIn 0.4s ease both; }
+  .slide.active .pair:nth-of-type(1) .half, .slide.active .pair:nth-of-type(1) .link { animation-delay: 0.15s; }
+  .slide.active .pair:nth-of-type(2) .half, .slide.active .pair:nth-of-type(2) .link { animation-delay: 0.27s; }
+  .slide.active .pair:nth-of-type(3) .half, .slide.active .pair:nth-of-type(3) .link { animation-delay: 0.39s; }
+  .slide.active .pair:nth-of-type(4) .half, .slide.active .pair:nth-of-type(4) .link { animation-delay: 0.51s; }
+  .slide.active .pair:nth-of-type(5) .half, .slide.active .pair:nth-of-type(5) .link { animation-delay: 0.63s; }
+  .slide.active .pair:nth-of-type(6) .half, .slide.active .pair:nth-of-type(6) .link { animation-delay: 0.75s; }
+
+  /* TDSP flow: connector arrows appear one after the other */
+  .slide.active .tdsp .step::after { animation: arrowIn 0.35s ease both; }
+  .slide.active .tdsp .step:nth-of-type(1)::after { animation-delay: 0.55s; }
+  .slide.active .tdsp .step:nth-of-type(2)::after { animation-delay: 0.67s; }
+  .slide.active .tdsp .step:nth-of-type(3)::after { animation-delay: 0.79s; }
+  .slide.active .tdsp .step:nth-of-type(4)::after { animation-delay: 0.91s; }
+
+  /* Demo checklist: numbered badges pop after their row lands */
+  .slide.active .demo-list li::before { animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .slide.active .demo-list li:nth-of-type(1)::before { animation-delay: 0.32s; }
+  .slide.active .demo-list li:nth-of-type(2)::before { animation-delay: 0.44s; }
+  .slide.active .demo-list li:nth-of-type(3)::before { animation-delay: 0.56s; }
+  .slide.active .demo-list li:nth-of-type(4)::before { animation-delay: 0.68s; }
+  .slide.active .demo-list li:nth-of-type(5)::before { animation-delay: 0.80s; }
+
+  /* Slide counter ticks on navigation */
+  .counter.tick { animation: tick 0.35s ease; }
+
+  /* Cards lift under the pointer while presenting */
+  .card, .stat, .pair .half, .tdsp .step, .demo-list li {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .card:hover, .stat:hover, .pair .half:hover, .tdsp .step:hover, .demo-list li:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
@@ -445,6 +551,8 @@
     .slide { position: static; display: flex !important; min-height: auto; page-break-after: always; padding: 2.2rem 2.6rem; overflow: visible; }
     body { background: #fff; }
     .slide .eyebrow, .slide h1, .slide h2, .slide .rv, .cover .chev { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .cover::before, .cover::after, .closing::before { display: none; }
+    .slide h2::after { animation: none !important; width: 44px; }
     .table-scroll { box-shadow: none; }
   }
 </style>
@@ -777,6 +885,39 @@
 
       i = target;
       reflect();
+      counter.classList.remove("tick");
+      void counter.offsetWidth;
+      counter.classList.add("tick");
+      animateNumbers(next);
+    }
+
+    // Count numeric tokens up from 0 while preserving the surrounding text
+    // (e.g. "72\u201376 %" animates both bounds). Skipped under reduced motion.
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function animateNumbers(slideEl) {
+      if (reduceMotion) return;
+      var els = slideEl.querySelectorAll(".stat .v");
+      Array.prototype.forEach.call(els, function (el) {
+        if (!el.dataset.final) el.dataset.final = el.textContent;
+        var final = el.dataset.final;
+        var tokens = final.match(/\d+(?:\.\d+)?/g);
+        if (!tokens) return;
+        var start = performance.now();
+        var DURATION = 900;
+        function frame(now) {
+          var p = Math.min((now - start) / DURATION, 1);
+          var eased = 1 - Math.pow(1 - p, 3);
+          var idx = 0;
+          el.textContent = final.replace(/\d+(?:\.\d+)?/g, function (tok) {
+            var target = parseFloat(tokens[idx++]);
+            var decimals = (tok.split(".")[1] || "").length;
+            return (target * eased).toFixed(decimals);
+          });
+          if (p < 1) requestAnimationFrame(frame);
+          else el.textContent = final;
+        }
+        requestAnimationFrame(frame);
+      });
     }
 
     // Buttons
@@ -817,6 +958,7 @@
 
     slides[i].classList.add("active");
     reflect();
+    animateNumbers(slides[i]);
   })();
 </script>
 
