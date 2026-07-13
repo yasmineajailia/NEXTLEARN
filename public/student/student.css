@@ -2111,35 +2111,19 @@ body.chatbot-open {
   padding-bottom: 0.5rem;
 }
 
-/* Card placements — trimmed to a focused set of cards */
+/* Card placements — the hero now carries the key stats, so the row that used
+   to hold a separate KPI strip is gone and everything below moves up one. */
 .card-hero { grid-column: 1 / 2; grid-row: 1; }
 .card-prediction { grid-column: 2 / 3; grid-row: 1; }
 .card-action { grid-column: 3 / 4; grid-row: 1; }
-.card-insights { grid-column: 1 / -1; grid-row: 2; }
-.card-quiz-trend { grid-column: 1 / 2; grid-row: 3; }
-.card-chart-overall { grid-column: 2 / 3; grid-row: 3; }
-.card-weakest { grid-column: 3 / 4; grid-row: 3; }
-.card-module-progress { grid-column: 1 / 2; grid-row: 4; }
-.card-heatmap { grid-column: 2 / 3; grid-row: 4; }
-.card-deadlines { grid-column: 3 / 4; grid-row: 4; }
-.card-achievements { grid-column: 1 / -1; grid-row: 5; }
-.card-vark { grid-column: 1 / -1; grid-row: 6; }
-
-/* KPI strip: compact, tiles share the row with the title */
-.card-insights {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding-top: 0.85rem;
-  padding-bottom: 0.85rem;
-}
-.card-insights .chart-head {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  flex-shrink: 0;
-}
-.card-insights .insights-body { flex: 1; }
+.card-quiz-trend { grid-column: 1 / 2; grid-row: 2; }
+.card-chart-overall { grid-column: 2 / 3; grid-row: 2; }
+.card-weakest { grid-column: 3 / 4; grid-row: 2; }
+.card-module-progress { grid-column: 1 / 2; grid-row: 3; }
+.card-heatmap { grid-column: 2 / 3; grid-row: 3; }
+.card-deadlines { grid-column: 3 / 4; grid-row: 3; }
+.card-achievements { grid-column: 1 / -1; grid-row: 4; }
+.card-vark { grid-column: 1 / -1; grid-row: 5; }
 
 /* Quiz trend line chart */
 .quiz-trend-wrap {
@@ -2156,14 +2140,45 @@ body.chatbot-open {
 /* Achievements: 6 badges in a 3-column grid */
 .card-achievements .ach-body { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-/* ── Hero ── */
+/* ── Hero ──
+   Holds the greeting, the three headline badges and the key stats. The stat
+   grid is the flexible element, so when the row is stretched to the height of
+   the prediction card the slack goes into the tiles instead of opening dead
+   gaps between the blocks. */
 .card-hero {
   background: linear-gradient(150deg, #ffffff 0%, #fff7f7 100%);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 0.85rem;
 }
-.card-hero .hero-quote { margin-top: 0.95rem; }
+.card-hero .hero-greeting { margin-bottom: 0; }
+
+.hero-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 0;
+}
+.hero-stats-label {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dash-muted);
+}
+.card-hero .insights-body {
+  flex: 1;
+  grid-template-columns: repeat(2, 1fr);
+}
+.card-hero .insight-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.card-hero .hero-quote { margin-top: 0; }
 
 /* Overall-progress card: ring on top, caption underneath */
 #dash-radial-container {
@@ -2495,7 +2510,23 @@ body.chatbot-open {
 .action-cta:hover .action-arrow { transform: translateX(4px); }
 .action-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
 .card-action { display: flex; flex-direction: column; }
-.action-body .action-cta { margin-top: 1rem; }
+/* This card carries little content but is stretched to the height of the
+   prediction card next to it. Centring the body turns the leftover height into
+   symmetric breathing room around a focused call to action, instead of a void
+   above or below it. */
+.card-action .action-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+.action-body .action-cta {
+  margin-top: 0.9rem;
+  align-self: stretch;
+  justify-content: center;
+}
 
 /* Heatmap legend */
 .heatmap-legend {
@@ -2874,7 +2905,6 @@ body.chatbot-open {
   .card-hero { grid-column: 1 / 3; grid-row: auto; }
   .card-prediction { grid-column: 1 / 2; grid-row: auto; }
   .card-action { grid-column: 2 / 3; grid-row: auto; }
-  .card-insights { grid-column: 1 / 3; grid-row: auto; }
   .card-quiz-trend { grid-column: 1 / 3; grid-row: auto; }
   .card-module-progress { grid-column: 1 / 3; grid-row: auto; }
   .card-chart-overall { grid-column: 1 / 2; grid-row: auto; }
@@ -2885,6 +2915,9 @@ body.chatbot-open {
   .card-achievements .ach-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .card-vark { grid-column: 1 / 3; grid-row: auto; }
   .mod-prog-row { grid-template-columns: 1fr 1fr 80px; }
+  /* The hero spans the full width here, so its stats spread back to four. */
+  .card-hero .insights-body { grid-template-columns: repeat(4, 1fr); }
+  .hero-stats { flex: none; }
 }
 
 @media (max-width: 640px) {
@@ -2892,7 +2925,6 @@ body.chatbot-open {
   .card-hero,
   .card-prediction,
   .card-action,
-  .card-insights,
   .card-quiz-trend,
   .card-chart-overall,
   .card-weakest,
@@ -2901,8 +2933,7 @@ body.chatbot-open {
   .card-deadlines,
   .card-achievements,
   .card-vark { grid-column: 1; }
-  .card-insights { flex-direction: column; align-items: stretch; }
-  .card-insights .insights-body { grid-template-columns: repeat(2, 1fr); }
+  .card-hero .insights-body { grid-template-columns: repeat(2, 1fr); }
   .card-achievements .ach-body { grid-template-columns: 1fr; }
   .mod-prog-row { grid-template-columns: 1fr; gap: 0.4rem; }
   .hero-badges { flex-direction: column; }
