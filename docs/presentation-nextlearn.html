@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NextLearn — Présentation du projet</title>
+<title>NextLearn — Project Presentation</title>
 <style>
   :root {
     --paper: #f7f6f3;
@@ -23,37 +23,6 @@
     --font-display: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --font-mono: Consolas, "Courier New", monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper: #10151f;
-      --surface: #1a212e;
-      --ink: #e9ecf3;
-      --slate: #a7aebc;
-      --faint: #6d7484;
-      --line: #2a3242;
-      --crimson: #e0435c;
-      --crimson-deep: #c41d38;
-      --rose: rgba(224, 67, 92, 0.1);
-      --rose-line: rgba(224, 67, 92, 0.3);
-      --navy-panel: #101827;
-      --navy-panel-ink: #eef1f7;
-      --ok: #3ba3dd;
-      --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
-    }
-  }
-  :root[data-theme="light"] {
-    --paper: #f7f6f3; --surface: #ffffff; --ink: #131b2c; --slate: #5b6374;
-    --faint: #9aa1b0; --line: #e6e4de; --crimson: #c41d38; --crimson-deep: #8f1220;
-    --rose: #fdf0f2; --rose-line: #f3d2d8; --navy-panel: #182235; --navy-panel-ink: #eef1f7;
-    --ok: #0072b2; --shadow: 0 10px 34px rgba(19, 27, 44, 0.08);
-  }
-  :root[data-theme="dark"] {
-    --paper: #10151f; --surface: #1a212e; --ink: #e9ecf3; --slate: #a7aebc;
-    --faint: #6d7484; --line: #2a3242; --crimson: #e0435c; --crimson-deep: #c41d38;
-    --rose: rgba(224, 67, 92, 0.1); --rose-line: rgba(224, 67, 92, 0.3);
-    --navy-panel: #101827; --navy-panel-ink: #eef1f7; --ok: #3ba3dd;
-    --shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
   }
 
   * { box-sizing: border-box; }
@@ -101,19 +70,51 @@
     color: var(--ink);
     font-size: 0.95rem;
     cursor: pointer;
-    transition: border-color 120ms ease, color 120ms ease;
+    transition: border-color 120ms ease, color 120ms ease, transform 120ms ease;
   }
-  .nav-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+  .nav-btn:hover { border-color: var(--crimson); color: var(--crimson); transform: translateY(-1px); }
   .nav-btn:focus-visible { outline: 2px solid var(--crimson); outline-offset: 2px; }
   .counter { font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
   .progress {
     position: fixed;
     top: 0; left: 0;
     height: 3px;
-    background: var(--crimson);
+    background: linear-gradient(90deg, var(--crimson-deep), var(--crimson));
     width: 0;
     z-index: 60;
-    transition: width 260ms ease;
+    transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ---------- Animations ---------- */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes sweepIn {
+    from { opacity: 0; transform: translateX(-26px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes chevPulse {
+    0%, 100% { transform: none; opacity: 1; }
+    50% { transform: translateX(6px); opacity: 0.85; }
+  }
+  .slide.active .eyebrow { animation: sweepIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .slide.active h1,
+  .slide.active h2 { animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: 0.08s; }
+  .slide.active .rv { animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .slide.active .rv:nth-of-type(1), .slide.active .rv-1 { animation-delay: 0.18s; }
+  .slide.active .rv:nth-of-type(2), .slide.active .rv-2 { animation-delay: 0.30s; }
+  .slide.active .rv:nth-of-type(3), .slide.active .rv-3 { animation-delay: 0.42s; }
+  .slide.active .rv:nth-of-type(4), .slide.active .rv-4 { animation-delay: 0.54s; }
+  .slide.active .rv:nth-of-type(5), .slide.active .rv-5 { animation-delay: 0.66s; }
+  .slide.active .rv:nth-of-type(6), .slide.active .rv-6 { animation-delay: 0.78s; }
+  .cover .chev { animation: chevPulse 2.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
 
   /* ---------- Typography ---------- */
@@ -127,33 +128,33 @@
   }
   h1 {
     font-family: var(--font-display);
-    font-size: clamp(2.4rem, 5.4vw, 4.4rem);
+    font-size: clamp(2.4rem, 5.4vw, 4.2rem);
     font-weight: 800;
     letter-spacing: -0.025em;
-    line-height: 1.04;
+    line-height: 1.05;
     margin: 0;
     text-wrap: balance;
   }
   h2 {
     font-family: var(--font-display);
-    font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+    font-size: clamp(1.7rem, 3.2vw, 2.5rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    margin: 0 0 1.6rem;
+    margin: 0 0 1.5rem;
     text-wrap: balance;
   }
   h3 {
-    font-size: 1.02rem;
+    font-size: 1rem;
     font-weight: 700;
     margin: 0 0 0.35rem;
     letter-spacing: -0.01em;
   }
   p { margin: 0; }
   .lede {
-    font-size: clamp(1.02rem, 1.6vw, 1.25rem);
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
     color: var(--slate);
-    max-width: 62ch;
+    max-width: 64ch;
   }
 
   /* ---------- Components ---------- */
@@ -161,19 +162,20 @@
   .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 1.15rem 1.25rem;
+    padding: 1.1rem 1.2rem;
   }
-  .card p { font-size: 0.88rem; color: var(--slate); }
+  .card p { font-size: 0.86rem; color: var(--slate); }
   .card.flag { border-left: 3px solid var(--crimson); }
 
   .tag {
     display: inline-block;
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -182,10 +184,9 @@
     border: 1px solid var(--rose-line);
     border-radius: 999px;
     padding: 0.18rem 0.6rem;
-    margin-bottom: 0.55rem;
+    margin-bottom: 0.5rem;
   }
-
-  .metric { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .tag.blue { color: var(--ok); background: #eaf4fb; border-color: #bfdcef; }
 
   table {
     width: 100%;
@@ -194,79 +195,22 @@
     border: 1px solid var(--line);
     border-radius: 14px;
     overflow: hidden;
-    font-size: 0.86rem;
+    font-size: 0.85rem;
   }
   .table-scroll { overflow-x: auto; border-radius: 14px; box-shadow: var(--shadow); }
-  th, td { padding: 0.6rem 0.85rem; text-align: center; border-bottom: 1px solid var(--line); }
+  th, td { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
   tbody tr:last-child th, tbody tr:last-child td { border-bottom: none; }
-  th { font-weight: 700; }
-  thead th { background: var(--navy-panel); color: var(--navy-panel-ink); border-bottom: none; }
-  thead th:first-child { text-align: left; }
-  tbody th { text-align: left; font-weight: 600; color: var(--ink); background: transparent; }
-  td.yes { color: var(--crimson); font-weight: 800; }
-  td.no { color: var(--faint); }
-  td.partial { color: var(--slate); font-size: 0.78rem; }
-  col.next-col { background: var(--rose); }
+  thead th { background: var(--navy-panel); color: var(--navy-panel-ink); border-bottom: none; font-weight: 700; }
+  td .metric, th .metric { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   .footnote { font-size: 0.72rem; color: var(--faint); margin-top: 0.7rem; }
 
-  .num-list { counter-reset: obj; display: grid; gap: 0.7rem; padding: 0; margin: 0; list-style: none; }
-  .num-list li {
-    counter-increment: obj;
-    display: flex;
-    gap: 0.85rem;
-    align-items: baseline;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 0.7rem 0.95rem;
-    font-size: 0.92rem;
-  }
-  .num-list li::before {
-    content: "F" counter(obj);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--crimson);
-    flex-shrink: 0;
-  }
-  .num-list.nf li::before { content: "NF" counter(obj); }
-  .num-list li b { font-weight: 700; }
-  .num-list li span { color: var(--slate); }
-
-  /* Architecture diagram */
-  .arch {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  .arch-box {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 1rem 1.1rem;
-  }
-  .arch-box h3 { font-size: 0.92rem; }
-  .arch-box.core { border-color: var(--rose-line); background: var(--rose); }
-  .arch-box ul { margin: 0.4rem 0 0; padding-left: 1rem; font-size: 0.82rem; color: var(--slate); }
-  .arch-box ul li { margin-bottom: 0.2rem; }
-  .arch-flow {
-    grid-column: 1 / -1;
-    text-align: center;
-    font-size: 0.78rem;
-    color: var(--faint);
-    letter-spacing: 0.06em;
-  }
-
   /* Cover */
-  .cover { text-align: left; }
   .cover .mark {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     font-weight: 800;
     font-size: 1rem;
-    letter-spacing: 0.01em;
     margin-bottom: 2.2rem;
   }
   .cover .mark .chev {
@@ -276,7 +220,7 @@
   }
   .cover h1 em { font-style: normal; color: var(--crimson); }
   .cover .meta {
-    margin-top: 2.6rem;
+    margin-top: 2.4rem;
     display: flex;
     gap: 2.4rem;
     flex-wrap: wrap;
@@ -284,8 +228,28 @@
     color: var(--slate);
   }
   .cover .meta b { display: block; color: var(--ink); font-size: 0.95rem; }
+  .agenda {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem 2rem;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    color: var(--slate);
+    max-width: 640px;
+    counter-reset: ag;
+  }
+  .agenda li { counter-increment: ag; display: flex; gap: 0.6rem; align-items: baseline; }
+  .agenda li::before {
+    content: counter(ag, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--crimson);
+    font-weight: 700;
+  }
 
-  .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1rem; margin-top: 1.4rem; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1rem; }
   .stat {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -294,13 +258,122 @@
   }
   .stat .v {
     font-family: var(--font-mono);
-    font-size: 1.7rem;
+    font-size: 1.65rem;
     font-weight: 700;
     color: var(--crimson);
     font-variant-numeric: tabular-nums;
     line-height: 1.15;
   }
-  .stat .l { font-size: 0.76rem; color: var(--slate); margin-top: 0.2rem; }
+  .stat .l { font-size: 0.75rem; color: var(--slate); margin-top: 0.2rem; }
+
+  /* BO/DSO pairing */
+  .bo-dso { display: grid; gap: 0.7rem; }
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.8rem;
+    align-items: stretch;
+  }
+  .pair .half {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.84rem;
+  }
+  .pair .half b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.15rem; }
+  .pair .half.bo b { color: var(--ink); }
+  .pair .half.dso { border-left: 3px solid var(--crimson); }
+  .pair .half.dso b { color: var(--crimson); }
+  .pair .link {
+    align-self: center;
+    color: var(--faint);
+    font-size: 1rem;
+  }
+
+  /* SDG cards */
+  .sdg {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+  }
+  .sdg .n {
+    flex-shrink: 0;
+    width: 52px; height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  /* TDSP cycle */
+  .tdsp {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+  .tdsp .step {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 0.9rem 0.95rem;
+    position: relative;
+  }
+  .tdsp .step::after {
+    content: "\\2192";
+    position: absolute;
+    right: -0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--faint);
+    font-size: 0.95rem;
+    z-index: 2;
+  }
+  .tdsp .step:last-child::after { content: ""; }
+  .tdsp .step .k {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--crimson);
+    letter-spacing: 0.06em;
+  }
+  .tdsp .step h3 { font-size: 0.86rem; margin: 0.25rem 0 0.3rem; }
+  .tdsp .step p { font-size: 0.75rem; color: var(--slate); }
+
+  /* Demo checklist */
+  .demo-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.65rem; counter-reset: demo; }
+  .demo-list li {
+    counter-increment: demo;
+    display: flex;
+    gap: 0.9rem;
+    align-items: baseline;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.7rem 1rem;
+    font-size: 0.92rem;
+  }
+  .demo-list li::before {
+    content: counter(demo);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #fff;
+    background: var(--crimson);
+    border-radius: 999px;
+    width: 22px; height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transform: translateY(3px);
+  }
+  .demo-list li span { color: var(--slate); }
+  .demo-list li b { color: var(--ink); }
 
   .kbd-hint { color: var(--faint); }
   .kbd-hint kbd {
@@ -316,19 +389,22 @@
   .closing { text-align: center; align-items: center; }
   .closing h1 { margin-bottom: 1rem; }
 
-  @media (max-width: 860px) {
-    .cols-3, .cols-4, .arch, .stat-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  @media (max-width: 900px) {
+    .cols-3, .cols-4, .cols-5, .stat-row, .tdsp { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .tdsp .step::after { content: ""; }
     .slide { padding: 3rem 5vw 5rem; }
+    .pair { grid-template-columns: 1fr; }
+    .pair .link { display: none; }
   }
   @media (max-width: 560px) {
-    .cols-2, .cols-3, .cols-4, .arch, .stat-row { grid-template-columns: 1fr; }
+    .cols-2, .cols-3, .cols-4, .cols-5, .stat-row, .tdsp, .agenda { grid-template-columns: 1fr; }
   }
 
-  /* ---------- Print: one slide per page ---------- */
   @media print {
     .deck-nav, .progress, .kbd-hint { display: none !important; }
     .slide { display: flex !important; min-height: auto; page-break-after: always; padding: 2.2rem 2.6rem; }
     body { background: #fff; }
+    .slide .eyebrow, .slide h1, .slide h2, .slide .rv, .cover .chev { animation: none !important; opacity: 1 !important; transform: none !important; }
     .table-scroll { box-shadow: none; }
   }
 </style>
@@ -337,329 +413,283 @@
 
 <div class="progress" id="progress"></div>
 
-<!-- 1 ── COVER ─────────────────────────────────────────────── -->
+<!-- 1 ── COVER / INTRODUCTION ─────────────────────────────── -->
 <section class="slide cover active">
   <div class="mark"><span class="chev"></span>NEXTLEARN <span style="color:var(--faint);font-weight:400">by ESPRIT</span></div>
-  <p class="eyebrow">Projet — Plateforme e-learning intelligente</p>
-  <h1>Apprendre le C avec une plateforme qui <em>comprend l'étudiant</em>.</h1>
-  <p class="lede" style="margin-top:1.4rem">
-    Prédiction du risque de décrochage expliquée par le modèle, assistant de cours ancré
-    dans le contenu réel, recommandations selon le style d'apprentissage et suivi
-    d'attention respectueux de la vie privée.
+  <p class="eyebrow">Introduction</p>
+  <h1>An e-learning platform that <em>understands the student</em>.</h1>
+  <p class="lede rv" style="margin-top:1.3rem">
+    NextLearn delivers the ESPRIT C-programming course and adds a data-science layer on
+    top: explainable predictions of failure risk and exam grade, a course-grounded AI
+    assistant, learning-style personalization and privacy-first attention measurement.
   </p>
-  <div class="meta">
-    <div><b>Yasmine Laajailia</b>Étudiante — ESPRIT</div>
-    <div><b>2025 – 2026</b>Année universitaire</div>
-    <div><b>Node.js · MongoDB · Python</b>Stack technique</div>
+  <div class="meta rv">
+    <div><b>Yasmine Laajailia</b>Student — ESPRIT</div>
+    <div><b>2025 – 2026</b>Academic year</div>
+    <div><b>Node.js · MongoDB · Python</b>Technical stack</div>
   </div>
-  <p class="kbd-hint" style="margin-top:2.4rem;font-size:0.8rem">
-    Naviguer avec <kbd>←</kbd> <kbd>→</kbd> ou les flèches en bas — <kbd>Ctrl</kbd>+<kbd>P</kbd> pour exporter en PDF (une diapositive par page).
+  <ol class="agenda rv">
+    <li>Introduction</li>
+    <li>Master of the business domain</li>
+    <li>Investigation on the real plan</li>
+    <li>Problem posed</li>
+    <li>BOs &amp; DSOs</li>
+    <li>SDGs</li>
+    <li>Relative metrics</li>
+    <li>TDSP methodology</li>
+    <li>Demo</li>
+    <li>Conclusion</li>
+  </ol>
+  <p class="kbd-hint rv" style="margin-top:1.8rem;font-size:0.8rem">
+    Navigate with <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> — <kbd>Ctrl</kbd>+<kbd>P</kbd> exports a PDF, one slide per page.
   </p>
 </section>
 
-<!-- 2 ── CONTEXTE ──────────────────────────────────────────── -->
+<!-- 2 ── MASTER OF THE BUSINESS DOMAIN ─────────────────────── -->
 <section class="slide">
-  <p class="eyebrow">01 — Contexte &amp; problématique</p>
-  <h2>L'e-learning classique diffuse du contenu, mais ne voit pas l'étudiant.</h2>
+  <p class="eyebrow">02 — Master of the business domain</p>
+  <h2>Higher-education e-learning: actors, content, and the catch-up stake.</h2>
   <div class="grid cols-3">
-    <div class="card flag">
-      <h3>Décrochage détecté trop tard</h3>
-      <p>L'enseignant découvre les difficultés à l'examen, quand il n'est plus temps d'agir. Aucun signal d'alerte précoce, aucune explication du « pourquoi ».</p>
+    <div class="card rv">
+      <span class="tag">Actors</span>
+      <h3>Three roles, two interfaces</h3>
+      <p>Students follow the course and take quizzes; teachers manage classes, content access and monitoring; administrators manage teachers. Student front-office, teacher back-office.</p>
     </div>
-    <div class="card flag">
-      <h3>Un parcours identique pour tous</h3>
-      <p>Même ordre, mêmes supports, même rythme — alors que les étudiants n'apprennent ni de la même façon (visuel, lecture, pratique…) ni à la même vitesse.</p>
+    <div class="card rv">
+      <span class="tag">Content model</span>
+      <h3>Module &#8594; acquis &#8594; sous-acquis</h3>
+      <p>The C course is structured in competency blocks. Each sous-acquis carries course material (PDF), videos and a quiz with two attempts and a 60% pass mark; passing unlocks the next prerequisites on a weekly calendar.</p>
     </div>
-    <div class="card flag">
-      <h3>Aide générique, hors contexte</h3>
-      <p>Les chatbots répondent depuis Internet, pas depuis le cours de l'école : réponses hors programme, parfois fausses, jamais reliées aux supports officiels.</p>
+    <div class="card rv">
+      <span class="tag">The stake</span>
+      <h3>Rattrapage (catch-up exams)</h3>
+      <p>Students who fail the semester sit a catch-up exam — costly for them and the school. The whole domain problem is spotting the trajectory toward rattrapage while there is still time to change it.</p>
     </div>
   </div>
-  <p class="lede" style="margin-top:1.6rem">
-    <b style="color:var(--ink)">Problématique :</b> comment transformer une plateforme de cours en un
-    système qui <b style="color:var(--ink)">anticipe</b> les difficultés, <b style="color:var(--ink)">explique</b> ses alertes
-    et <b style="color:var(--ink)">adapte</b> l'accompagnement à chaque étudiant ?
-  </p>
+  <div class="grid cols-2" style="margin-top:1rem">
+    <div class="card rv">
+      <h3>What the domain data looks like</h3>
+      <p>Behavioral traces: lesson completions, quiz scores and timestamps, login frequency, self-evaluations — plus, with consent, focus scores from attention tracking. No demographic data is used.</p>
+    </div>
+    <div class="card rv">
+      <h3>Domain constraints that shaped the design</h3>
+      <p>Pedagogy must stay explainable (a teacher cannot act on a black box), webcams are ethically sensitive (processing must stay local), and the course is French-first with an English UI option.</p>
+    </div>
+  </div>
 </section>
 
-<!-- 3 ── SOLUTIONS EXISTANTES ──────────────────────────────── -->
+<!-- 3 ── INVESTIGATION ON THE REAL PLAN ────────────────────── -->
 <section class="slide">
-  <p class="eyebrow">02 — Étude de l'existant</p>
-  <h2>Quatre familles de solutions dominent le marché.</h2>
+  <p class="eyebrow">03 — Investigation on the real plan</p>
+  <h2>What exists today, and where it stops.</h2>
   <div class="grid cols-4">
-    <div class="card">
+    <div class="card rv">
       <span class="tag">LMS</span>
       <h3>Moodle</h3>
-      <p>Le LMS open source de référence : cours, quiz, notes, plugins. Très complet mais lourd à administrer, et son analytique reste descriptive (taux de complétion, notes).</p>
+      <p>The reference open-source LMS. Complete but heavy, and its analytics stay descriptive; risk plugins exist but are unexplained black boxes.</p>
     </div>
-    <div class="card">
-      <span class="tag">Classe virtuelle</span>
+    <div class="card rv">
+      <span class="tag">Virtual class</span>
       <h3>Google Classroom</h3>
-      <p>Distribution de devoirs et communication, adoption immédiate. Aucune intelligence pédagogique : pas de prédiction, pas de recommandation, pas d'adaptation.</p>
+      <p>Assignment distribution and communication. No prediction, no recommendation, no adaptation — no pedagogical intelligence at all.</p>
     </div>
-    <div class="card">
+    <div class="card rv">
       <span class="tag">MOOC</span>
       <h3>Coursera / OpenClassrooms</h3>
-      <p>Catalogues massifs et parcours diplômants. Le contenu est générique : impossible d'y suivre le programme précis d'une école avec ses propres supports et évaluations.</p>
+      <p>Massive generic catalogs. Cannot host a school's own program, supports and evaluations; recommendations serve the catalog, not the learner.</p>
     </div>
-    <div class="card">
-      <span class="tag">Adaptatif</span>
+    <div class="card rv">
+      <span class="tag">Adaptive</span>
       <h3>Khan Academy</h3>
-      <p>Exercices adaptatifs et maîtrise par compétence — le plus proche de notre vision. Mais catalogue fermé, sans contenu d'établissement ni explication des décisions.</p>
+      <p>Mastery-based adaptive exercises — closest to our vision, but a closed catalog with no institutional content and no explainable analytics.</p>
+    </div>
+  </div>
+  <div class="card flag rv" style="margin-top:1rem">
+    <h3>Four shared blind spots</h3>
+    <p>No explained early-warning signal &#183; recommendations disconnected from how the student learns &#183; no measure of real engagement (a "viewed" video proves nothing) &#183; assistants not grounded in the school's actual course.</p>
+  </div>
+</section>
+
+<!-- 4 ── PROBLEM POSED ─────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">04 — Problem posed</p>
+  <h2>Failure is detected at the exam — when nothing can be done anymore.</h2>
+  <div class="grid cols-3">
+    <div class="card flag rv">
+      <h3>Too late</h3>
+      <p>The teacher discovers who is in difficulty from the final grades. Every week of delay makes remediation harder and rattrapage more likely.</p>
+    </div>
+    <div class="card flag rv">
+      <h3>Unexplained</h3>
+      <p>Even when a risk score exists, neither the student nor the teacher knows which behavior drives it — so no one knows what to change.</p>
+    </div>
+    <div class="card flag rv">
+      <h3>Impersonal</h3>
+      <p>Same path, same supports, same help for every student, regardless of their learning style, their gaps or their actual engagement.</p>
+    </div>
+  </div>
+  <p class="lede rv" style="margin-top:1.6rem">
+    <b style="color:var(--ink)">Question:</b> can we predict, early and per module, which students
+    are heading to catch-up exams and what grade they are heading toward — <b style="color:var(--ink)">explain</b> each
+    prediction in actionable terms, and <b style="color:var(--ink)">adapt</b> the platform's guidance accordingly?
+  </p>
+</section>
+
+<!-- 5 ── BOs & DSOs ────────────────────────────────────────── -->
+<section class="slide">
+  <p class="eyebrow">05 — Business objectives &amp; data science objectives</p>
+  <h2>Every BO is served by a measurable DSO.</h2>
+  <div class="bo-dso">
+    <div class="pair rv">
+      <div class="half bo"><b>BO1 — Reduce the catch-up rate</b>Detect at-risk students weeks before the exam, per module.</div>
+      <span class="link">&#8594;</span>
+      <div class="half dso"><b>DSO1 — Risk classification</b>Random Forest on 7 behavioral features predicting catch-up probability.</div>
+    </div>
+    <div class="pair rv">
+      <div class="half bo"><b>BO2 — Anticipate exam outcomes</b>Give students a concrete target instead of a vague warning.</div>
+      <span class="link">&#8594;</span>
+      <div class="half dso"><b>DSO2 — Grade regression</b>Random Forest regressor predicting the exam grade /20.</div>
+    </div>
+    <div class="pair rv">
+      <div class="half bo"><b>BO3 — Make alerts actionable &amp; trusted</b>Teachers and students must see <i>why</i>.</div>
+      <span class="link">&#8594;</span>
+      <div class="half dso"><b>DSO3 — Explainability</b>Exact SHAP attributions on the deployed trees, per prediction.</div>
+    </div>
+    <div class="pair rv">
+      <div class="half bo"><b>BO4 — Personalize the learning path</b>Right support, right student, right moment.</div>
+      <span class="link">&#8594;</span>
+      <div class="half dso"><b>DSO4 — Profiling</b>K-means clustering of learner profiles + VARK-based content recommendation.</div>
+    </div>
+    <div class="pair rv">
+      <div class="half bo"><b>BO5 — Reliable, on-program course help</b>An assistant that never answers off-syllabus.</div>
+      <span class="link">&#8594;</span>
+      <div class="half dso"><b>DSO5 — Grounded RAG</b>Retrieval over the course's own extracted content, with grounding checks.</div>
+    </div>
+    <div class="pair rv">
+      <div class="half bo"><b>BO6 — Measure real engagement ethically</b>Attention, not surveillance.</div>
+      <span class="link">&#8594;</span>
+      <div class="half dso"><b>DSO6 — Local attention scoring</b>In-browser computer vision producing a focus score; only derived metrics leave the device.</div>
     </div>
   </div>
 </section>
 
-<!-- 4 ── LIMITES ───────────────────────────────────────────── -->
+<!-- 6 ── SDGs ──────────────────────────────────────────────── -->
 <section class="slide">
-  <p class="eyebrow">03 — Ce qui leur manque</p>
-  <h2>Quatre angles morts communs à ces solutions.</h2>
-  <div class="grid cols-2">
-    <div class="card flag">
-      <h3>Prédiction sans explication — ou pas de prédiction du tout</h3>
-      <p>Quand une alerte « étudiant à risque » existe (plugins Moodle), c'est une boîte noire : ni l'enseignant ni l'étudiant ne savent quel comportement corriger.</p>
+  <p class="eyebrow">06 — Sustainable development goals</p>
+  <h2>Where the project meets the UN 2030 agenda.</h2>
+  <div class="grid cols-3">
+    <div class="card rv">
+      <div class="sdg">
+        <span class="n" style="background:#c5192d">4</span>
+        <div>
+          <h3>Quality education</h3>
+          <p>The core of the project: early detection of struggling students, personalized guidance and an always-available course assistant directly target completion and learning outcomes (targets 4.3, 4.4).</p>
+        </div>
+      </div>
     </div>
-    <div class="card flag">
-      <h3>Recommandations déconnectées du profil cognitif</h3>
-      <p>Les suggestions servent le catalogue (« cours suivants populaires »), pas la manière dont l'étudiant apprend le mieux — vidéo, lecture ou pratique.</p>
+    <div class="card rv">
+      <div class="sdg">
+        <span class="n" style="background:#dd1367">10</span>
+        <div>
+          <h3>Reduced inequalities</h3>
+          <p>Support goes first to those drifting behind, not those already succeeding. Accessibility is built in: color-blind-safe palette, dark mode, keyboard navigation, bilingual FR/EN interface.</p>
+        </div>
+      </div>
     </div>
-    <div class="card flag">
-      <h3>Aucune mesure de l'engagement réel</h3>
-      <p>Une vidéo « vue » ne veut pas dire une vidéo regardée. Aucune plateforme grand public ne mesure la concentration effective — et celles qui filment posent un problème éthique.</p>
-    </div>
-    <div class="card flag">
-      <h3>Assistant non ancré dans le cours de l'école</h3>
-      <p>Les IA intégrées (quand il y en a) répondent depuis leurs connaissances générales, sans citer les supports du module ni respecter le périmètre du programme.</p>
+    <div class="card rv">
+      <div class="sdg">
+        <span class="n" style="background:#fd6925">9</span>
+        <div>
+          <h3>Industry, innovation &amp; infrastructure</h3>
+          <p>Applied research within the school's own infrastructure: explainable ML, RAG and on-device computer vision assembled into a working, reproducible educational platform.</p>
+        </div>
+      </div>
     </div>
   </div>
+  <p class="footnote rv">The privacy-by-design attention tracker also supports the responsible-technology spirit of the agenda: measurement without image collection, gated by explicit consent.</p>
 </section>
 
-<!-- 5 ── NOTRE RÉPONSE ─────────────────────────────────────── -->
+<!-- 7 ── RELATIVE METRICS ──────────────────────────────────── -->
 <section class="slide">
-  <p class="eyebrow">04 — Notre réponse</p>
-  <h2>NextLearn : quatre piliers d'intelligence au-dessus d'un LMS complet.</h2>
-  <div class="grid cols-2">
-    <div class="card">
-      <span class="tag">Prédire &amp; expliquer</span>
-      <h3>Double prédiction explicable par SHAP</h3>
-      <p>Probabilité de rattrapage <b>et</b> note prévue à l'examen (/20), par module. Chaque prédiction est décomposée en facteurs signés (« Connexions rares : −4 % ») calculés sur les arbres réellement déployés.</p>
-    </div>
-    <div class="card">
-      <span class="tag">Assister</span>
-      <h3>Chatbot RAG ancré dans le cours</h3>
-      <p>Réponses en streaming, construites uniquement à partir des supports du module (recherche vectorielle), avec sources affichées, mémoire de conversation et refus du hors-programme.</p>
-    </div>
-    <div class="card">
-      <span class="tag">Personnaliser</span>
-      <h3>Profil VARK &amp; parcours adapté</h3>
-      <p>Huit mini-jeux déterminent le style d'apprentissage ; chaque leçon recommande alors le support le plus efficace (vidéo, lecture, quiz) et le clustering K-means regroupe les profils pour l'enseignant.</p>
-    </div>
-    <div class="card">
-      <span class="tag">Mesurer</span>
-      <h3>Suivi d'attention 100 % local</h3>
-      <p>Vision par ordinateur dans le navigateur (MediaPipe) : yeux, orientation de la tête, regard. La vidéo ne quitte jamais la machine — seul un score de concentration dérivé est transmis, après consentement.</p>
-    </div>
+  <p class="eyebrow">07 — Relative metrics</p>
+  <h2>Each DSO has a number — measured on test data, never on training data.</h2>
+  <div class="stat-row" style="margin-bottom:1rem">
+    <div class="stat rv"><div class="v" data-count="76" data-prefix="72–" data-suffix=" %">72–76 %</div><div class="l">DSO1 — risk classifier accuracy (5-fold CV + fresh-seed test)</div></div>
+    <div class="stat rv"><div class="v">0.81–0.84</div><div class="l">DSO1 — AUC, discriminative power</div></div>
+    <div class="stat rv"><div class="v">&#177;0.95 pt</div><div class="l">DSO2 — mean absolute error of the predicted grade /20</div></div>
+    <div class="stat rv"><div class="v">&#8804; 0.01</div><div class="l">DSO3 — max deviation between deployed JS trees and their Python reconstruction</div></div>
   </div>
-</section>
-
-<!-- 6 ── MATRICE COMPARATIVE ───────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">05 — Positionnement</p>
-  <h2>Matrice comparative.</h2>
-  <div class="table-scroll">
+  <div class="table-scroll rv">
     <table>
-      <colgroup>
-        <col><col><col><col><col class="next-col">
-      </colgroup>
       <thead>
-        <tr>
-          <th>Capacité</th><th>Moodle</th><th>Classroom</th><th>Coursera</th><th>NextLearn</th>
-        </tr>
+        <tr><th>Objective</th><th>Metric</th><th>Protocol</th></tr>
       </thead>
       <tbody>
-        <tr><th>Contenu propre à l'établissement</th><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Prédiction du risque de décrochage</th><td class="partial">plugin</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Explication des prédictions (SHAP)</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Note prévue à l'examen (/20)</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Chatbot ancré dans le cours (RAG)</th><td class="no">—</td><td class="no">—</td><td class="partial">générique</td><td class="yes">✓</td></tr>
-        <tr><th>Recommandation selon style VARK</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Suivi d'attention (local, consenti)</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Génération de quiz par IA</th><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
-        <tr><th>Accessibilité daltonisme + FR/EN</th><td class="partial">partiel</td><td class="partial">partiel</td><td class="partial">partiel</td><td class="yes">✓</td></tr>
+        <tr><th>DSO4 — Profiling</th><td>Cluster separation (silhouette) + teacher-readable labels</td><td>K-means on normalized behavioral features, k chosen by elbow + interpretability</td></tr>
+        <tr><th>DSO5 — Grounded RAG</th><td>Grounding check on every answer; ungrounded generations discarded for the deterministic fallback</td><td>Answer must overlap retrieved chunks; off-syllabus questions refused by scope guard</td></tr>
+        <tr><th>DSO6 — Attention</th><td>Focus score = share of focused frames over a rolling 30 s window</td><td>Sampled every 5 s; session average and worst 30 s stretch stored; 10-session rolling average per student</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="footnote">« plugin » : possible via extensions tierces payantes ou à configurer, sans explicabilité. « générique » : assistant non limité au contenu du cours suivi.</p>
+  <p class="footnote rv">Training accuracy (~99 %) is reported nowhere: with noisy synthetic labels it is meaningless. The test metrics above sit near the theoretical ceiling imposed by label noise.</p>
 </section>
 
-<!-- 7 ── OBJECTIFS FONCTIONNELS ────────────────────────────── -->
+<!-- 8 ── TDSP METHODOLOGY ──────────────────────────────────── -->
 <section class="slide">
-  <p class="eyebrow">06 — Objectifs fonctionnels</p>
-  <h2>Ce que le système fait.</h2>
+  <p class="eyebrow">08 — TDSP methodology</p>
+  <h2>The Team Data Science Process, applied end to end.</h2>
+  <div class="tdsp" style="margin-bottom:1rem">
+    <div class="step rv"><span class="k">1</span><h3>Business understanding</h3><p>Domain study, BOs &#8594; DSOs mapping, success metrics fixed before modeling.</p></div>
+    <div class="step rv"><span class="k">2</span><h3>Data acquisition &amp; understanding</h3><p>Behavioral traces from the platform + calibrated synthetic training data; 7-feature vector per student per module.</p></div>
+    <div class="step rv"><span class="k">3</span><h3>Modeling</h3><p>Two Random Forests (classification + regression), K-means profiling; seeded, scripted, reproducible training.</p></div>
+    <div class="step rv"><span class="k">4</span><h3>Deployment</h3><p>Models served in-process (&lt;100 ms); SHAP microservice with graceful degradation; RAG index auto-rebuilt on content change.</p></div>
+    <div class="step rv"><span class="k">5</span><h3>Customer acceptance</h3><p>Teacher dashboards, per-student explanations, live demo — validated against the BOs.</p></div>
+  </div>
   <div class="grid cols-2">
-    <ul class="num-list">
-      <li><span><b>Gérer les comptes</b> — inscription, connexion étudiant / enseignant, réinitialisation du mot de passe par e-mail.</span></li>
-      <li><span><b>Consulter les cours</b> — modules structurés en acquis / sous-acquis, supports PDF et vidéos intégrés, progression persistée.</span></li>
-      <li><span><b>Évaluer</b> — quiz par sous-acquis (2 tentatives, seuil de réussite, déblocage des prérequis), auto-évaluation.</span></li>
-      <li><span><b>Assister</b> — chatbot RAG en streaming avec sources, mémoire et périmètre limité au module consulté.</span></li>
-      <li><span><b>Prédire</b> — risque de rattrapage et note prévue par module, avec facteurs explicatifs SHAP.</span></li>
-    </ul>
-    <ul class="num-list" style="counter-reset: obj 5">
-      <li><span><b>Personnaliser</b> — Mission Apprenant (8 mini-jeux VARK) et recommandation du support adapté sur chaque leçon.</span></li>
-      <li><span><b>Mesurer l'attention</b> — suivi webcam consenti pendant leçons et quiz, tableau de bord de concentration par classe.</span></li>
-      <li><span><b>Administrer</b> — back-office enseignant : modules, classes, accès, profils d'apprentissage (clustering), vue d'ensemble.</span></li>
-      <li><span><b>Générer des quiz par IA</b> — questions proposées par LLM, validées puis publiées par l'enseignant.</span></li>
-      <li><span><b>Basculer FR / EN</b> — interface bilingue, réponses du chatbot dans la langue choisie.</span></li>
-    </ul>
+    <div class="card rv">
+      <h3>Iterative in practice</h3>
+      <p>The loop ran several times: the grade model, module-scoped predictions and the exact-tree SHAP reconstruction were later iterations triggered by acceptance feedback on earlier versions.</p>
+    </div>
+    <div class="card rv">
+      <h3>Reproducibility as discipline</h3>
+      <p>Fixed seeds, versioned training and evaluation scripts (train, evaluate, fresh-data test), and honest metric reporting are enforced by the project's own conventions.</p>
+    </div>
   </div>
 </section>
 
-<!-- 8 ── OBJECTIFS NON FONCTIONNELS ────────────────────────── -->
+<!-- 9 ── DEMO ──────────────────────────────────────────────── -->
 <section class="slide">
-  <p class="eyebrow">07 — Objectifs non fonctionnels</p>
-  <h2>Comment le système doit se comporter.</h2>
-  <div class="grid cols-2">
-    <ul class="num-list nf">
-      <li><span><b>Performance</b> — modèles préchargés en mémoire (prédiction &lt; 100 ms), réponses du chatbot en streaming SSE, traitement vidéo throttlé à 8 img/s.</span></li>
-      <li><span><b>Fiabilité</b> — chaîne de repli pour l'explicabilité : service Python SHAP → Shapley exact JS → règles métier, avec disjoncteur ; l'app fonctionne même si un composant IA tombe.</span></li>
-      <li><span><b>Confidentialité</b> — la vidéo webcam ne quitte jamais le navigateur ; consentement explicite ; seules des métriques dérivées (scores, événements) sont stockées.</span></li>
-      <li><span><b>Accessibilité</b> — mode sombre, palette adaptée au daltonisme (Okabe-Ito), navigation clavier, <span class="metric">prefers-reduced-motion</span> respecté.</span></li>
-    </ul>
-    <ul class="num-list nf" style="counter-reset: obj 4">
-      <li><span><b>Utilisabilité</b> — design system unifié (tokens, composants), interface bilingue FR/EN, cohérence étudiant / back-office.</span></li>
-      <li><span><b>Maintenabilité</b> — TypeScript, services découplés, entraînement des modèles reproductible (graine fixe, scripts versionnés).</span></li>
-      <li><span><b>Honnêteté scientifique</b> — métriques mesurées sur données de test indépendantes, jamais sur l'entraînement ; écart Python/JS du modèle vérifié ≤ 0,01.</span></li>
-      <li><span><b>Sécurité</b> — secrets hors dépôt, liens de réinitialisation à expiration, validation des entrées côté serveur.</span></li>
-    </ul>
-  </div>
+  <p class="eyebrow">09 — Demo</p>
+  <h2>Live walkthrough.</h2>
+  <ol class="demo-list">
+    <li class="rv"><span><b>Student dashboard</b> — per-module AI prediction: catch-up risk gauge, predicted grade /20, and the SHAP factors explaining both.</span></li>
+    <li class="rv"><span><b>Course assistant</b> — a question on the current lesson answered in streaming, grounded in the course PDF, with sources; an off-syllabus question politely refused.</span></li>
+    <li class="rv"><span><b>Learner Mission</b> — the VARK mini-games, then the personalized recommendation banner on a lesson page.</span></li>
+    <li class="rv"><span><b>Attention tracking</b> — consent flow, live focus ring while studying, and the teacher's class concentration dashboard.</span></li>
+    <li class="rv"><span><b>Back-office</b> — class management, module access scheduling, learning-profile clusters, AI quiz generation.</span></li>
+  </ol>
+  <p class="footnote rv" style="margin-top:1rem">Local instance — http://localhost:3000 — demo accounts seeded (student demo.eleve01, teacher/admin accounts).</p>
 </section>
 
-<!-- 9 ── ARCHITECTURE ──────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">08 — Architecture technique</p>
-  <h2>Trois couches, deux moteurs d'IA.</h2>
-  <div class="arch">
-    <div class="arch-box">
-      <span class="tag">Client</span>
-      <h3>Navigateur</h3>
-      <ul>
-        <li>Front étudiant &amp; back-office (JS natif)</li>
-        <li>MediaPipe FaceMesh — vision locale</li>
-        <li>Chart.js — visualisations</li>
-        <li>Thèmes sombre / daltonien, i18n FR-EN</li>
-      </ul>
-    </div>
-    <div class="arch-box core">
-      <span class="tag">Serveur</span>
-      <h3>API Express / TypeScript</h3>
-      <ul>
-        <li>Random Forest ×2 en mémoire (risque + note)</li>
-        <li>RAG : embeddings + recherche vectorielle</li>
-        <li>Sessions d'attention, quiz, progression</li>
-        <li>MongoDB (Mongoose)</li>
-      </ul>
-    </div>
-    <div class="arch-box">
-      <span class="tag">Services IA</span>
-      <h3>Python &amp; LLM</h3>
-      <ul>
-        <li>FastAPI + SHAP <i>TreeExplainer</i> (arbres exacts reconstruits)</li>
-        <li>OpenRouter — LLM (chat, génération de quiz)</li>
-        <li>OpenRouter — embeddings (text-embedding-3)</li>
-      </ul>
-    </div>
-    <div class="arch-flow">NAVIGATEUR&nbsp;&nbsp;⇄&nbsp;&nbsp;API EXPRESS&nbsp;&nbsp;⇄&nbsp;&nbsp;MONGODB · SERVICE SHAP · LLM — la vidéo webcam, elle, ne franchit jamais la première flèche.</div>
-  </div>
-</section>
-
-<!-- 10 ── MOTEUR IA & CHIFFRES ─────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">09 — Le moteur IA, en chiffres honnêtes</p>
-  <h2>Des métriques mesurées sur données de test, pas sur l'entraînement.</h2>
-  <div class="stat-row">
-    <div class="stat"><div class="v">72–76 %</div><div class="l">Exactitude du classifieur de risque (validation croisée + données fraîches)</div></div>
-    <div class="stat"><div class="v">0,81–0,84</div><div class="l">AUC — pouvoir discriminant du classifieur</div></div>
-    <div class="stat"><div class="v">±0,95 pt</div><div class="l">Erreur moyenne absolue de la note prévue (/20)</div></div>
-    <div class="stat"><div class="v">≤ 0,01</div><div class="l">Écart maximal entre le modèle JS déployé et sa reconstruction Python pour SHAP</div></div>
-  </div>
-  <div class="grid cols-3" style="margin-top:1.4rem">
-    <div class="card">
-      <h3>7 variables comportementales</h3>
-      <p>Retard, rythme, score moyen, fréquence de connexion, profondeur des lacunes, récence, taux de quiz en difficulté — calculées par module.</p>
-    </div>
-    <div class="card">
-      <h3>SHAP exact, pas approché</h3>
-      <p>Les arbres du modèle déployé sont reconstruits en scikit-learn : les contributions affichées sont celles du modèle qui prédit réellement.</p>
-    </div>
-    <div class="card">
-      <h3>Frontière assumée</h3>
-      <p>Entraînement sur données synthétiques calibrées + traces réelles ; l'exactitude plafonne près de la limite théorique imposée par le bruit des étiquettes.</p>
-    </div>
-  </div>
-</section>
-
-<!-- 11 ── SUIVI D'ATTENTION ────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">10 — Zoom : suivi d'attention éthique</p>
-  <h2>Mesurer la concentration sans jamais transmettre d'image.</h2>
-  <div class="grid cols-2">
-    <div class="card">
-      <h3>Côté étudiant</h3>
-      <p>Consentement explicite avant toute activation. Détection locale : yeux fermés (EAR &gt; 2 s), tête tournée (±35°), regard hors écran, absence. Score de concentration sur fenêtre glissante de 30 s, widget discret, pause automatique quand l'onglet est masqué.</p>
-    </div>
-    <div class="card">
-      <h3>Côté enseignant</h3>
-      <p>Tableau de bord par classe : concentration moyenne, distraction dominante, tendance par étudiant, chronologie des sessions et carte de chaleur — pour repérer quand et où l'attention décroche, jamais pour surveiller un visage.</p>
-    </div>
-  </div>
-  <div class="card" style="margin-top:1rem;border-left:3px solid var(--ok)">
-    <h3 style="color:var(--ok)">Garantie de conception</h3>
-    <p>Le flux vidéo est consommé par le réseau de neurones <b>dans le navigateur</b> (MediaPipe FaceMesh, 478 points). Seuls des nombres dérivés — scores, types d'événements, durées — atteignent le serveur. Ce choix rend la fonctionnalité présentable à un comité d'éthique, là où les solutions de « proctoring » filment.</p>
-  </div>
-</section>
-
-<!-- 12 ── PERSPECTIVES ─────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">11 — Perspectives</p>
-  <h2>La feuille de route s'appuie sur les données déjà collectées.</h2>
-  <div class="grid cols-2">
-    <div class="card">
-      <h3>Révision espacée</h3>
-      <p>Re-proposer automatiquement les questions échouées selon une planification type SM-2 — l'historique de quiz nécessaire existe déjà.</p>
-    </div>
-    <div class="card">
-      <h3>Exercices de C auto-corrigés</h3>
-      <p>Éditeur intégré, compilation et jeux de tests, retour pédagogique du LLM sur les erreurs de compilation — l'étape qui fait écrire du code.</p>
-    </div>
-    <div class="card">
-      <h3>Difficulté adaptative</h3>
-      <p>Sélection de la prochaine question par bandit multi-bras (entrée douce vers l'apprentissage par renforcement), calibrée par un score Elo par compétence.</p>
-    </div>
-    <div class="card">
-      <h3>Alerte hebdomadaire enseignant</h3>
-      <p>Courriel automatique listant les étudiants passés en risque élevé, avec leurs facteurs SHAP — l'infrastructure e-mail est en place.</p>
-    </div>
-  </div>
-</section>
-
-<!-- 13 ── CONCLUSION ───────────────────────────────────────── -->
+<!-- 10 ── CONCLUSION ───────────────────────────────────────── -->
 <section class="slide closing">
-  <p class="eyebrow">Conclusion</p>
-  <h1>Un LMS qui prédit, explique <br>et s'adapte — <em style="font-style:normal;color:var(--crimson)">NextLearn</em>.</h1>
-  <p class="lede" style="margin:0 auto; max-width:56ch">
-    Là où l'existant distribue du contenu, NextLearn ferme la boucle pédagogique :
-    détecter tôt, expliquer pourquoi, recommander quoi faire — et le prouver avec des
-    métriques honnêtes.
+  <p class="eyebrow">10 — Conclusion</p>
+  <h1>Predict early. Explain honestly.<br>Adapt to <em style="font-style:normal;color:var(--crimson)">each student</em>.</h1>
+  <p class="lede rv" style="margin:0 auto; max-width:58ch">
+    NextLearn closes the loop the existing platforms leave open: a measurable data-science
+    objective behind every business objective, metrics reported the honest way, and a
+    deployment that degrades gracefully instead of failing. Next: spaced repetition,
+    auto-graded C exercises, adaptive difficulty.
   </p>
-  <p style="margin-top:2.4rem;color:var(--slate);font-size:0.9rem"><b style="color:var(--ink)">Merci de votre attention.</b> — Questions bienvenues.</p>
+  <p class="rv" style="margin-top:2.2rem;color:var(--slate);font-size:0.9rem"><b style="color:var(--ink)">Thank you.</b> — Questions welcome.</p>
 </section>
 
 <div class="deck-nav">
-  <span class="brand"><b>›</b> NextLearn — soutenance</span>
+  <span class="brand"><b>&#8250;</b> NextLearn — project presentation</span>
   <div class="nav-controls">
-    <button class="nav-btn" id="prev" aria-label="Diapositive précédente">←</button>
-    <span class="counter" id="counter">1 / 13</span>
-    <button class="nav-btn" id="next" aria-label="Diapositive suivante">→</button>
+    <button class="nav-btn" id="prev" aria-label="Previous slide">&#8592;</button>
+    <span class="counter" id="counter">1 / 10</span>
+    <button class="nav-btn" id="next" aria-label="Next slide">&#8594;</button>
   </div>
 </div>
 
