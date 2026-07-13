@@ -107,6 +107,10 @@
     const name = document.getElementById("student-name");
     const identifier = document.getElementById("student-identifier");
     if (name) {
+      // Dynamic value slot: drop the i18n key before writing the real name, so
+      // that later translation passes (the sidebar:ready re-bind, the
+      // MutationObserver) cannot overwrite it with the placeholder string.
+      name.removeAttribute("data-i18n");
       name.textContent = currentUser.fullName || currentUser.identifier;
     }
     if (identifier) {

@@ -230,8 +230,11 @@ function initStudentApp() {
 }
 
 function renderProfile() {
+  // Dynamic value slot: drop the i18n key first, otherwise a later translation
+  // pass would overwrite the student's name with the placeholder string.
+  dom.name.removeAttribute("data-i18n");
   dom.name.textContent = currentUser.fullName || currentUser.identifier;
-  dom.identifier.textContent = `Identifiant: ${currentUser.identifier}`;
+  dom.identifier.textContent = `${tr("sidebar.identifier", "Identifiant")}: ${currentUser.identifier}`;
 }
 
 function bindEvents() {

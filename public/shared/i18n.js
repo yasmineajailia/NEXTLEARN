@@ -43,6 +43,7 @@
     /* Shared sidebar */
     "sidebar.student": "Student",
     "sidebar.studentName": "Student name",
+    "sidebar.identifier": "ID",
     "sidebar.level": "Level",
     "sidebar.nav": "Student navigation",
     "sidebar.dashboard": "Dashboard",

@@ -7,7 +7,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Découvre ton profil — NextLearn</title>
+  <title data-i18n="title.mission">Découvre ton profil — NextLearn</title>
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -343,6 +343,158 @@
 <script>
 "use strict";
 
+/* ── i18n : le français reste la source, l'anglais vit dans ce dictionnaire ── */
+const tr = (key, fr, vars) => (window.I18N ? window.I18N.t(key, fr, vars) : fr);
+const IS_EN = !!(window.I18N && window.I18N.isEn);
+
+if (window.I18N) window.I18N.extend({
+  "title.mission": "Discover your profile — NextLearn",
+
+  /* Shell */
+  "mission.hudTitle": "Discover your profile",
+  "mission.gameN": "Game {n} / 8",
+
+  /* Welcome */
+  "mission.welcomeTitle": "Discover <em>your profile</em>",
+  "mission.welcomeLead": "<b>8 mini-games</b>, in random order: observation, words, memory, reflexes… Play, score as many points as you can, and find out at the end which way of learning fits you best.",
+  "mission.start": "Let's go! →",
+  "mission.welcomeHint": "~6 minutes · no bad score, just your play style.",
+
+  /* Profiles */
+  "mission.dim.V.label": "Visual",
+  "mission.dim.V.pname": "The Cartographer",
+  "mission.dim.V.desc": "You need to <em>see</em> in order to understand: spotting details, memorising images, structuring space. Your eye catches what others miss. Faced with chaos, your first instinct is to draw the map.",
+  "mission.dim.V.rec": "On NextLearn, start every sub-skill with the <b>course videos</b>: they give you the overview your visual brain needs. Round it off with your own diagrams and mind maps.",
+  "mission.dim.R.label": "Words",
+  "mission.dim.R.pname": "The Storyteller",
+  "mission.dim.R.desc": "Words are your playground: you guess them, you sort them, you remember them. One well-written explanation is worth a thousand demonstrations to you. Writing is not a chore, it is how you think.",
+  "mission.dim.R.rec": "On NextLearn, tackle every chapter through the <b>PDFs and course notes</b>: read first, highlight, summarise in your own words. Your written notes will be your best weapon.",
+  "mission.dim.A.label": "Sequence",
+  "mission.dim.A.pname": "The Strategist",
+  "mission.dim.A.desc": "You remember chains, rhythms, signals that follow one another. When an argument unfolds step by step, you replay it in your head effortlessly. Talking a topic through helps you more than rereading it in silence.",
+  "mission.dim.A.rec": "On NextLearn, use the <b>chatbot</b> as a thinking partner: ask your questions, ask for rephrasings, explain the concepts out loud as if you were teaching them.",
+  "mission.dim.K.label": "Action",
+  "mission.dim.K.pname": "The Explorer",
+  "mission.dim.K.desc": "You understand by doing: grabbing, moving, building, fixing. Pure theory bores you until you have got your hands into it. Every mistake is information, not failure.",
+  "mission.dim.K.rec": "On NextLearn, go straight for the <b>quizzes and exercises</b> of each sub-skill, even before reading everything. Try things, see what breaks, then come back to the course to fill the gaps.",
+
+  /* Game registry */
+  "mission.v1.name": "Spot the differences",
+  "mission.v1.rule": "4 elements changed between the two images. Click them before the clock runs out!",
+  "mission.v2.name": "Memorise the grid",
+  "mission.v2.rule": "9 images, 4 seconds. Then we ask you what was where!",
+  "mission.l1.name": "Hangman revisited",
+  "mission.l1.rule": "Guess 3 words letter by letter. 6 mistakes max per word.",
+  "mission.l2.name": "Sort the words",
+  "mission.l2.rule": "Causes or consequences? Drag each word into the right column.",
+  "mission.a1.name": "Light-up Simon",
+  "mission.a1.rule": "Repeat the colour sequence. It gets longer every round!",
+  "mission.a2.name": "Repeat the rhythm",
+  "mission.a2.rule": "5 beats, short or long. Play them back in the exact order.",
+  "mission.k1.name": "Catch the targets",
+  "mission.k1.rule": "The targets shrink fast: catch them all and chain your combos!",
+  "mission.k2.name": "Build the journey",
+  "mission.k2.rule": "Put the 5 right steps in order. Avoid the 2 traps!",
+
+  /* V1 — spot the differences */
+  "mission.v1.count": "Differences: {n}/4",
+  "mission.v1.hint": "Compare the two images: <b>4 elements</b> changed on the right. Click them!",
+  "mission.v1.original": "Original",
+  "mission.v1.findThem": "Find the 4 differences",
+  "mission.v1.perfect": "Eagle eye! Nothing gets past you.",
+  "mission.v1.partial": "{n} of 4 differences spotted.",
+
+  /* V2 — memorise the grid */
+  "mission.v2.hint": "Remember where each image is — you have <b>4 seconds</b>!",
+  "mission.v2.question": "<b>Question {n}/4:</b> which image was in the <b>{pos}</b> position?",
+  "mission.v2.perfect": "Photographic memory confirmed!",
+  "mission.v2.partial": "{n} correct answers out of 4.",
+  "mission.pos.0": "top-left",
+  "mission.pos.1": "top-centre",
+  "mission.pos.2": "top-right",
+  "mission.pos.3": "middle-left",
+  "mission.pos.4": "centre",
+  "mission.pos.5": "middle-right",
+  "mission.pos.6": "bottom-left",
+  "mission.pos.7": "bottom-centre",
+  "mission.pos.8": "bottom-right",
+
+  /* L1 — hangman */
+  "mission.l1.hint": "Guess <b>3 words</b> letter by letter. 6 mistakes max per word — each mistake costs 5 pts.",
+  "mission.l1.word": "Word {n} / 3",
+  "mission.l1.perfect": "Flawless vocabulary, almost no mistakes!",
+  "mission.l1.partial": "You landed {n} word(s).",
+
+  /* L2 — sort the words */
+  "mission.l2.hint": "Drag each word into the right column: is it a <b>cause</b> or a <b>consequence</b>?",
+  "mission.l2.causes": "Causes",
+  "mission.l2.consequences": "Consequences",
+  "mission.l2.w1": "lack of sleep",
+  "mission.l2.w2": "stress",
+  "mission.l2.w3": "poor organisation",
+  "mission.l2.w4": "procrastination",
+  "mission.l2.w5": "distractions",
+  "mission.l2.w6": "falling behind",
+  "mission.l2.w7": "tiredness",
+  "mission.l2.w8": "failing the exam",
+  "mission.l2.w9": "dropping grades",
+  "mission.l2.w10": "forgetfulness",
+  "mission.l2.perfect": "Clean sort, no slip-ups!",
+  "mission.l2.partial": "{n} of 10 words correctly sorted.",
+
+  /* A1 — Simon */
+  "mission.a1.hint": "Watch the light sequence, then repeat it. It gets longer every round!",
+  "mission.a1.round": "Round {n}/5",
+  "mission.a1.getReady": "Get ready…",
+  "mission.a1.watch": "Watch closely…",
+  "mission.a1.yourTurn": "Your turn!",
+  "mission.a1.nextRound": "Nice! Next round…",
+  "mission.a1.maxReached": "Maximum sequence reached!",
+  "mission.a1.missed": "Missed!",
+  "mission.a1.perfect": "Every round cleared — outstanding sequence memory!",
+  "mission.a1.partial": "{n} correct signals before the slip.",
+
+  /* A2 — rhythm */
+  "mission.a2.hint": "Watch the <b>5 beats</b>: some are <b>short</b>, others <b>long</b>. Then play the series back!",
+  "mission.a2.attempt": "Attempt {n}",
+  "mission.a2.attempt2": "Attempt 2 (points ÷ 2)",
+  "mission.a2.watchCircle": "Watch the circle…",
+  "mission.a2.short": "Short",
+  "mission.a2.long": "Long",
+  "mission.a2.yourTurn": "Your turn: play the series back!",
+  "mission.a2.notQuite": "Not quite… watch again!",
+  "mission.a2.perfect": "Perfect rhythm, perfect ear!",
+  "mission.a2.partial": "{n} of 5 beats (attempt {a}).",
+
+  /* K1 — catch the targets */
+  "mission.k1.hint": "12 targets will appear and shrink. <b>Catch them before they vanish!</b> Chain your hits for a combo.",
+  "mission.k1.target": "Target",
+  "mission.k1.great": "Cat-like reflexes, combo mastered!",
+  "mission.k1.good": "Nice accuracy!",
+  "mission.k1.poor": "The targets got away… keep practising!",
+
+  /* K2 — build the journey */
+  "mission.k2.hint": "Scenario: <b>“Plan a trip”</b>. Drag the 5 right steps into order — watch out, 2 cards are traps! (−15 pts per mistake)",
+  "mission.k2.s1": "Choose the destination",
+  "mission.k2.s2": "Book the tickets",
+  "mission.k2.s3": "Pack your bag",
+  "mission.k2.s4": "Go to the airport",
+  "mission.k2.s5": "Enjoy the trip",
+  "mission.k2.d1": "Buy a sofa",
+  "mission.k2.d2": "Repaint the kitchen",
+  "mission.k2.perfect": "Perfect route first try — ready for takeoff!",
+  "mission.k2.partial": "Journey completed with {n} detour(s).",
+
+  /* Result */
+  "mission.res.saved": "Your saved profile",
+  "mission.res.done": "8 games completed — here is your profile",
+  "mission.res.strength": "Strength: {label}",
+  "mission.res.strategy": "Your strategy on NextLearn",
+  "mission.res.retake": "Retake the test",
+  "mission.res.restart": "Play again",
+  "mission.res.continue": "Continue to my courses →"
+});
+
 /* ══════════════════════════════════════════════════════════
    « Découvre ton profil » — 8 mini-jeux, 2 par dimension.
    Les dimensions ne sont jamais nommées explicitement dans l'UI.
@@ -368,22 +520,22 @@ function IMG(id, w, h, cls) {
 
 /* ── dimensions ── */
 const DIMS = {
-  V: { key: "visual",      color: "#3266ad", label: "Visuel",   thumb: P.forest,
-       emoji: "🗺️", pname: "Le Cartographe",
-       desc: "Tu as besoin de <em>voir</em> pour comprendre : repérer les détails, mémoriser les images, structurer l'espace. Ton œil capte ce que les autres ratent. Face au chaos, ton premier réflexe est de dessiner la carte.",
-       rec: "Sur NextLearn, commence chaque sous-acquis par les <b>vidéos de cours</b> : elles te donnent la vue d'ensemble dont ton cerveau visuel a besoin. Complète avec tes propres schémas et cartes mentales." },
-  R: { key: "readwrite",   color: "#1d9e75", label: "Mots",     thumb: P.book,
-       emoji: "📖", pname: "Le Narrateur",
-       desc: "Les mots sont ton terrain de jeu : tu les devines, tu les classes, tu les retiens. Une bonne explication rédigée vaut pour toi mille démonstrations. Écrire n'est pas une corvée, c'est ta façon de penser.",
-       rec: "Sur NextLearn, attaque chaque chapitre par les <b>PDFs et les notes de cours</b> : lis d'abord, surligne, résume avec tes propres mots. Tes fiches rédigées seront ta meilleure arme." },
-  A: { key: "auditory",    color: "#7f77dd", label: "Séquence", thumb: P.bird,
-       emoji: "🎯", pname: "Le Stratège",
-       desc: "Tu retiens les enchaînements, les rythmes, les signaux qui se suivent. Quand un raisonnement se déroule pas à pas, tu le rejoues dans ta tête sans effort. Discuter d'un sujet t'aide plus que le relire en silence.",
-       rec: "Sur NextLearn, utilise le <b>chatbot</b> comme partenaire de réflexion : pose tes questions, demande des reformulations, explique les notions à voix haute comme si tu les enseignais." },
-  K: { key: "kinesthetic", color: "#d85a30", label: "Action",   thumb: P.sneaker,
-       emoji: "⚙️", pname: "L'Explorateur",
-       desc: "Tu comprends en agissant : attraper, déplacer, construire, corriger. La théorie pure t'ennuie tant que tu n'as pas mis les mains dedans. Chaque erreur est une information, pas un échec.",
-       rec: "Sur NextLearn, fonce directement sur les <b>quiz et les exercices</b> de chaque sous-acquis, même avant d'avoir tout lu. Teste, observe ce qui coince, puis reviens vers le cours pour combler tes lacunes." }
+  V: { key: "visual",      color: "#3266ad", label: tr("mission.dim.V.label", "Visuel"),   thumb: P.forest,
+       emoji: "🗺️", pname: tr("mission.dim.V.pname", "Le Cartographe"),
+       desc: tr("mission.dim.V.desc", "Tu as besoin de <em>voir</em> pour comprendre : repérer les détails, mémoriser les images, structurer l'espace. Ton œil capte ce que les autres ratent. Face au chaos, ton premier réflexe est de dessiner la carte."),
+       rec: tr("mission.dim.V.rec", "Sur NextLearn, commence chaque sous-acquis par les <b>vidéos de cours</b> : elles te donnent la vue d'ensemble dont ton cerveau visuel a besoin. Complète avec tes propres schémas et cartes mentales.") },
+  R: { key: "readwrite",   color: "#1d9e75", label: tr("mission.dim.R.label", "Mots"),     thumb: P.book,
+       emoji: "📖", pname: tr("mission.dim.R.pname", "Le Narrateur"),
+       desc: tr("mission.dim.R.desc", "Les mots sont ton terrain de jeu : tu les devines, tu les classes, tu les retiens. Une bonne explication rédigée vaut pour toi mille démonstrations. Écrire n'est pas une corvée, c'est ta façon de penser."),
+       rec: tr("mission.dim.R.rec", "Sur NextLearn, attaque chaque chapitre par les <b>PDFs et les notes de cours</b> : lis d'abord, surligne, résume avec tes propres mots. Tes fiches rédigées seront ta meilleure arme.") },
+  A: { key: "auditory",    color: "#7f77dd", label: tr("mission.dim.A.label", "Séquence"), thumb: P.bird,
+       emoji: "🎯", pname: tr("mission.dim.A.pname", "Le Stratège"),
+       desc: tr("mission.dim.A.desc", "Tu retiens les enchaînements, les rythmes, les signaux qui se suivent. Quand un raisonnement se déroule pas à pas, tu le rejoues dans ta tête sans effort. Discuter d'un sujet t'aide plus que le relire en silence."),
+       rec: tr("mission.dim.A.rec", "Sur NextLearn, utilise le <b>chatbot</b> comme partenaire de réflexion : pose tes questions, demande des reformulations, explique les notions à voix haute comme si tu les enseignais.") },
+  K: { key: "kinesthetic", color: "#d85a30", label: tr("mission.dim.K.label", "Action"),   thumb: P.sneaker,
+       emoji: "⚙️", pname: tr("mission.dim.K.pname", "L'Explorateur"),
+       desc: tr("mission.dim.K.desc", "Tu comprends en agissant : attraper, déplacer, construire, corriger. La théorie pure t'ennuie tant que tu n'as pas mis les mains dedans. Chaque erreur est une information, pas un échec."),
+       rec: tr("mission.dim.K.rec", "Sur NextLearn, fonce directement sur les <b>quiz et les exercices</b> de chaque sous-acquis, même avant d'avoir tout lu. Teste, observe ce qui coince, puis reviens vers le cours pour combler tes lacunes.") }
 };
 
 const STORAGE_KEY = "nextlearn_vark_result";
@@ -430,9 +582,9 @@ function hud() {
   return `
     <div class="hud">
       <div class="hud-row">
-        <span class="hud-title">Découvre ton profil</span>
+        <span class="hud-title">${tr("mission.hudTitle", "Découvre ton profil")}</span>
         <div class="hud-right">
-          <span class="hud-step">Jeu ${cur + 1} / 8</span>
+          <span class="hud-step">${tr("mission.gameN", "Jeu " + (cur + 1) + " / 8", { n: cur + 1 })}</span>
           <span class="hud-score">⭐ ${totalPts} pts</span>
         </div>
       </div>
@@ -516,13 +668,13 @@ function runV1(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🔍 Trouve les différences</span>
+      <span class="g-name">🔍 ${tr("mission.v1.name", "Trouve les différences")}</span>
       <div class="g-chips">
-        <span class="chip" id="v1-count">Différences : 0/4</span>
+        <span class="chip" id="v1-count">${tr("mission.v1.count", "Différences : 0/4", { n: 0 })}</span>
         <span class="chip" id="v1-timer">⏱ 30s</span>
       </div>
     </div>
-    <p class="g-hint">Compare les deux images : <b>4 éléments</b> ont changé à droite. Clique dessus !</p>
+    <p class="g-hint">${tr("mission.v1.hint", "Compare les deux images : <b>4 éléments</b> ont changé à droite. Clique dessus !")}</p>
     <div class="diff-wrap">
       <div class="diff-panel">
         ${IMG(P.beach, 400, 300)}
@@ -534,8 +686,8 @@ function runV1(host, done) {
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div class="diff-cap">Original</div>
-      <div class="diff-cap">Trouve les 4 différences</div>
+      <div class="diff-cap">${tr("mission.v1.original", "Original")}</div>
+      <div class="diff-cap">${tr("mission.v1.findThem", "Trouve les 4 différences")}</div>
     </div>`;
 
   const svg = host.querySelector("#v1-svg");
@@ -575,7 +727,7 @@ function runV1(host, done) {
       mark.setAttribute("cx", c.x); mark.setAttribute("cy", c.y); mark.setAttribute("r", 14);
       mark.setAttribute("fill", "none"); mark.setAttribute("stroke", "#22c55e"); mark.setAttribute("stroke-width", "2.5");
       svg.appendChild(mark);
-      host.querySelector("#v1-count").textContent = `Différences : ${found}/4`;
+      host.querySelector("#v1-count").textContent = tr("mission.v1.count", "Différences : " + found + "/4", { n: found });
       syncHudScore();
       if (found === 4) end();
     } else {
@@ -589,12 +741,15 @@ function runV1(host, done) {
   function end() {
     if (over) return;
     over = true;
-    done(raw, found === 4 ? "Œil de lynx ! Rien ne t'échappe." : `${found} différence${found > 1 ? "s" : ""} sur 4 repérée${found > 1 ? "s" : ""}.`);
+    done(raw, found === 4
+      ? tr("mission.v1.perfect", "Œil de lynx ! Rien ne t'échappe.")
+      : tr("mission.v1.partial", `${found} différence${found > 1 ? "s" : ""} sur 4 repérée${found > 1 ? "s" : ""}.`, { n: found }));
   }
 }
 
 /* ══════════════════ V2 — Mémorise la grille ══════════════════ */
-const POS_NAMES = ["haut-gauche","haut-centre","haut-droite","milieu-gauche","centre","milieu-droite","bas-gauche","bas-centre","bas-droite"];
+const POS_NAMES = ["haut-gauche","haut-centre","haut-droite","milieu-gauche","centre","milieu-droite","bas-gauche","bas-centre","bas-droite"]
+  .map((fr, i) => tr("mission.pos." + i, fr));
 
 function runV2(host, done) {
   const photos = shuffle([P.book, P.coffee, P.sneaker, P.watch, P.plant, P.dog, P.cat, P.bird, P.fox]);
@@ -603,10 +758,10 @@ function runV2(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🧠 Mémorise la grille</span>
+      <span class="g-name">🧠 ${tr("mission.v2.name", "Mémorise la grille")}</span>
       <div class="g-chips"><span class="chip" id="v2-timer">👀 4s</span></div>
     </div>
-    <p class="g-hint">Retiens la position de chaque image — tu as <b>4 secondes</b> !</p>
+    <p class="g-hint">${tr("mission.v2.hint", "Retiens la position de chaque image — tu as <b>4 secondes</b> !")}</p>
     <div class="mem9" id="v2-grid">
       ${photos.map((id) => `<div class="ph">${IMG(id, 200, 200)}</div>`).join("")}
     </div>
@@ -628,7 +783,9 @@ function runV2(host, done) {
 
   function ask() {
     if (qi >= questions.length) {
-      done(raw, raw === 100 ? "Mémoire photographique confirmée !" : `${raw / 25} bonne${raw > 25 ? "s" : ""} réponse${raw > 25 ? "s" : ""} sur 4.`);
+      done(raw, raw === 100
+        ? tr("mission.v2.perfect", "Mémoire photographique confirmée !")
+        : tr("mission.v2.partial", `${raw / 25} bonne${raw > 25 ? "s" : ""} réponse${raw > 25 ? "s" : ""} sur 4.`, { n: raw / 25 }));
       return;
     }
     const pos = questions[qi];
@@ -636,7 +793,7 @@ function runV2(host, done) {
     const others = shuffle(photos.filter((p) => p !== correct)).slice(0, 2);
     const opts = shuffle([correct, ...others]);
     host.querySelector("#v2-q").innerHTML = `
-      <p class="g-hint" style="margin-bottom:10px;"><b>Question ${qi + 1}/4 :</b> quelle image était en position <b>${POS_NAMES[pos]}</b> ?</p>
+      <p class="g-hint" style="margin-bottom:10px;">${tr("mission.v2.question", "<b>Question " + (qi + 1) + "/4 :</b> quelle image était en position <b>" + POS_NAMES[pos] + "</b> ?", { n: qi + 1, pos: POS_NAMES[pos] })}</p>
       <div class="memq-opts">
         ${opts.map((id) => `<button class="memq-opt" data-id="${id}">${IMG(id, 200, 200)}</button>`).join("")}
       </div>`;
@@ -656,7 +813,9 @@ function runV2(host, done) {
 }
 
 /* ══════════════════ L1 — Le Pendu revisité ══════════════════ */
-const HANG_WORDS = ["CURIOSITÉ", "STRATÉGIE", "AVENTURE"];
+const HANG_WORDS = IS_EN
+  ? ["CURIOSITY", "STRATEGY", "ADVENTURE"]
+  : ["CURIOSITÉ", "STRATÉGIE", "AVENTURE"];
 const deacc = (c) => c.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 function runL1(host, done) {
@@ -664,10 +823,10 @@ function runL1(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🪢 Le Pendu revisité</span>
+      <span class="g-name">🪢 ${tr("mission.l1.name", "Le Pendu revisité")}</span>
       <div class="g-chips"><span class="chip" id="l1-score">0 pts</span></div>
     </div>
-    <p class="g-hint">Devine <b>3 mots</b> lettre par lettre. 6 erreurs max par mot — chaque erreur coûte 5 pts.</p>
+    <p class="g-hint">${tr("mission.l1.hint", "Devine <b>3 mots</b> lettre par lettre. 6 erreurs max par mot — chaque erreur coûte 5 pts.")}</p>
     <div id="l1-zone"></div>`;
 
   function startRound() {
@@ -677,7 +836,7 @@ function runL1(host, done) {
     let wrong = 0, over = false;
 
     host.querySelector("#l1-zone").innerHTML = `
-      <div class="hang-round">Mot ${round + 1} / 3</div>
+      <div class="hang-round">${tr("mission.l1.word", "Mot " + (round + 1) + " / 3", { n: round + 1 })}</div>
       <div class="hang-wrap">
         <svg class="hang-svg" viewBox="0 0 120 140">
           <line x1="10" y1="132" x2="95" y2="132"/>
@@ -745,7 +904,9 @@ function runL1(host, done) {
     if (round >= HANG_WORDS.length) {
       const final = Math.max(0, raw);
       const solved = Math.round(final / 50);
-      done(final, final >= 140 ? "Lexique impeccable, quasi sans faute !" : `Tu as décroché ${Math.min(3, Math.max(0, solved))} mot(s).`);
+      done(final, final >= 140
+        ? tr("mission.l1.perfect", "Lexique impeccable, quasi sans faute !")
+        : tr("mission.l1.partial", `Tu as décroché ${Math.min(3, Math.max(0, solved))} mot(s).`, { n: Math.min(3, Math.max(0, solved)) }));
     } else startRound();
   }
 
@@ -754,10 +915,12 @@ function runL1(host, done) {
 
 /* ══════════════════ L2 — Classe les mots ══════════════════ */
 const SORT_WORDS = [
-  { w: "manque de sommeil",     col: 0 }, { w: "stress",            col: 0 },
-  { w: "mauvaise organisation", col: 0 }, { w: "procrastination",   col: 0 }, { w: "distractions", col: 0 },
-  { w: "retard",                col: 1 }, { w: "fatigue",           col: 1 },
-  { w: "échec à l'examen",      col: 1 }, { w: "notes en baisse",   col: 1 }, { w: "oublis",       col: 1 }
+  { w: tr("mission.l2.w1", "manque de sommeil"),     col: 0 }, { w: tr("mission.l2.w2", "stress"),          col: 0 },
+  { w: tr("mission.l2.w3", "mauvaise organisation"), col: 0 }, { w: tr("mission.l2.w4", "procrastination"), col: 0 },
+  { w: tr("mission.l2.w5", "distractions"),          col: 0 },
+  { w: tr("mission.l2.w6", "retard"),                col: 1 }, { w: tr("mission.l2.w7", "fatigue"),         col: 1 },
+  { w: tr("mission.l2.w8", "échec à l'examen"),      col: 1 }, { w: tr("mission.l2.w9", "notes en baisse"), col: 1 },
+  { w: tr("mission.l2.w10", "oublis"),               col: 1 }
 ];
 
 function runL2(host, done) {
@@ -765,16 +928,16 @@ function runL2(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🗂️ Classe les mots</span>
+      <span class="g-name">🗂️ ${tr("mission.l2.name", "Classe les mots")}</span>
       <div class="g-chips">
         <span class="chip" id="l2-score">0 pts</span>
         <span class="chip" id="l2-timer">⏱ 45s</span>
       </div>
     </div>
-    <p class="g-hint">Glisse chaque mot dans la bonne colonne : est-ce une <b>cause</b> ou une <b>conséquence</b> ?</p>
+    <p class="g-hint">${tr("mission.l2.hint", "Glisse chaque mot dans la bonne colonne : est-ce une <b>cause</b> ou une <b>conséquence</b> ?")}</p>
     <div class="sort-cols" style="--gc:#1d9e75">
-      <div class="sort-col" data-col="0"><h4>📌 Causes</h4><div class="placed"></div></div>
-      <div class="sort-col" data-col="1"><h4>⚡ Conséquences</h4><div class="placed"></div></div>
+      <div class="sort-col" data-col="0"><h4>📌 ${tr("mission.l2.causes", "Causes")}</h4><div class="placed"></div></div>
+      <div class="sort-col" data-col="1"><h4>⚡ ${tr("mission.l2.consequences", "Conséquences")}</h4><div class="placed"></div></div>
     </div>
     <div class="pool" id="l2-pool" style="--gc:#1d9e75">
       ${shuffle(SORT_WORDS).map((it) => `<div class="drag-card" data-col="${it.col}">${esc(it.w)}</div>`).join("")}
@@ -820,7 +983,9 @@ function runL2(host, done) {
   function end() {
     if (over) return;
     over = true;
-    done(raw, placed === SORT_WORDS.length ? "Classement net et sans bavure !" : `${placed} mot${placed > 1 ? "s" : ""} bien classé${placed > 1 ? "s" : ""} sur 10.`);
+    done(raw, placed === SORT_WORDS.length
+      ? tr("mission.l2.perfect", "Classement net et sans bavure !")
+      : tr("mission.l2.partial", `${placed} mot${placed > 1 ? "s" : ""} bien classé${placed > 1 ? "s" : ""} sur 10.`, { n: placed }));
   }
 }
 
@@ -841,12 +1006,12 @@ function runA1(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">💡 Simon lumineux</span>
-      <div class="g-chips"><span class="chip" id="a1-round">Manche 1/5</span><span class="chip" id="a1-score">0 pts</span></div>
+      <span class="g-name">💡 ${tr("mission.a1.name", "Simon lumineux")}</span>
+      <div class="g-chips"><span class="chip" id="a1-round">${tr("mission.a1.round", "Manche 1/5", { n: 1 })}</span><span class="chip" id="a1-score">0 pts</span></div>
     </div>
-    <p class="g-hint">Observe la séquence lumineuse puis reproduis-la. Elle s'allonge à chaque manche !</p>
+    <p class="g-hint">${tr("mission.a1.hint", "Observe la séquence lumineuse puis reproduis-la. Elle s'allonge à chaque manche !")}</p>
     <div class="simon-wrap">
-      <div class="simon-status" id="a1-status">Prépare-toi…</div>
+      <div class="simon-status" id="a1-status">${tr("mission.a1.getReady", "Prépare-toi…")}</div>
       <div class="simon-grid">
         ${SIMON_PADS.map((p, i) => `<button class="pad" data-p="${i}" style="background:${p.c};color:${p.c}" disabled>${p.i}</button>`).join("")}
       </div>
@@ -868,12 +1033,12 @@ function runA1(host, done) {
   function playRound() {
     step = 0;
     renderDots();
-    host.querySelector("#a1-round").textContent = `Manche ${len - 2}/5`;
-    status.textContent = "Observe bien…";
+    host.querySelector("#a1-round").textContent = tr("mission.a1.round", "Manche " + (len - 2) + "/5", { n: len - 2 });
+    status.textContent = tr("mission.a1.watch", "Observe bien…");
     pads.forEach((b) => (b.disabled = true));
     for (let i = 0; i < len; i++) after(500 + i * 620, () => flash(seq[i], 400));
     after(500 + len * 620, () => {
-      status.textContent = "À toi !";
+      status.textContent = tr("mission.a1.yourTurn", "À toi !");
       pads.forEach((b) => (b.disabled = false));
     });
   }
@@ -890,7 +1055,7 @@ function runA1(host, done) {
       if (step === len) {
         pads.forEach((b) => (b.disabled = true));
         if (len === 7) { end(true); }
-        else { len++; status.textContent = "Bien joué ! Manche suivante…"; after(950, playRound); }
+        else { len++; status.textContent = tr("mission.a1.nextRound", "Bien joué ! Manche suivante…"); after(950, playRound); }
       }
     } else {
       const dots = host.querySelectorAll("#a1-dots .sdot");
@@ -903,8 +1068,12 @@ function runA1(host, done) {
     if (over) return;
     over = true;
     pads.forEach((b) => (b.disabled = true));
-    status.textContent = success ? "Séquence maximale atteinte ! 🎉" : "Raté !";
-    done(raw, success ? "Toutes les manches réussies — mémoire sérielle hors norme !" : `${raw / 20} signaux corrects avant l'erreur.`);
+    status.textContent = success
+      ? tr("mission.a1.maxReached", "Séquence maximale atteinte !") + " 🎉"
+      : tr("mission.a1.missed", "Raté !");
+    done(raw, success
+      ? tr("mission.a1.perfect", "Toutes les manches réussies — mémoire sérielle hors norme !")
+      : tr("mission.a1.partial", `${raw / 20} signaux corrects avant l'erreur.`, { n: raw / 20 }));
   }
 
   playRound();
@@ -917,17 +1086,17 @@ function runA2(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🥁 Reproduis le rythme</span>
-      <div class="g-chips"><span class="chip" id="a2-att">Essai 1</span></div>
+      <span class="g-name">🥁 ${tr("mission.a2.name", "Reproduis le rythme")}</span>
+      <div class="g-chips"><span class="chip" id="a2-att">${tr("mission.a2.attempt", "Essai 1", { n: 1 })}</span></div>
     </div>
-    <p class="g-hint">Observe les <b>5 pulsations</b> : certaines sont <b>courtes</b>, d'autres <b>longues</b>. Puis reproduis la série !</p>
+    <p class="g-hint">${tr("mission.a2.hint", "Observe les <b>5 pulsations</b> : certaines sont <b>courtes</b>, d'autres <b>longues</b>. Puis reproduis la série !")}</p>
     <div class="beat-stage">
-      <div class="simon-status" id="a2-status">Regarde le cercle…</div>
+      <div class="simon-status" id="a2-status">${tr("mission.a2.watchCircle", "Regarde le cercle…")}</div>
       <div class="beat-circle" id="a2-circle"></div>
       <div class="simon-dots" id="a2-dots">${seq.map(() => '<span class="sdot"></span>').join("")}</div>
       <div class="beat-btns">
-        <button class="beat-btn" data-k="S" disabled>Court ●</button>
-        <button class="beat-btn" data-k="L" disabled>Long ⬤</button>
+        <button class="beat-btn" data-k="S" disabled>${tr("mission.a2.short", "Court")} ●</button>
+        <button class="beat-btn" data-k="L" disabled>${tr("mission.a2.long", "Long")} ⬤</button>
       </div>
     </div>`;
 
@@ -939,7 +1108,7 @@ function runA2(host, done) {
   function play() {
     inputs = [];
     dots().forEach((d) => d.classList.remove("hit", "miss"));
-    status.textContent = "Regarde le cercle…";
+    status.textContent = tr("mission.a2.watchCircle", "Regarde le cercle…");
     btns.forEach((b) => (b.disabled = true));
     let t = 700;
     seq.forEach((k) => {
@@ -951,7 +1120,7 @@ function runA2(host, done) {
       t += dur + 450;
     });
     after(t, () => {
-      status.textContent = "À toi : rejoue la série !";
+      status.textContent = tr("mission.a2.yourTurn", "À toi : rejoue la série !");
       btns.forEach((b) => (b.disabled = false));
     });
   }
@@ -975,11 +1144,13 @@ function runA2(host, done) {
       const per = attempt === 1 ? 20 : 10;
       const raw = correct * per;
       totalPts += raw; syncHudScore();
-      done(raw, correct === 5 ? "Rythme parfait, oreille absolue !" : `${correct} pulsations sur 5 (essai ${attempt}).`);
+      done(raw, correct === 5
+        ? tr("mission.a2.perfect", "Rythme parfait, oreille absolue !")
+        : tr("mission.a2.partial", `${correct} pulsations sur 5 (essai ${attempt}).`, { n: correct, a: attempt }));
     } else {
       attempt = 2;
-      host.querySelector("#a2-att").textContent = "Essai 2 (points ÷ 2)";
-      status.textContent = "Pas tout à fait… regarde encore !";
+      host.querySelector("#a2-att").textContent = tr("mission.a2.attempt2", "Essai 2 (points ÷ 2)");
+      status.textContent = tr("mission.a2.notQuite", "Pas tout à fait… regarde encore !");
       after(1300, play);
     }
   }
@@ -994,15 +1165,15 @@ function runK1(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🎯 Attrape les cibles</span>
+      <span class="g-name">🎯 ${tr("mission.k1.name", "Attrape les cibles")}</span>
       <div class="g-chips">
         <span class="chip" id="k1-score">0 pts</span>
         <span class="chip combo" id="k1-combo" hidden>Combo ×2</span>
       </div>
     </div>
-    <p class="g-hint">12 cibles vont apparaître et rétrécir. <b>Attrape-les avant qu'elles disparaissent !</b> Enchaîne les touches pour un combo.</p>
+    <p class="g-hint">${tr("mission.k1.hint", "12 cibles vont apparaître et rétrécir. <b>Attrape-les avant qu'elles disparaissent !</b> Enchaîne les touches pour un combo.")}</p>
     <div class="arena" id="k1-arena"></div>
-    <p class="g-hint" style="margin:6px 0 0;">Cible <span id="k1-i">1</span> / 12</p>`;
+    <p class="g-hint" style="margin:6px 0 0;">${tr("mission.k1.target", "Cible")} <span id="k1-i">1</span> / 12</p>`;
 
   const arena = host.querySelector("#k1-arena");
 
@@ -1062,7 +1233,11 @@ function runK1(host, done) {
   function end() {
     if (over) return;
     over = true;
-    done(raw, raw >= 200 ? "Réflexes de félin, combo maîtrisé !" : raw >= 90 ? "Belle précision !" : "Les cibles ont eu chaud… entraîne-toi !");
+    done(raw, raw >= 200
+      ? tr("mission.k1.great", "Réflexes de félin, combo maîtrisé !")
+      : raw >= 90
+        ? tr("mission.k1.good", "Belle précision !")
+        : tr("mission.k1.poor", "Les cibles ont eu chaud… entraîne-toi !"));
   }
 
   spawn();
@@ -1070,15 +1245,15 @@ function runK1(host, done) {
 
 /* ══════════════════ K2 — Construis le parcours ══════════════════ */
 const TRIP_STEPS = [
-  { id: "s1", label: "Choisir la destination", img: P.paris },
-  { id: "s2", label: "Réserver les billets",   img: P.tokyo },
-  { id: "s3", label: "Faire sa valise",        img: P.london },
-  { id: "s4", label: "Aller à l'aéroport",     img: P.ny },
-  { id: "s5", label: "Profiter du voyage",     img: P.dubai }
+  { id: "s1", label: tr("mission.k2.s1", "Choisir la destination"), img: P.paris },
+  { id: "s2", label: tr("mission.k2.s2", "Réserver les billets"),   img: P.tokyo },
+  { id: "s3", label: tr("mission.k2.s3", "Faire sa valise"),        img: P.london },
+  { id: "s4", label: tr("mission.k2.s4", "Aller à l'aéroport"),     img: P.ny },
+  { id: "s5", label: tr("mission.k2.s5", "Profiter du voyage"),     img: P.dubai }
 ];
 const TRIP_DECOYS = [
-  { id: "d1", label: "Acheter un canapé",      img: P.plant },
-  { id: "d2", label: "Repeindre la cuisine",   img: P.watch }
+  { id: "d1", label: tr("mission.k2.d1", "Acheter un canapé"),      img: P.plant },
+  { id: "d2", label: tr("mission.k2.d2", "Repeindre la cuisine"),   img: P.watch }
 ];
 
 function runK2(host, done) {
@@ -1086,10 +1261,10 @@ function runK2(host, done) {
 
   host.innerHTML = `
     <div class="g-head">
-      <span class="g-name">🧭 Construis le parcours</span>
+      <span class="g-name">🧭 ${tr("mission.k2.name", "Construis le parcours")}</span>
       <div class="g-chips"><span class="chip" id="k2-score">100 pts</span></div>
     </div>
-    <p class="g-hint">Scénario : <b>« Organiser un voyage »</b>. Glisse les 5 bonnes étapes dans l'ordre — attention, 2 cartes sont des pièges ! (−15 pts par erreur)</p>
+    <p class="g-hint">${tr("mission.k2.hint", "Scénario : <b>« Organiser un voyage »</b>. Glisse les 5 bonnes étapes dans l'ordre — attention, 2 cartes sont des pièges ! (−15 pts par erreur)")}</p>
     <div class="tl" style="--gc:#d85a30">
       <span class="tl-end">🚀</span><span class="tl-arrow">→</span>
       ${[0,1,2,3,4].map((i) => `<div class="tl-slot" data-slot="${i}">${i + 1}</div><span class="tl-arrow">→</span>`).join("")}
@@ -1130,20 +1305,22 @@ function runK2(host, done) {
     over = true;
     const raw = score();
     totalPts += raw; syncHudScore();
-    done(raw, wrongTries === 0 ? "Parcours parfait du premier coup — départ imminent !" : `Parcours bouclé avec ${wrongTries} détour${wrongTries > 1 ? "s" : ""}.`);
+    done(raw, wrongTries === 0
+      ? tr("mission.k2.perfect", "Parcours parfait du premier coup — départ imminent !")
+      : tr("mission.k2.partial", `Parcours bouclé avec ${wrongTries} détour${wrongTries > 1 ? "s" : ""}.`, { n: wrongTries }));
   }
 }
 
 /* ══════════════════ registre des jeux ══════════════════ */
 const GAMES = [
-  { id: "v1", dim: "V", dimColor: "#3266ad", emoji: "🔍", name: "Trouve les différences", rule: "4 éléments ont changé entre les deux images. Clique-les avant la fin du chrono !", max: 100, run: runV1 },
-  { id: "v2", dim: "V", dimColor: "#3266ad", emoji: "🧠", name: "Mémorise la grille",     rule: "9 images, 4 secondes. Puis on te demande ce qui était où !", max: 100, run: runV2 },
-  { id: "l1", dim: "R", dimColor: "#1d9e75", emoji: "🪢", name: "Le Pendu revisité",      rule: "Devine 3 mots lettre par lettre. 6 erreurs max par mot.", max: 150, run: runL1 },
-  { id: "l2", dim: "R", dimColor: "#1d9e75", emoji: "🗂️", name: "Classe les mots",        rule: "Causes ou conséquences ? Glisse chaque mot dans la bonne colonne.", max: 100, run: runL2 },
-  { id: "a1", dim: "A", dimColor: "#7f77dd", emoji: "💡", name: "Simon lumineux",         rule: "Reproduis la séquence de couleurs. Elle s'allonge à chaque manche !", max: 500, run: runA1 },
-  { id: "a2", dim: "A", dimColor: "#7f77dd", emoji: "🥁", name: "Reproduis le rythme",    rule: "5 pulsations, courtes ou longues. Rejoue-les dans l'ordre exact.", max: 100, run: runA2 },
-  { id: "k1", dim: "K", dimColor: "#d85a30", emoji: "🎯", name: "Attrape les cibles",     rule: "Les cibles rétrécissent vite : attrape-les toutes et enchaîne les combos !", max: 270, run: runK1 },
-  { id: "k2", dim: "K", dimColor: "#d85a30", emoji: "🧭", name: "Construis le parcours",  rule: "Assemble les 5 bonnes étapes dans l'ordre. Évite les 2 pièges !", max: 100, run: runK2 }
+  { id: "v1", dim: "V", dimColor: "#3266ad", emoji: "🔍", name: tr("mission.v1.name", "Trouve les différences"), rule: tr("mission.v1.rule", "4 éléments ont changé entre les deux images. Clique-les avant la fin du chrono !"), max: 100, run: runV1 },
+  { id: "v2", dim: "V", dimColor: "#3266ad", emoji: "🧠", name: tr("mission.v2.name", "Mémorise la grille"),     rule: tr("mission.v2.rule", "9 images, 4 secondes. Puis on te demande ce qui était où !"), max: 100, run: runV2 },
+  { id: "l1", dim: "R", dimColor: "#1d9e75", emoji: "🪢", name: tr("mission.l1.name", "Le Pendu revisité"),      rule: tr("mission.l1.rule", "Devine 3 mots lettre par lettre. 6 erreurs max par mot."), max: 150, run: runL1 },
+  { id: "l2", dim: "R", dimColor: "#1d9e75", emoji: "🗂️", name: tr("mission.l2.name", "Classe les mots"),        rule: tr("mission.l2.rule", "Causes ou conséquences ? Glisse chaque mot dans la bonne colonne."), max: 100, run: runL2 },
+  { id: "a1", dim: "A", dimColor: "#7f77dd", emoji: "💡", name: tr("mission.a1.name", "Simon lumineux"),         rule: tr("mission.a1.rule", "Reproduis la séquence de couleurs. Elle s'allonge à chaque manche !"), max: 500, run: runA1 },
+  { id: "a2", dim: "A", dimColor: "#7f77dd", emoji: "🥁", name: tr("mission.a2.name", "Reproduis le rythme"),    rule: tr("mission.a2.rule", "5 pulsations, courtes ou longues. Rejoue-les dans l'ordre exact."), max: 100, run: runA2 },
+  { id: "k1", dim: "K", dimColor: "#d85a30", emoji: "🎯", name: tr("mission.k1.name", "Attrape les cibles"),     rule: tr("mission.k1.rule", "Les cibles rétrécissent vite : attrape-les toutes et enchaîne les combos !"), max: 270, run: runK1 },
+  { id: "k2", dim: "K", dimColor: "#d85a30", emoji: "🧭", name: tr("mission.k2.name", "Construis le parcours"),  rule: tr("mission.k2.rule", "Assemble les 5 bonnes étapes dans l'ordre. Évite les 2 pièges !"), max: 100, run: runK2 }
 ];
 
 function syncHudScore() {
@@ -1240,20 +1417,24 @@ function renderProfileScreen(ds, dominant, fromStorage) {
     <div class="in">
       <div class="res-hero">
         <span class="res-emoji">${d.emoji}</span>
-        <div class="res-eyebrow">${fromStorage ? "Ton profil enregistré" : "8 jeux terminés — voici ton profil"}</div>
+        <div class="res-eyebrow">${fromStorage
+          ? tr("mission.res.saved", "Ton profil enregistré")
+          : tr("mission.res.done", "8 jeux terminés — voici ton profil")}</div>
         <h2 class="res-name">${esc(d.pname)}</h2>
-        <span class="res-badge">Point fort : ${esc(d.label)}</span>
+        <span class="res-badge">${tr("mission.res.strength", "Point fort : " + esc(d.label), { label: esc(d.label) })}</span>
       </div>
       <div class="res-body">
         <p class="res-desc">${d.desc}</p>
         <div class="rec-card">
-          <div class="rec-lbl">🎯 Ta stratégie sur NextLearn</div>
+          <div class="rec-lbl">🎯 ${tr("mission.res.strategy", "Ta stratégie sur NextLearn")}</div>
           <p class="rec-txt">${d.rec}</p>
         </div>
         <canvas id="res-chart"></canvas>
         <div class="res-actions">
-          <button class="btn ghost" id="restart-btn">↺ ${fromStorage ? "Refaire le test" : "Recommencer"}</button>
-          <a class="btn" href="/student/?view=cours">Continuer vers mes cours →</a>
+          <button class="btn ghost" id="restart-btn">↺ ${fromStorage
+            ? tr("mission.res.retake", "Refaire le test")
+            : tr("mission.res.restart", "Recommencer")}</button>
+          <a class="btn" href="/student/?view=cours">${tr("mission.res.continue", "Continuer vers mes cours →")}</a>
         </div>
       </div>
     </div>`;
@@ -1368,10 +1549,9 @@ function showWelcome() {
   app.innerHTML = `
     <div class="card intro in">
       <span class="intro-icon">🎮</span>
-      <h1>Découvre <em>ton profil</em></h1>
+      <h1>${tr("mission.welcomeTitle", "Découvre <em>ton profil</em>")}</h1>
       <p class="lead">
-        <b>8 mini-jeux</b>, dans un ordre aléatoire : observation, mots, mémoire, réflexes…
-        Joue, marque un max de points, et découvre à la fin la façon d'apprendre qui te ressemble.
+        ${tr("mission.welcomeLead", "<b>8 mini-jeux</b>, dans un ordre aléatoire : observation, mots, mémoire, réflexes… Joue, marque un max de points, et découvre à la fin la façon d'apprendre qui te ressemble.")}
       </p>
       <div class="dim-dots">
         <span class="dim-dot" style="background:#3266ad"></span>
@@ -1379,8 +1559,8 @@ function showWelcome() {
         <span class="dim-dot" style="background:#7f77dd"></span>
         <span class="dim-dot" style="background:#d85a30"></span>
       </div>
-      <button class="btn" id="start-btn">C'est parti ! →</button>
-      <p class="intro-hint">~6 minutes · aucun mauvais score, juste ton style de jeu.</p>
+      <button class="btn" id="start-btn">${tr("mission.start", "C'est parti ! →")}</button>
+      <p class="intro-hint">${tr("mission.welcomeHint", "~6 minutes · aucun mauvais score, juste ton style de jeu.")}</p>
     </div>`;
   document.getElementById("start-btn").addEventListener("click", startRun);
 }
