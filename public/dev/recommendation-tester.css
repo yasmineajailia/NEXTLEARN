@@ -1,9 +1,0 @@
-*{box-sizing:border-box;font-family:Inter,Segoe UI,Arial,sans-serif}body{background:#f6f8fb;margin:0;color:#111}main.container{max-width:980px;margin:28px auto;padding:18px}h1{margin:0 0 12px;font-size:20px}section.panel{background:#fff;border-radius:8px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,23,42,0.06)}label{display:block;margin-top:10px;font-size:13px;color:#334155}textarea{width:100%;min-height:56px;padding:8px;border:1px solid #e6eef8;border-radius:6px;background:#fbfdff}input,select{padding:6px;border-radius:6px;border:1px solid #e6eef8;background:#fff}.row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}.actions{margin-top:12px;display:flex;gap:8px}button{padding:8px 12px;border-radius:6px;border:none;background:#0b64d3;color:#fff;cursor:pointer}button#loadGraph{background:#475569}pre.output{white-space:pre-wrap;word-break:break-word;background:#0f1724;color:#e6eef8;padding:12px;border-radius:6px;min-height:180px;overflow:auto}div.graph-preview{margin-top:10px;padding:8px;background:#eef2ff;border-radius:6px;max-height:200px;overflow:auto;font-size:13px}
-/* skill list styles */
-.skill-list{margin-top:12px;border:1px solid #eef2ff;padding:8px;border-radius:6px;max-height:300px;overflow:auto}
-.skill-row{display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px}
-.skill-row:nth-child(odd){background:linear-gradient(0deg,rgba(15,23,42,0.01),rgba(15,23,42,0.01))}
-.skill-checkbox{width:18px;height:18px}
-.skill-id{font-family:monospace;color:#0b64d3;margin-left:6px;width:110px}
-.skill-title{flex:1;color:#0f1724}
-.skill-score{width:84px;padding:6px;border-radius:6px;border:1px solid #e6eef8}
