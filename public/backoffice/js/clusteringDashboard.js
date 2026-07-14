@@ -171,11 +171,44 @@
     return "cdb-score-bad";
   }
 
-  function riskBadge(weakSkillRatio) {
-    var ratio = isFinite(weakSkillRatio) ? weakSkillRatio : 0;
-    if (ratio > 0.5) return { emoji: "🔴", label: "Élevé", cls: "cdb-badge-danger" };
-    if (ratio >= 0.25) return { emoji: "🟡", label: "Modéré", cls: "cdb-badge-warn" };
-    return { emoji: "🟢", label: "Faible", cls: "cdb-badge-ok" };
+  /**
+   * Risk badge for one student.
+   *
+   * This used to read weakSkillRatio alone. That ratio is 0 for a student who
+   * has never taken a quiz — 0 because there is no data, not because they are
+   * doing well — so a student who never logged in and never opened a course was
+   * labelled "Faible" (low risk). Absence of evidence is not evidence of safety:
+   * disengagement is precisely the risk this platform exists to catch.
+   *
+   * `score` is what the Risque column sorts on, so the students who most need
+   * attention sort to the top.
+   */
+  function riskBadge(features) {
+    var f = features || {};
+    var weak = clampNumber(f.weakSkillRatio, 0, 1, 0);
+    var completion = clampNumber(f.completionRate, 0, 1, 0);
+    var logins = clampNumber(f.weeklyLoginFrequency, 0, 7, 0);
+    var hasQuiz = clampNumber(f.quizAttemptRate, 0, 10, 0) > 0;
+
+    // No evidence at all: no quiz taken and nothing completed.
+    if (!hasQuiz && completion === 0) {
+      if (logins < 0.5) {
+        // Never (or barely) shows up either — the clearest at-risk signal there is.
+        return { label: "Inactif", cls: "cdb-badge-danger", score: 1.5 };
+      }
+      // Logs in but has produced no work yet: we genuinely cannot judge them.
+      return { label: "Sans évaluation", cls: "cdb-badge-neutral", score: 0.45 };
+    }
+
+    // Quiz weakness, weighted up when the student is barely progressing or has
+    // stopped logging in — good scores mean little once someone stops showing up.
+    var score = weak;
+    if (completion < 0.2) score += 0.2;
+    if (logins < 1) score += 0.2;
+
+    if (score > 0.5) return { label: "Élevé", cls: "cdb-badge-danger", score: score };
+    if (score >= 0.25) return { label: "Modéré", cls: "cdb-badge-warn", score: score };
+    return { label: "Faible", cls: "cdb-badge-ok", score: score };
   }
 
   function isCompactView() {
@@ -278,6 +311,9 @@
 
   function getSortValue(student, key) {
     if (key === "fullName") return student.fullName || student.identifier || "";
+    // Risk is a composite, not a raw feature — sort it by the badge's own score
+    // so inactive students rank above merely weak ones.
+    if (key === "riskScore") return riskBadge(student.features || {}).score;
     var value = (student.features || {})[key];
     return isFinite(value) ? value : 0;
   }
@@ -731,7 +767,7 @@
         '<th data-key="avgQuizScore">Score quiz moyen<span class="cdb-sort-arrow"></span></th>' +
         '<th data-key="weeklyLoginFrequency">Connexions/semaine<span class="cdb-sort-arrow"></span></th>' +
         '<th data-key="weakSkillRatio">Compétences faibles<span class="cdb-sort-arrow"></span></th>' +
-        '<th data-key="weakSkillRatio">Risque<span class="cdb-sort-arrow"></span></th>' +
+        '<th data-key="riskScore">Risque<span class="cdb-sort-arrow"></span></th>' +
         '<th class="cdb-th-action">Action</th>' +
         "</tr></thead><tbody>" + renderStudentRows(cluster, "fullName", "asc") + "</tbody></table>" +
         "</div></div></div></div>"
@@ -749,7 +785,7 @@
         var quiz = clampNumber(f.avgQuizScore, 0, 100, 0);
         var logins = clampNumber(f.weeklyLoginFrequency, 0, 7, 0);
         var weak = clampNumber(f.weakSkillRatio, 0, 1, 0);
-        var risk = riskBadge(f.weakSkillRatio);
+        var risk = riskBadge(f);
         var initials = initialsFromName(student.fullName || student.identifier);
         var name = student.fullName || student.identifier || "—";
         return (
@@ -761,7 +797,7 @@
           '<td class="' + scoreColorClass(quiz) + '">' + Math.round(quiz) + "%</td>" +
           "<td>" + logins.toFixed(1) + "</td>" +
           "<td>" + Math.round(weak * 100) + "%</td>" +
-          '<td><span class="cdb-badge ' + risk.cls + '">' + risk.emoji + " " + escapeHtml(risk.label) + "</span></td>" +
+          '<td><span class="cdb-badge ' + risk.cls + '">' + escapeHtml(risk.label) + "</span></td>" +
           '<td><a class="cdb-btn cdb-btn-ghost cdb-btn-sm" href="/backoffice/student-profile.html?id=' + encodeURIComponent(student.identifier) + '">Voir le profil</a></td>' +
           "</tr>"
         );
@@ -961,7 +997,7 @@
 
         var s = nearest.student;
         var f = s.features || {};
-        var risk = riskBadge(f.weakSkillRatio);
+        var risk = riskBadge(f);
 
         tooltipEl.hidden = false;
         tooltipEl.innerHTML =
@@ -970,7 +1006,7 @@
           '<span class="cdb-tooltip-row">Score quiz : ' + Math.round(clampNumber(f.avgQuizScore, 0, 100, 0)) + "%</span>" +
           '<span class="cdb-tooltip-row">Complétion : ' + Math.round(clampNumber(f.completionRate, 0, 1, 0) * 100) + "%</span>" +
           '<span class="cdb-tooltip-row">Connexions/sem. : ' + clampNumber(f.weeklyLoginFrequency, 0, 7, 0).toFixed(1) + "</span>" +
-          '<span class="cdb-tooltip-row">Risque : ' + risk.emoji + " " + escapeHtml(risk.label) + "</span>";
+          '<span class="cdb-tooltip-row">Risque : ' + escapeHtml(risk.label) + "</span>";
 
         var flipLeft = event.clientX > rect.right - TOOLTIP_WIDTH - 20;
         tooltipEl.style.left = (flipLeft ? event.clientX - TOOLTIP_WIDTH - 14 : event.clientX + 14) + "px";

@@ -1803,26 +1803,44 @@ function renderInsights(filteredStudents) {
   renderModuleTable(filteredStudents);
 }
 
+/**
+ * Risk = the complement of the model's catch-up probability.
+ *
+ * `catchupProbability` is the probability the student CATCHES UP, i.e. succeeds —
+ * higher is better (the student dashboard prints it as "% de réussite"). Returns
+ * null when the student has no prediction, so they are simply not ranked.
+ */
+function riskProbability(student) {
+  const p = Number(student?.catchupProbability);
+  return Number.isFinite(p) ? 1 - p : null;
+}
+
 function renderAtRiskStudents(filteredStudents) {
   if (!dom.atRiskList) return;
+
+  // This list used to filter and sort on catchupProbability directly, which is
+  // backwards: it surfaced the students with the BEST chance of succeeding as the
+  // most "at risk", and dropped the genuinely failing ones (low catch-up chance)
+  // out of the list entirely.
   const atRisk = filteredStudents
-    .filter((s) => (s.catchupProbability || 0) >= 0.55)
-    .sort((a, b) => (b.catchupProbability || 0) - (a.catchupProbability || 0));
+    .map((student) => ({ student, risk: riskProbability(student) }))
+    .filter((entry) => entry.risk !== null && entry.risk >= 0.45)
+    .sort((a, b) => b.risk - a.risk);
 
   if (!atRisk.length) {
     dom.atRiskList.innerHTML = '<p class="insight-empty">Aucun étudiant à risque détecté.</p>';
     return;
   }
 
-  dom.atRiskList.innerHTML = atRisk.map((student) => {
-    const prob = Math.round((student.catchupProbability || 0) * 100);
-    const level = prob >= 75 ? "high" : "medium";
-    const label = prob >= 75 ? "Risque élevé" : "Risque modéré";
+  dom.atRiskList.innerHTML = atRisk.map(({ student, risk }) => {
+    const pct = Math.round(risk * 100);
+    const level = pct >= 75 ? "high" : "medium";
+    const label = pct >= 75 ? "Risque élevé" : "Risque modéré";
     const room = state.classes.find((r) => r.id === student.classId);
     return `<div class="insight-row">
       <div class="insight-name">${htmlEscape(student.fullName)}</div>
       <div class="insight-meta">${htmlEscape(room?.name || "Sans classe")}</div>
-      <span class="risk-badge risk-${level}">${label} · ${prob}%</span>
+      <span class="risk-badge risk-${level}">${label} · ${pct}%</span>
     </div>`;
   }).join("");
 }

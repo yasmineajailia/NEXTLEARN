@@ -339,6 +339,19 @@ from the database (`resolveTotalSubAcquisCount()`); the clustering service hard-
 `TOTAL_SUB_ACQUIS = 84` in `kmeans.ts`. If the curriculum changes size, clustering silently
 uses a stale denominator. Worth reconciling.
 
+**`catchupProbability` is a success probability, not a risk.** It is the probability the
+student *catches up*, so **higher is better** — the student dashboard prints it as
+"% de réussite". Risk is its complement, `1 - catchupProbability`. Getting this backwards
+is not hypothetical: the back-office "Étudiants à risque" list did exactly that, ranking
+the strongest students as the most at risk while the failing ones (0% catch-up) never
+appeared at all. Whenever you consume this field, ask yourself which direction is bad.
+
+**A zero feature can mean "no data", not "good".** `weakSkillRatio` is 0 for a student who
+has failed nothing *and* for a student who has never taken a quiz; `averageScore` defaults
+to 50 for a student with no scores at all. Any UI that reads these raw will call a student
+who never logged in "low risk". The clustering risk badge now checks for the absence of
+evidence first and labels such a student "Inactif" or "Sans évaluation" instead.
+
 **ML metric honesty.** Report test/CV numbers only: risk accuracy ~72–76%, AUC ~0.81–0.84;
 grade MAE ~0.95 points out of 20. Training accuracy (~99%) is meaningless here because the
 labels carry deliberate noise, and quoting it would be dishonest. Retrain with the scripts
