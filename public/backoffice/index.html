@@ -396,55 +396,76 @@
         <section class="view" id="view-teachers">
           <div class="panel-grid">
             <article class="card wide">
-              <h3 id="teacher-form-title">Ajouter un enseignant</h3>
-              <form id="teacher-form" class="stack-form">
+              <div class="card-head">
+                <h3 id="teacher-form-title" data-i18n="bo.teacherAdd">Ajouter un enseignant</h3>
+                <p class="card-sub" data-i18n="bo.teacherAddSub">Créez le compte, puis affectez-lui des classes depuis « Gestion des classes ».</p>
+              </div>
+              <form id="teacher-form" class="stack-form form-grid">
                 <label>
-                  Nom complet
+                  <span data-i18n="bo.fullName">Nom complet</span>
                   <input type="text" name="teacherFullName" required placeholder="Exemple: Sami Ben Ali" />
                 </label>
                 <label>
-                  Email de l'enseignant
+                  <span data-i18n="bo.teacherEmail">Email de l'enseignant</span>
                   <input type="email" name="teacherEmail" required placeholder="Exemple: sami@nextlearn.tn" />
                 </label>
                 <label>
-                  Numéro de téléphone
+                  <span data-i18n="bo.phone">Numéro de téléphone</span>
                   <input type="tel" name="teacherPhone" required placeholder="Exemple: +216 20 000 000" />
                 </label>
                 <label>
-                  Mot de passe
-                  <input type="password" name="teacherPassword" required minlength="6" placeholder="Minimum 6 caracteres" />
+                  <span data-i18n="common.password">Mot de passe</span>
+                  <input type="password" name="teacherPassword" required minlength="6" placeholder="Minimum 6 caractères" />
                 </label>
                 <div class="button-row">
-                  <button type="submit" id="teacher-submit-btn">Ajouter l'enseignant</button>
-                  <button type="button" id="teacher-cancel-edit" class="secondary-btn" hidden>Annuler modification</button>
+                  <button type="submit" id="teacher-submit-btn" data-i18n="bo.teacherAdd">Ajouter l'enseignant</button>
+                  <button type="button" id="teacher-cancel-edit" class="secondary-btn" hidden data-i18n="bo.cancelEdit">Annuler la modification</button>
                 </div>
               </form>
             </article>
-          </div>
 
-          <article class="card">
-            <h3>Liste des enseignants</h3>
-            <div id="teacher-table" class="table-wrap"></div>
-          </article>
+            <article class="card wide">
+              <div class="card-head">
+                <h3 data-i18n="bo.teacherList">Liste des enseignants</h3>
+                <p class="card-sub" data-i18n="bo.teacherListSub">Chaque enseignant et le nombre de classes qui lui sont affectées.</p>
+              </div>
+              <div id="teacher-table" class="table-wrap"></div>
+            </article>
+          </div>
         </section>
 
         <section class="view" id="view-classes-create">
-          <div id="class-table" class="classes-grid"></div>
+          <div class="panel-grid">
+            <!-- classes-create-form-card is a permission hook: backoffice.js hides
+                 this card for non-admin teachers. Keep the class on this element. -->
+            <article class="card wide classes-create-form-card">
+              <div class="card-head">
+                <h3 data-i18n="bo.classAdd">Ajouter une classe</h3>
+                <p class="card-sub" data-i18n="bo.classAddSub">Nommez la classe et désignez l'enseignant qui en a la charge.</p>
+              </div>
+              <form id="class-form" class="stack-form form-grid">
+                <label>
+                  <span data-i18n="bo.className">Nom de la classe</span>
+                  <input type="text" name="className" required placeholder="Exemple: INFO-2A" />
+                </label>
+                <label>
+                  <span data-i18n="bo.teacher">Enseignant</span>
+                  <select id="class-teacher-select" name="teacherId" required></select>
+                </label>
+                <div class="button-row">
+                  <button type="submit" data-i18n="bo.classCreate">Créer la classe</button>
+                </div>
+              </form>
+            </article>
 
-          <article class="card classes-create-form-card">
-            <h3>Ajouter une classe</h3>
-            <form id="class-form" class="stack-form classes-create-form">
-              <label>
-                Nom de la classe
-                <input type="text" name="className" required placeholder="Exemple: INFO-2A" />
-              </label>
-              <label>
-                Enseignant
-                <select id="class-teacher-select" name="teacherId" required></select>
-              </label>
-              <button type="submit">Créer la classe</button>
-            </form>
-          </article>
+            <article class="card wide">
+              <div class="card-head">
+                <h3 data-i18n="bo.classListTitle">Classes existantes</h3>
+                <p class="card-sub" data-i18n="bo.classListSub">Ouvrez une classe pour gérer ses étudiants.</p>
+              </div>
+              <div id="class-table" class="classes-grid"></div>
+            </article>
+          </div>
         </section>
 
         <section class="view" id="view-class-detail">
@@ -466,13 +487,14 @@
 
         <section class="view" id="view-classes-access">
           <div class="panel-grid">
-            <article class="card wide classes-access-card">
-              
-
-              
-              <form id="schedule-form" class="stack-form classes-access-form">
+            <article class="card wide">
+              <div class="card-head">
+                <h3 data-i18n="bo.calendarTitle">Calendrier des cours</h3>
+                <p class="card-sub" data-i18n="bo.calendarSub">Fixez la date de démarrage : les sous-acquis se débloquent ensuite semaine par semaine, pour toutes les classes.</p>
+              </div>
+              <form id="schedule-form" class="stack-form form-inline">
                 <label>
-                  Date de démarrage des cours
+                  <span data-i18n="bo.startDate">Date de démarrage des cours</span>
                   <div class="schedule-date-picker" id="schedule-date-picker">
                     <input id="schedule-start-date" name="startDate" type="hidden" />
 
@@ -508,33 +530,44 @@
                     </section>
                   </div>
                 </label>
-                <button type="submit">Générer le calendrier global</button>
-              </form>
-
-              <hr />
-<h3>Gérer l'accès aux modules des classes</h3>
-              <form id="access-form" class="stack-form classes-access-form">
-                <label>
-                  Classe
-                  <select id="access-class-select" name="classId" required></select>
-                </label>
-                <label>
-                  Module
-                  <select id="access-module-select" name="moduleId" required></select>
-                </label>
-                <label>
-                  Règle d'accès
-                  <select name="accessRule" required>
-                    <option value="granted">Autoriser l'accès</option>
-                    <option value="blocked">Bloquer l'accès</option>
-                  </select>
-                </label>
-                <button type="submit">Appliquer la règle</button>
+                <div class="button-row">
+                  <button type="submit" data-i18n="bo.calendarGenerate">Générer le calendrier global</button>
+                </div>
               </form>
             </article>
 
             <article class="card wide">
-              <h3>Accès des classes par module</h3>
+              <div class="card-head">
+                <h3 data-i18n="bo.accessRuleTitle">Règle d'accès par classe</h3>
+                <p class="card-sub" data-i18n="bo.accessRuleSub">Autorisez ou bloquez un module pour une classe donnée.</p>
+              </div>
+              <form id="access-form" class="stack-form form-grid form-grid-3">
+                <label>
+                  <span data-i18n="bo.classLabel">Classe</span>
+                  <select id="access-class-select" name="classId" required></select>
+                </label>
+                <label>
+                  <span data-i18n="common.module">Module</span>
+                  <select id="access-module-select" name="moduleId" required></select>
+                </label>
+                <label>
+                  <span data-i18n="bo.accessRule">Règle d'accès</span>
+                  <select name="accessRule" required>
+                    <option value="granted" data-i18n="bo.accessGrant">Autoriser l'accès</option>
+                    <option value="blocked" data-i18n="bo.accessBlock">Bloquer l'accès</option>
+                  </select>
+                </label>
+                <div class="button-row">
+                  <button type="submit" data-i18n="bo.accessApply">Appliquer la règle</button>
+                </div>
+              </form>
+            </article>
+
+            <article class="card wide">
+              <div class="card-head">
+                <h3 data-i18n="bo.accessTableTitle">Accès des classes par module</h3>
+                <p class="card-sub" data-i18n="bo.accessTableSub">État du calendrier et des autorisations, classe par classe.</p>
+              </div>
               <div id="class-access-table" class="table-wrap"></div>
             </article>
           </div>

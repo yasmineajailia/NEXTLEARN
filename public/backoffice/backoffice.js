@@ -1,5 +1,8 @@
 const STORAGE_KEY = "nextlearn_backoffice_data_v1";
 
+/** French stays inline as the fallback; English comes from the i18n dictionary. */
+const boTr = (key, fr) => (window.I18N ? window.I18N.t(key, fr) : fr);
+
 const initialData = {
   teachers: [
     { id: "tch-1", name: "Pr. Sami", email: "sami@nextlearn.tn", phone: "+21620000001" },
@@ -482,6 +485,9 @@ function renderSidebarIdentity() {
   const normalizedRole = role === "admin" ? "admin" : "enseignant";
 
   dom.sidebarUserName.textContent = fullName || "Utilisateur";
+  // Dynamic value slot: drop the i18n key before writing the real role, otherwise
+  // a later translation pass relabels an admin as "Teacher".
+  dom.sidebarUserRole.removeAttribute("data-i18n");
   dom.sidebarUserRole.textContent = normalizedRole;
   dom.sidebarUserRole.classList.toggle("is-admin", normalizedRole === "admin");
   dom.sidebarUserRole.classList.toggle("is-teacher", normalizedRole === "enseignant");
@@ -965,7 +971,6 @@ function switchView(viewKey) {
     viewKey = "overview";
   }
 
-  const boTr = (key, fr) => (window.I18N ? window.I18N.t(key, fr) : fr);
   const titles = {
     overview: {
       eyebrow: boTr("bo.overview", "Vue d'ensemble"),
@@ -977,15 +982,15 @@ function switchView(viewKey) {
     },
     teachers: {
       eyebrow: boTr("bo.teacherMgmt", "Gestion des enseignants"),
-      title: ""
+      title: boTr("bo.teacherMgmtTitle", "Les enseignants et leurs classes")
     },
     "classes-create": {
       eyebrow: boTr("bo.classMgmt", "Gestion des classes"),
-      title: ""
+      title: boTr("bo.classMgmtTitle", "Les classes et leurs étudiants")
     },
     "classes-access": {
-      eyebrow: boTr("bo.classMgmt", "Gestion des classes"),
-      title: ""
+      eyebrow: boTr("bo.accessMgmt", "Gérer l'accès aux modules"),
+      title: boTr("bo.accessMgmtTitle", "Calendrier et accès aux modules")
     },
     students: {
       eyebrow: boTr("bo.studentMgmt", "Gestion des étudiants"),
@@ -3430,27 +3435,44 @@ function renderClassAccessTable() {
     const unlockedCount = scheduleDates.filter((date) => date.getTime() <= now).length;
     const upcoming = scheduleDates.find((date) => date.getTime() > now) || null;
 
-    const grantedModules = state.modules
-      .filter((module) => (room.accessByModule?.[module.id] || "blocked") === "granted")
-      .map((module) => htmlEscape(module.name));
-
-    const blockedModules = state.modules
-      .filter((module) => (room.accessByModule?.[module.id] || "blocked") === "blocked")
-      .map((module) => htmlEscape(module.name));
+    // Modules read as chips rather than a run of <br />-separated names: the
+    // granted/blocked state is then visible without reading the column header.
+    const moduleChips = (rule, className) => {
+      const names = state.modules
+        .filter((module) => (room.accessByModule?.[module.id] || "blocked") === rule)
+        .map((module) => `<span class="access-chip ${className}">${htmlEscape(module.name)}</span>`);
+      return names.length ? `<div class="access-chips">${names.join("")}</div>` : null;
+    };
 
     return [
-      htmlEscape(room.name),
-      room.scheduleStartDate ? htmlEscape(formatIsoDateLabel(room.scheduleStartDate)) : "Non defini",
+      `<strong>${htmlEscape(room.name)}</strong>`,
+      room.scheduleStartDate
+        ? htmlEscape(formatIsoDateLabel(room.scheduleStartDate))
+        : `<span class="access-empty">${boTr("bo.notSet", "Non défini")}</span>`,
       scheduleDates.length
-        ? `${unlockedCount}/${scheduleDates.length} debloques${upcoming ? ` (prochain: ${htmlEscape(formatIsoDateLabel(upcoming.toISOString()))})` : ""}`
-        : "Aucun calendrier généré",
-      grantedModules.length ? grantedModules.join("<br />") : "Aucun module autorisé",
-      blockedModules.length ? blockedModules.join("<br />") : "Aucun module bloqué"
+        ? `${unlockedCount}/${scheduleDates.length} ${boTr("bo.unlocked", "débloqués")}${
+            upcoming
+              ? `<br /><span class="access-muted">${boTr("bo.next", "prochain")} : ${htmlEscape(
+                  formatIsoDateLabel(upcoming.toISOString())
+                )}</span>`
+              : ""
+          }`
+        : `<span class="access-empty">${boTr("bo.noCalendar", "Aucun calendrier généré")}</span>`,
+      moduleChips("granted", "access-chip-granted") ||
+        `<span class="access-empty">${boTr("bo.noGranted", "Aucun module autorisé")}</span>`,
+      moduleChips("blocked", "access-chip-blocked") ||
+        `<span class="access-empty">${boTr("bo.noBlocked", "Aucun module bloqué")}</span>`
     ];
   });
 
   dom.classAccessTable.innerHTML = buildTable(
-    ["Classe", "Date de démarrage", "Sous-acquis debloques", "Modules autorisés", "Modules bloqués"],
+    [
+      boTr("bo.classLabel", "Classe"),
+      boTr("bo.startDate", "Date de démarrage"),
+      boTr("bo.subAcquisUnlocked", "Sous-acquis débloqués"),
+      boTr("bo.grantedModules", "Modules autorisés"),
+      boTr("bo.blockedModules", "Modules bloqués")
+    ],
     rows
   );
 }
