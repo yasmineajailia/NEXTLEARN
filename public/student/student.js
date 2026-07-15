@@ -1813,6 +1813,8 @@ const FACTOR_LABEL_EN = [
   [/^Connexions rares$/, "Infrequent logins"],
   [/^Bon rythme \(([\d.,]+)\/sem\)$/, (m) => `Good pace (${m[1]}/week)`],
   [/^Rythme lent \(([\d.,]+)\/sem\)$/, (m) => `Slow pace (${m[1]}/week)`],
+  [/^Bonne concentration \((\d+)%\)$/, (m) => `Good focus (${m[1]}%)`],
+  [/^Concentration faible \((\d+)%\)$/, (m) => `Low focus (${m[1]}%)`],
   [/^Progression saine, aucun signal de risque$/, "Healthy progress, no risk signals"]
 ];
 function trFactor(label) {

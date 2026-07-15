@@ -11,13 +11,16 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { PREDICTION_FEATURE_KEYS } from "../src/services/prediction/features";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { RandomForestClassifier, RandomForestRegression } = require("ml-random-forest");
 
 const CSV_PATH = path.join(process.cwd(), "data", "student_analytics.csv");
 const RF_OPTS = { nEstimators: 100, maxDepth: 10, minNumSamples: 3, seed: 42 };
-const FEATURES = ["delayWeeks", "completionPace", "averageScore", "loginFrequency", "gapDepth", "recencyRatio", "weakSkillRatio"];
+// Imported, never re-typed. This list was hardcoded to 7 features, so when an 8th
+// and 9th were added it silently kept evaluating a model that had never seen them.
+const FEATURES: readonly string[] = PREDICTION_FEATURE_KEYS;
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;

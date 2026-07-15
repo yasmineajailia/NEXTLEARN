@@ -1,0 +1,11 @@
+[
+  "delayWeeks",
+  "completionPace",
+  "averageScore",
+  "loginFrequency",
+  "gapDepth",
+  "recencyRatio",
+  "weakSkillRatio",
+  "avgFocusScore",
+  "hasAttentionData"
+]

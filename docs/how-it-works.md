@@ -36,8 +36,8 @@ pretrained ones we merely call — and in a defence you will be asked which is w
 
 | Model | What it does | Ours or third-party? | Where |
 |---|---|---|---|
-| **Random Forest classifier** | Probability the student catches up (the inverse of risk) | **Trained by us** (`npm run train:model`, seed 42), 7 behavioural features | `data/rf-model.json`, loaded in-process at boot |
-| **Random Forest regressor** | Predicted exam grade out of 20 | **Trained by us** (`npm run train:grade-model`), same 7 features | `data/rf-grade-model.json`, in-process |
+| **Random Forest classifier** | Probability the student catches up (the inverse of risk) | **Trained by us** (`npm run train:model`, seed 42), 9 features: 7 behavioural + attention (score + missingness indicator) | `data/rf-model.json`, loaded in-process at boot |
+| **Random Forest regressor** | Predicted exam grade out of 20 | **Trained by us** (`npm run train:grade-model`), same 9 features | `data/rf-grade-model.json`, in-process |
 | **SHAP TreeExplainer** | Explains the two forests above | Third-party library (`shap`), *not* a model — an explainer over our exact trees | `ml/shap_service.py` (FastAPI), with an exact-Shapley JS fallback |
 | **K-means** | Groups a class into learner profiles | **Ours**, hand-written; fitted on demand, nothing persisted | `src/services/clustering/kmeans.ts` |
 | **MediaPipe FaceMesh** | 478 facial landmarks for the focus score | **Third-party, pretrained** — we never train or fine-tune it | Loaded from CDN, runs **in the browser only** |
@@ -441,11 +441,27 @@ entire tracker and it sends the numeric object above. The 16×16 canvas exists o
 average brightness locally. The consent gate (stored under `nextlearn_attention_consent`) is
 mandatory. If you change this file, that invariant is the thing to protect.
 
-**The focus score is not an input to any model.** It is reported to the student and the
-teacher, and that is all — the risk classifier's seven features and the clustering vector's
-six features contain no attention data whatsoever. Attention is a measurement, not a
-prediction feature. Feeding it into the risk model is an obvious next step, but today it is
-not there, and any claim to the contrary would be false.
+**The focus score IS now an input to the risk and grade models — with caveats you must be
+able to state.** It enters as a *pair* of features: `avgFocusScore` (0–100) and
+`hasAttentionData` (0/1). Two things make this honest rather than decorative:
+
+1. **Missing data is never imputed.** Attention is consent-gated, so most students have none
+   (2 of 35 at the time of writing). A student with no sessions gets `avgFocusScore = 0` AND
+   `hasAttentionData = 0`, and the forest learns from the indicator to ignore the score in
+   that case. The synthetic label is built so that having no attention data is *exactly*
+   neutral — never consenting to the webcam can neither help nor hurt a prediction. That
+   neutrality is a design promise; preserve it if you touch the weights.
+2. **The relationship is asserted, not learned.** There are no real end-of-term outcomes, so
+   the link between focus and catching up cannot be discovered from data. It is written down
+   in `scripts/lib/syntheticLabel.ts` (focus = 15% of the latent success score, below quiz
+   average at 24% and recency at 20%), and the forest reproduces what we wrote. Any accuracy
+   figure therefore measures "can the model recover the relationship we asserted", not "does
+   focus predict real exams". Say this plainly if asked.
+
+Run `npx tsx scripts/ablate-attention.ts` for the honest before/after: it retrains with and
+without the two attention columns on identical splits.
+
+The clustering vector (six features) still contains no attention data.
 
 ---
 

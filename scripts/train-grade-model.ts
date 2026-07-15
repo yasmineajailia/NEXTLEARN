@@ -11,6 +11,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { PREDICTION_FEATURE_KEYS } from "../src/services/prediction/features";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { RandomForestRegression } = require("ml-random-forest");
@@ -22,15 +23,10 @@ function parseCSV(raw: string): { X: number[][]; y: number[] } {
   const lines = raw.trim().split(/\r?\n/);
   const header = lines[0].split(",").map((h) => h.trim());
 
-  const featureCols = [
-    "delayWeeks",
-    "completionPace",
-    "averageScore",
-    "loginFrequency",
-    "gapDepth",
-    "recencyRatio",
-    "weakSkillRatio"
-  ];
+  // Imported, never re-typed. Hardcoding this list is how the models ended up
+  // trained on 7 features while the server fed them 9: the extra columns were
+  // silently ignored and attention had no effect on any prediction.
+  const featureCols: readonly string[] = PREDICTION_FEATURE_KEYS;
   const labelCol = "examGrade";
 
   const featureIdxs = featureCols.map((col) => {
@@ -87,6 +83,9 @@ async function main() {
 
   await fs.writeFile(MODEL_OUT, JSON.stringify(reg.toJSON()), "utf8");
   console.log(`[train-grade] ✅ Model saved to: ${MODEL_OUT}`);
+
+  const featuresOut = path.join(process.cwd(), "data", "model-features.json");
+  await fs.writeFile(featuresOut, JSON.stringify([...PREDICTION_FEATURE_KEYS], null, 2), "utf8");
 }
 
 main().catch((err) => {

@@ -23,6 +23,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  PREDICTION_FEATURE_KEYS,
   PredictionFeatures,
   predictionFeaturesToVector
 } from "./prediction/features";
@@ -40,6 +41,46 @@ type RFClassifier = {
 
 const MODEL_PATH = path.join(process.cwd(), "data", "rf-model.json");
 const GRADE_MODEL_PATH = path.join(process.cwd(), "data", "rf-grade-model.json");
+const MODEL_FEATURES_PATH = path.join(process.cwd(), "data", "model-features.json");
+
+/**
+ * Guards against the failure that let attention be added to the feature vector
+ * while the forests were still trained on the old 7 columns: the server fed a
+ * 9-long row, the trees only ever split on indices 0-6, nothing threw, and every
+ * prediction silently ignored the new features.
+ *
+ * The training scripts write the feature list they used next to the model; if it
+ * no longer matches PREDICTION_FEATURE_KEYS, the model is stale and must be
+ * retrained. We shout rather than serve confidently wrong numbers.
+ */
+function assertModelFeaturesMatch(): void {
+  if (!fs.existsSync(MODEL_FEATURES_PATH)) {
+    console.warn(
+      "[ML] ⚠️  data/model-features.json is missing — cannot verify the model was " +
+      "trained on the current feature list. Run `npm run train:model` to regenerate it."
+    );
+    return;
+  }
+  try {
+    const trainedOn: string[] = JSON.parse(fs.readFileSync(MODEL_FEATURES_PATH, "utf8"));
+    const expected = [...PREDICTION_FEATURE_KEYS];
+    const matches =
+      Array.isArray(trainedOn) &&
+      trainedOn.length === expected.length &&
+      trainedOn.every((key, i) => key === expected[i]);
+    if (!matches) {
+      console.error(
+        "[ML] ❌ FEATURE MISMATCH — the deployed model is stale.\n" +
+        `[ML]    trained on : ${JSON.stringify(trainedOn)}\n` +
+        `[ML]    code expects: ${JSON.stringify(expected)}\n` +
+        "[ML]    Predictions will silently ignore the new features. Run " +
+        "`npm run generate:training-data && npm run train:model && npm run train:grade-model`."
+      );
+    }
+  } catch (error) {
+    console.warn("[ML] ⚠️  Could not read data/model-features.json:", error);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Service singleton
@@ -52,6 +93,8 @@ class MLPredictorServiceImpl {
   private gradeReady = false;
 
   async initialize(): Promise<void> {
+    assertModelFeaturesMatch();
+
     if (!fs.existsSync(MODEL_PATH)) {
       console.warn(
         "[ML] ⚠️  No pre-trained model found at data/rf-model.json.\n" +

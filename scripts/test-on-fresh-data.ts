@@ -12,6 +12,16 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  PREDICTION_FEATURE_KEYS,
+  type PredictionFeatureKey
+} from "../src/services/prediction/features";
+import {
+  successPropensity,
+  labelFromPropensity,
+  gradeFromPropensity,
+  drawSyntheticFeatures
+} from "./lib/syntheticLabel";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { RandomForestClassifier, RandomForestRegression } = require("ml-random-forest");
@@ -19,15 +29,11 @@ const { RandomForestClassifier, RandomForestRegression } = require("ml-random-fo
 const N = 3000;
 const SEED = 20260708; // different from the training seed (42)
 
-type Features = {
-  delayWeeks: number; completionPace: number; averageScore: number;
-  loginFrequency: number; gapDepth: number; recencyRatio: number; weakSkillRatio: number;
-};
-const ORDER: (keyof Features)[] = ["delayWeeks", "completionPace", "averageScore", "loginFrequency", "gapDepth", "recencyRatio", "weakSkillRatio"];
-const RANGES: Record<keyof Features, [number, number]> = {
-  delayWeeks: [0, 12], completionPace: [0, 5], averageScore: [0, 100], loginFrequency: [0, 14],
-  gapDepth: [0, 1], recencyRatio: [0, 1], weakSkillRatio: [0, 1]
-};
+// Feature list and latent label model are IMPORTED, never re-typed. They used to be
+// copied here with a comment claiming they were "identical" to the generator's; the
+// copies drifted the moment attention was added, and this test silently began
+// scoring the models against a target they were never trained on.
+const ORDER: readonly PredictionFeatureKey[] = PREDICTION_FEATURE_KEYS;
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -40,23 +46,6 @@ function mulberry32(seed: number): () => number {
 }
 const rr = (rng: () => number, min: number, max: number) => min + rng() * (max - min);
 
-// ── Latent model — identical to scripts/generate-training-data.ts ──
-function successPropensity(f: Features): number {
-  const n = {
-    delay: 1 - f.delayWeeks / 12, pace: f.completionPace / 5, score: f.averageScore / 100,
-    login: f.loginFrequency / 14, coverage: 1 - f.gapDepth, recency: f.recencyRatio, strength: 1 - f.weakSkillRatio
-  };
-  const raw = 0.24 * n.score + 0.2 * n.recency + 0.16 * n.pace + 0.14 * n.delay + 0.12 * n.strength + 0.08 * n.coverage + 0.06 * n.login;
-  return Math.max(0, Math.min(1, raw));
-}
-function labelFrom(p: number, rng: () => number): number {
-  return p + (rng() - 0.5) * 0.35 >= 0.5 ? 1 : 0;
-}
-function gradeFrom(p: number, f: Features, rng: () => number): number {
-  const base = 0.7 * p + 0.3 * (f.averageScore / 100);
-  const g = 1 + base * 18 + (rng() - 0.5) * 3.5;
-  return Math.max(0, Math.min(20, Math.round(g * 4) / 4));
-}
 
 function classMetrics(yTrue: number[], yPred: number[]) {
   let tp = 0, tn = 0, fp = 0, fn = 0;
@@ -90,12 +79,11 @@ async function main() {
   const rng = mulberry32(SEED);
   const X: number[][] = [], yLabel: number[] = [], yGrade: number[] = [];
   for (let i = 0; i < N; i++) {
-    const f = {} as Features;
-    for (const k of ORDER) f[k] = rr(rng, RANGES[k][0], RANGES[k][1]);
+    const f = drawSyntheticFeatures(rng);
     const p = successPropensity(f);
     X.push(ORDER.map((k) => f[k]));
-    yLabel.push(labelFrom(p, rng));
-    yGrade.push(gradeFrom(p, f, rng));
+    yLabel.push(labelFromPropensity(p, rng));
+    yGrade.push(gradeFromPropensity(p, f, rng));
   }
   const pos = yLabel.filter((v) => v === 1).length;
   console.log(`[fresh] Generated ${N} NEW rows (seed ${SEED}, unseen by the models). caughtUp=1: ${pos} (${((pos / N) * 100).toFixed(1)}%)\n`);

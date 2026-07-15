@@ -17,7 +17,14 @@ export const PREDICTION_FEATURE_KEYS = [
   "loginFrequency",
   "gapDepth",
   "recencyRatio",
-  "weakSkillRatio"
+  "weakSkillRatio",
+  // Attention signal. `avgFocusScore` is only meaningful when `hasAttentionData`
+  // is 1: attention tracking is consent-gated, so most students have none. The
+  // indicator lets the forest learn to ignore the score when it is absent,
+  // instead of us imputing a fake "neutral" focus for students who never opted
+  // in — absence of data must never read as evidence of good (or bad) focus.
+  "avgFocusScore",
+  "hasAttentionData"
 ] as const;
 
 export type PredictionFeatureKey = (typeof PREDICTION_FEATURE_KEYS)[number];
@@ -32,7 +39,9 @@ export const PREDICTION_FEATURE_RANGES: Record<PredictionFeatureKey, [number, nu
   loginFrequency: [0, 14],
   gapDepth: [0, 1],
   recencyRatio: [0, 1],
-  weakSkillRatio: [0, 1]
+  weakSkillRatio: [0, 1],
+  avgFocusScore: [0, 100],
+  hasAttentionData: [0, 1]
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -61,6 +70,12 @@ export type PredictionFeatureInput = {
   lastLoginAt: number | null;
   /** Class schedule anchor (ms). When present, delay is measured against the course timeline. */
   scheduleStartAt: number | null;
+  /**
+   * Per-session average focus scores (0-100) from attention tracking. Optional:
+   * empty/absent means the student never consented or never tracked a session,
+   * which is recorded as hasAttentionData = 0 rather than imputed.
+   */
+  focusScores?: number[];
   now: number;
 };
 
@@ -116,6 +131,17 @@ export function computePredictionFeatures(input: PredictionFeatureInput): Predic
       ? clamp(validScores.filter((s) => s < WEAK_SCORE_THRESHOLD).length / validScores.length, 0, 1)
       : 0;
 
+  // Attention: reported only when it actually exists. When the student has no
+  // tracked session, the score is left at 0 AND the indicator is 0 — the pair is
+  // what the model reads, so a missing signal cannot masquerade as a real one.
+  const focusScores = (Array.isArray(input.focusScores) ? input.focusScores : [])
+    .map((s) => Number(s))
+    .filter((s) => Number.isFinite(s) && s >= 0 && s <= 100);
+  const hasAttentionData = focusScores.length > 0 ? 1 : 0;
+  const avgFocusScore = hasAttentionData
+    ? clamp(focusScores.reduce((a, b) => a + b, 0) / focusScores.length, 0, 100)
+    : 0;
+
   return {
     delayWeeks,
     completionPace,
@@ -123,7 +149,9 @@ export function computePredictionFeatures(input: PredictionFeatureInput): Predic
     loginFrequency,
     gapDepth,
     recencyRatio,
-    weakSkillRatio
+    weakSkillRatio,
+    avgFocusScore,
+    hasAttentionData
   };
 }
 
@@ -156,21 +184,33 @@ export type RiskFactor = {
  * to this baseline: Σ φ_i = predict(x) − predict(background), where
  * predict(background) ≈ the population's average catch-up probability (~0.50).
  * Regenerate these means if the training data changes materially.
+ *
+ * ONE DELIBERATE EXCEPTION — `avgFocusScore`.
+ * Its raw column mean is ~18.6, but that number is meaningless: it averages the
+ * real focus scores of tracked students together with the structural 0 we store
+ * for the ~64% who have no attention data at all. Using it would make a tracked
+ * student with a poor 25% focus look ABOVE average, so weak focus could never
+ * surface as a risk driver. The reference here is therefore the mean among
+ * students who actually have the signal (~51) — i.e. "compared with a typical
+ * tracked student", which is the only comparison that means anything. Do not
+ * "correct" this back to the raw column mean.
  */
 export const PREDICTION_FEATURE_BACKGROUND: PredictionFeatures = {
-  delayWeeks: 6.0567,
-  completionPace: 2.4274,
-  averageScore: 50.7072,
-  loginFrequency: 6.9312,
-  gapDepth: 0.4908,
-  recencyRatio: 0.4919,
-  weakSkillRatio: 0.4996
+  delayWeeks: 6.1123,
+  completionPace: 2.4410,
+  averageScore: 50.6629,
+  loginFrequency: 6.8370,
+  gapDepth: 0.5052,
+  recencyRatio: 0.4972,
+  weakSkillRatio: 0.4984,
+  avgFocusScore: 51.1679,
+  hasAttentionData: 1
 };
 
 /**
- * Exact SHAP (Shapley) values for one prediction. With only 7 features we can
- * enumerate all 2^7 feature coalitions, so these are EXACT Shapley values (no
- * sampling/approximation) under an interventional background reference.
+ * Exact SHAP (Shapley) values for one prediction. With 9 features we can still
+ * enumerate all 2^9 = 512 feature coalitions, so these are EXACT Shapley values
+ * (no sampling/approximation) under an interventional background reference.
  *
  * For a coalition S, "absent" features take their {@link PREDICTION_FEATURE_BACKGROUND}
  * value and "present" features take the student's actual value; f(S) is the model's
@@ -262,6 +302,14 @@ function shapFactorLabel(key: PredictionFeatureKey, f: PredictionFeatures, posit
       return positive ? "Connexions fréquentes" : "Connexions rares";
     case "completionPace":
       return positive ? `Bon rythme (${f.completionPace.toFixed(1)}/sem)` : `Rythme lent (${f.completionPace.toFixed(1)}/sem)`;
+    case "avgFocusScore":
+      return positive
+        ? `Bonne concentration (${Math.round(f.avgFocusScore)}%)`
+        : `Concentration faible (${Math.round(f.avgFocusScore)}%)`;
+    case "hasAttentionData":
+      // Never shown to a student (see DISPLAY_EXCLUDED_FEATURES) — kept for the
+      // raw shapValues payload only.
+      return positive ? "Suivi d'attention actif" : "Pas de données d'attention";
     default:
       return String(key);
   }
@@ -280,13 +328,24 @@ function shapFactorLabel(key: PredictionFeatureKey, f: PredictionFeatures, posit
  * @param predict  the model's prediction fn.
  * @returns risk factors ordered most-impactful first, each carrying its signed `impact`.
  */
+/**
+ * Features the model uses but that we never show as a "reason" to a human.
+ * `hasAttentionData` is a technical missingness flag: telling a student that
+ * "not having attention data" drives their risk is meaningless and unactionable,
+ * and by construction its absence is neutral in the label anyway. It stays in the
+ * model and in the raw shapValues payload; it just never becomes a bullet point.
+ */
+const DISPLAY_EXCLUDED_FEATURES: ReadonlySet<string> = new Set(["hasAttentionData"]);
+
 export function explainRiskFactorsFromShap(
   features: PredictionFeatures,
   predict: (f: PredictionFeatures) => number,
   background: PredictionFeatures = PREDICTION_FEATURE_BACKGROUND
 ): RiskFactor[] {
   const shap = computeShapValues(features, predict, background);
-  const entries = PREDICTION_FEATURE_KEYS.map((key) => ({ key, value: shap[key] }));
+  const entries = PREDICTION_FEATURE_KEYS.filter((key) => !DISPLAY_EXCLUDED_FEATURES.has(key)).map(
+    (key) => ({ key, value: shap[key] })
+  );
 
   // Only surface contributions above a small threshold to avoid noise.
   const drivers = entries.filter((e) => e.value <= -0.02).sort((a, b) => a.value - b.value);
@@ -321,7 +380,9 @@ export function explainGradeFactorsFromShap(
   background: PredictionFeatures = PREDICTION_FEATURE_BACKGROUND
 ): { factors: RiskFactor[]; shapValues: Record<PredictionFeatureKey, number> } {
   const shapValues = computeShapValues(features, predictGrade, background);
-  const entries = PREDICTION_FEATURE_KEYS.map((key) => ({ key, value: shapValues[key] }));
+  const entries = PREDICTION_FEATURE_KEYS.filter((key) => !DISPLAY_EXCLUDED_FEATURES.has(key)).map(
+    (key) => ({ key, value: shapValues[key] })
+  );
 
   const drivers = entries.filter((e) => e.value <= -0.5).sort((a, b) => a.value - b.value);
   if (drivers.length > 0) {
@@ -408,6 +469,14 @@ export function explainRiskFactors(features: PredictionFeatures): RiskFactor[] {
       weight: 0.4
     });
   }
+  // Only speak about focus when focus was actually measured.
+  if (features.hasAttentionData >= 0.5 && features.avgFocusScore < 60) {
+    factors.push({
+      label: `Concentration faible (${Math.round(features.avgFocusScore)}%)`,
+      level: features.avgFocusScore < 40 ? "high" : "medium",
+      weight: (60 - features.avgFocusScore) / 60
+    });
+  }
 
   if (factors.length === 0) {
     return [{ label: "Progression saine, aucun signal de risque", level: "good" }];
@@ -428,6 +497,7 @@ export function extractMLFeatures(params: {
     completedLessonKeys?: unknown[];
     quizResults?: Array<{ score?: unknown; submittedAt?: unknown }>;
     selfEvaluationResults?: Array<{ score?: unknown }>;
+    attentionSessions?: Array<{ avgFocusScore?: unknown; moduleId?: unknown }>;
   };
   profile?: {
     loginCount?: number;
@@ -460,6 +530,16 @@ export function extractMLFeatures(params: {
     })
     .filter((t) => Number.isFinite(t));
 
+  // Attention sessions, scoped to the module when the prediction is. A student
+  // with sessions elsewhere but none on THIS module correctly reads as "no data".
+  const allSessions = Array.isArray(progress?.attentionSessions) ? progress.attentionSessions : [];
+  const sessions = moduleId
+    ? allSessions.filter((sess) => String((sess as any)?.moduleId || "") === moduleId)
+    : allSessions;
+  const focusScores = sessions
+    .map((sess) => Number((sess as any)?.avgFocusScore))
+    .filter((v) => Number.isFinite(v));
+
   const createdAt = profile?.createdAt ? new Date(profile.createdAt).getTime() : Date.now();
   const lastLoginAt = profile?.lastLoginDate ? new Date(profile.lastLoginDate).getTime() : null;
   const scheduleStartAt = scheduleStartDate ? new Date(scheduleStartDate).getTime() : null;
@@ -473,6 +553,7 @@ export function extractMLFeatures(params: {
     createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
     lastLoginAt: lastLoginAt && Number.isFinite(lastLoginAt) ? lastLoginAt : null,
     scheduleStartAt: scheduleStartAt && Number.isFinite(scheduleStartAt) ? scheduleStartAt : null,
+    focusScores,
     now: Date.now()
   });
 }

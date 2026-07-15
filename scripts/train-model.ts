@@ -10,6 +10,7 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { PREDICTION_FEATURE_KEYS } from "../src/services/prediction/features";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { RandomForestClassifier } = require("ml-random-forest");
@@ -26,15 +27,10 @@ function parseCSV(raw: string): { X: number[][]; y: number[] } {
 
   console.log(`[train] Columns detected: ${header.join(", ")}`);
 
-  const featureCols = [
-    "delayWeeks",
-    "completionPace",
-    "averageScore",
-    "loginFrequency",
-    "gapDepth",
-    "recencyRatio",
-    "weakSkillRatio"
-  ];
+  // Imported, never re-typed. Hardcoding this list is how the models ended up
+  // trained on 7 features while the server fed them 9: the extra columns were
+  // silently ignored and attention had no effect on any prediction.
+  const featureCols: readonly string[] = PREDICTION_FEATURE_KEYS;
   const labelCol    = "caughtUp";
 
   const featureIdxs = featureCols.map((col) => {
@@ -104,6 +100,13 @@ async function main() {
   const modelJson = clf.toJSON();
   await fs.writeFile(MODEL_OUT, JSON.stringify(modelJson), "utf8");
   console.log(`[train] ✅ Model saved to: ${MODEL_OUT}`);
+
+  // Record WHICH features this forest was trained on. MLPredictorService checks
+  // this at boot and refuses to trust a model whose feature list has drifted from
+  // PREDICTION_FEATURE_KEYS — a silent mismatch is how attention was ignored.
+  const featuresOut = path.join(process.cwd(), "data", "model-features.json");
+  await fs.writeFile(featuresOut, JSON.stringify([...PREDICTION_FEATURE_KEYS], null, 2), "utf8");
+  console.log(`[train] ✅ Feature list saved to: ${featuresOut}`);
 }
 
 main().catch((err) => {

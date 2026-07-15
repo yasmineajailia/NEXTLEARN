@@ -42,7 +42,17 @@ FEATURES = [
     "gapDepth",
     "recencyRatio",
     "weakSkillRatio",
+    "avgFocusScore",
+    "hasAttentionData",
 ]
+
+# Features the model uses but that are never shown to a human as a "reason".
+# hasAttentionData is a missingness flag: "you have no attention data" is not an
+# actionable explanation, and its absence is neutral in the label by construction.
+# It stays in the model and in the raw shapValues payload — it just never becomes
+# a bullet point. Must mirror DISPLAY_EXCLUDED_FEATURES in features.ts.
+DISPLAY_EXCLUDED = {"hasAttentionData"}
+DISPLAY_FEATURES = [f for f in FEATURES if f not in DISPLAY_EXCLUDED]
 
 # ---------------------------------------------------------------------------
 # Load the EXACT production ml-random-forest model (reconstructed as sklearn so
@@ -108,11 +118,17 @@ def shap_factor_label(key: str, f: dict, positive: bool) -> str:
         return "Connexions fréquentes" if positive else "Connexions rares"
     if key == "completionPace":
         return f"Bon rythme ({f['completionPace']:.1f}/sem)" if positive else f"Rythme lent ({f['completionPace']:.1f}/sem)"
+    if key == "avgFocusScore":
+        s = round(f["avgFocusScore"])
+        return f"Bonne concentration ({s}%)" if positive else f"Concentration faible ({s}%)"
+    if key == "hasAttentionData":
+        # Never surfaced (see DISPLAY_EXCLUDED); kept for completeness.
+        return "Suivi d'attention actif" if positive else "Pas de données d'attention"
     return key
 
 
 def build_risk_factors(feat: dict, shap_by_feature: dict) -> list:
-    entries = [{"key": k, "value": float(shap_by_feature[k])} for k in FEATURES]
+    entries = [{"key": k, "value": float(shap_by_feature[k])} for k in DISPLAY_FEATURES]
     drivers = sorted([e for e in entries if e["value"] <= -0.02], key=lambda e: e["value"])
     if drivers:
         out = []
@@ -138,7 +154,7 @@ def build_risk_factors(feat: dict, shap_by_feature: dict) -> list:
 
 def build_grade_factors(feat: dict, shap_by_feature: dict) -> list:
     """Top grade drivers, thresholds in grade points (/20)."""
-    entries = [{"key": k, "value": float(shap_by_feature[k])} for k in FEATURES]
+    entries = [{"key": k, "value": float(shap_by_feature[k])} for k in DISPLAY_FEATURES]
     drivers = sorted([e for e in entries if e["value"] <= -0.5], key=lambda e: e["value"])
     if drivers:
         return [{

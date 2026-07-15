@@ -27,7 +27,18 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.tree._tree import Tree
 
-N_FEATURES = 7
+# Read the feature count from the list the training scripts wrote next to the
+# model, so this never has to be kept in sync by hand (it silently wasn't, once).
+def _load_n_features(default: int = 9) -> int:
+    meta = os.path.join(os.getcwd(), "data", "model-features.json")
+    try:
+        with open(meta, encoding="utf-8") as fh:
+            return len(json.load(fh))
+    except Exception:
+        return default
+
+
+N_FEATURES = _load_n_features()
 N_CLASSES = 2
 
 # Grab this sklearn build's exact node struct dtype from a throwaway fitted tree,

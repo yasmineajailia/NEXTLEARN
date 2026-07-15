@@ -3729,6 +3729,10 @@ webRouter.post("/api/ml/predict", async (req, res) => {
       // Newer features default to neutral values so older 5-feature callers still work.
       recencyRatio:   Number.isFinite(Number(body.recencyRatio)) ? Number(body.recencyRatio) : 0.5,
       weakSkillRatio: Number.isFinite(Number(body.weakSkillRatio)) ? Number(body.weakSkillRatio) : 0,
+      // Attention: a caller that says nothing about focus is a student with no
+      // attention data, not a student with average focus. Never impute a score.
+      avgFocusScore:  Number.isFinite(Number(body.avgFocusScore)) ? Number(body.avgFocusScore) : 0,
+      hasAttentionData: Number.isFinite(Number(body.avgFocusScore)) ? 1 : 0,
     };
 
     for (const key of ["delayWeeks", "completionPace", "averageScore", "loginFrequency", "gapDepth"] as const) {
@@ -4153,7 +4157,14 @@ webRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
       predictionScheduleStart = (classRoom as any)?.scheduleStartDate || null;
     }
     const scopedPrediction = await buildModuleScopedPrediction({
-      progress: { completedLessonKeys, quizResults, selfEvaluationResults: selfEvalResults as any },
+      // attentionSessions must be carried through: without it the dashboard's
+      // prediction would read every student as having no attention data.
+      progress: {
+        completedLessonKeys,
+        quizResults,
+        selfEvaluationResults: selfEvalResults as any,
+        attentionSessions: Array.isArray(progress.attentionSessions) ? progress.attentionSessions : []
+      },
       profile: profile as any,
       scheduleStartDate: predictionScheduleStart,
       modules: listPredictionModules(modulesRaw as any[]),
@@ -4164,7 +4175,14 @@ webRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
     // Global (all-modules) activity metrics for the hero badges / insights —
     // login frequency and pace are program-wide, unlike the scoped prediction.
     const globalFeatures = extractMLFeatures({
-      progress: { completedLessonKeys, quizResults, selfEvaluationResults: selfEvalResults as any },
+      // attentionSessions must be carried through: without it the dashboard's
+      // prediction would read every student as having no attention data.
+      progress: {
+        completedLessonKeys,
+        quizResults,
+        selfEvaluationResults: selfEvalResults as any,
+        attentionSessions: Array.isArray(progress.attentionSessions) ? progress.attentionSessions : []
+      },
       profile: profile as any,
       totalSubAcquis: Math.max(totalSubAcquis, 1),
       scheduleStartDate: predictionScheduleStart

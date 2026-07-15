@@ -35,6 +35,14 @@ import {
   computePredictionFeatures,
   type PredictionFeatures
 } from "../src/services/prediction/features";
+// The latent label model lives in ONE place, shared with test-on-fresh-data.ts.
+// It used to be copy-pasted into both and the copies drifted — see the file header.
+import {
+  successPropensity,
+  labelFromPropensity,
+  gradeFromPropensity,
+  drawSyntheticFeatures
+} from "./lib/syntheticLabel";
 
 const OUT_PATH = path.join(process.cwd(), "data", "student_analytics.csv");
 const SYNTHETIC_COUNT = 1200;
@@ -52,73 +60,10 @@ function makeRng(seed: number): () => number {
   };
 }
 
-function randRange(rng: () => number, min: number, max: number): number {
-  return min + rng() * (max - min);
-}
-
-/**
- * Latent success model: combines the features into a single "propensity to
- * catch up" score in roughly [0, 1], then labels 1 if (score + noise) crosses
- * a threshold. The signs encode the intended relationships:
- *   - low delay, high pace, high score, frequent logins, low gap,
- *     recent activity, few weak skills  ->  likely catches up.
- */
-function successPropensity(f: PredictionFeatures): number {
-  const norm = {
-    delay: 1 - f.delayWeeks / 12, // 1 = on time
-    pace: f.completionPace / 5,
-    score: f.averageScore / 100,
-    login: f.loginFrequency / 14,
-    coverage: 1 - f.gapDepth, // 1 = fully covered
-    recency: f.recencyRatio,
-    strength: 1 - f.weakSkillRatio // 1 = no weak skills
-  };
-
-  // Weighted sum (weights sum to 1). Score & recency matter most.
-  const raw =
-    0.24 * norm.score +
-    0.2 * norm.recency +
-    0.16 * norm.pace +
-    0.14 * norm.delay +
-    0.12 * norm.strength +
-    0.08 * norm.coverage +
-    0.06 * norm.login;
-
-  return Math.max(0, Math.min(1, raw));
-}
-
-function labelFromPropensity(propensity: number, rng: () => number): number {
-  // Logistic-ish threshold at 0.5 with realistic noise so classes overlap
-  // (a model that perfectly separates synthetic data would just memorise it).
-  const noise = (rng() - 0.5) * 0.35;
-  return propensity + noise >= 0.5 ? 1 : 0;
-}
-
-/**
- * Exam-grade label (/20) from the same latent model, so the regression target
- * is consistent with the classification label. The grade leans on the overall
- * propensity but keeps a direct link to quiz performance (averageScore), plus
- * noise so the mapping isn't a deterministic curve the forest can memorise.
- */
-function gradeFromPropensity(propensity: number, f: PredictionFeatures, rng: () => number): number {
-  const base = 0.7 * propensity + 0.3 * (f.averageScore / 100);
-  const noise = (rng() - 0.5) * 3.5; // ±1.75 points
-  const grade = 1 + base * 18 + noise;
-  return Math.max(0, Math.min(20, Math.round(grade * 4) / 4));
-}
-
 type LabeledRow = { features: PredictionFeatures; label: number; grade: number };
 
 function generateSyntheticRow(rng: () => number): LabeledRow {
-  const features: PredictionFeatures = {
-    delayWeeks: randRange(rng, 0, 12),
-    completionPace: randRange(rng, 0, 5),
-    averageScore: randRange(rng, 0, 100),
-    loginFrequency: randRange(rng, 0, 14),
-    gapDepth: randRange(rng, 0, 1),
-    recencyRatio: randRange(rng, 0, 1),
-    weakSkillRatio: randRange(rng, 0, 1)
-  };
+  const features = drawSyntheticFeatures(rng);
   const propensity = successPropensity(features);
   return {
     features,
@@ -174,6 +119,12 @@ async function collectRealStudentRows(): Promise<LabeledRow[]> {
       const quizResults = Array.isArray(progress.quizResults) ? progress.quizResults : [];
       const scheduleStart = scheduleByClassId.get(String(profile.classId || "")) || null;
 
+      // Real attention sessions, when the student consented and tracked any.
+      const attentionSessions = Array.isArray(progress.attentionSessions) ? progress.attentionSessions : [];
+      const focusScores = attentionSessions
+        .map((sess: any) => Number(sess?.avgFocusScore))
+        .filter((v: number) => Number.isFinite(v));
+
       const features = computePredictionFeatures({
         completedCount: Array.isArray(progress.completedLessonKeys) ? progress.completedLessonKeys.length : 0,
         totalSubAcquis,
@@ -185,6 +136,7 @@ async function collectRealStudentRows(): Promise<LabeledRow[]> {
         createdAt: profile.createdAt ? new Date(profile.createdAt).getTime() : now,
         lastLoginAt: profile.lastLoginDate ? new Date(profile.lastLoginDate).getTime() : null,
         scheduleStartAt: scheduleStart ? new Date(scheduleStart).getTime() : null,
+        focusScores,
         now
       });
 
