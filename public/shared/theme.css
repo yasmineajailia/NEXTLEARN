@@ -187,6 +187,64 @@
 
 /* Inline code-block already dark — leave. */
 
+/* ---------- Lesson page (sous-acquis.html) ---------- */
+/* Cards that keep a hardcoded white/light background otherwise show their
+   (now-lightened) heading text as light-on-white — unreadable. Darken them. */
+:root[data-theme="dark"] .objectives-card,
+:root[data-theme="dark"] .sub-next-cta {
+  background: #161b22;
+  border-color: #2a313c;
+}
+:root[data-theme="dark"] .objectives-head h2 { color: #f2f5f9; }
+:root[data-theme="dark"] .objectives-text,
+:root[data-theme="dark"] .sub-next-cta { color: #cdd6e0; }
+/* Chatbot panel title was #111827 (dark) on the now-dark panel — invisible. */
+:root[data-theme="dark"] .chatbot-panel-title { color: #f2f5f9; }
+:root[data-theme="dark"] .chatbot-suggestion {
+  background: #1c222b;
+  border-color: #2a313c;
+  color: #cdd6e0;
+}
+/* Video placeholder is a bright light gradient before playback. */
+:root[data-theme="dark"] .video-thumb-card { border-color: #2a313c; }
+:root[data-theme="dark"] .video-thumb-placeholder {
+  background: linear-gradient(135deg, #1b212b, #232b37);
+}
+/* Top-bar pills default to white; keep the active media pill red-filled but
+   darken the inactive ones and the focus toggle so they don't glare. */
+:root[data-theme="dark"] .focus-mode-btn {
+  background: #1c222b;
+  border-color: #2a313c;
+  color: #cdd6e0;
+}
+:root[data-theme="dark"] .video-button:not(.active),
+:root[data-theme="dark"] .support-button:not(.active) {
+  background: #1c222b;
+  border-color: #ff8088;
+  color: #ff8088;
+}
+/* The module label row is a container, not a pill; drop the stray dark bar the
+   generic .meta override gives it. Its children (.meta-item) are light pills —
+   darken those so they read as chips rather than bright spots. */
+:root[data-theme="dark"] #meta.meta { background: transparent; border: 0; }
+:root[data-theme="dark"] .meta-item {
+  background: #1c222b;
+  border-color: #2a313c;
+  color: #cdd6e0;
+}
+
+/* ---------- Attention consent modal (injected white surface) ---------- */
+:root[data-theme="dark"] .att-consent-modal { background: #161b22; color: #cdd6e0; }
+:root[data-theme="dark"] .att-consent-modal h2 { color: #f2f5f9; }
+:root[data-theme="dark"] .att-consent-modal p { color: #aab3bf; }
+:root[data-theme="dark"] .att-btn-secondary { background: #232a33; color: #cdd6e0; }
+
+/* ---------- Mission Apprenant result: strategy card uses a light gradient ---------- */
+:root[data-theme="dark"] .rec-card {
+  background: #191f28;
+  border-color: rgba(255, 95, 109, 0.28);
+}
+
 /* Pinned sidebar footer: display settings + logout / home link.
    Sits at the bottom, divided from the nav, so the toggles read as settings. */
 .sidebar-footer {
