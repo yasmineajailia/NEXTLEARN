@@ -190,6 +190,7 @@
     "chat.float": "Detach the assistant",
     "chat.dock": "Dock the assistant",
     "chat.resize": "Resize the assistant",
+    "vark.dismiss": "Dismiss the recommendation",
     "chat.sugExplain": "Explain this lesson simply",
     "chat.sugExample": "Give a code example",
     "chat.sugKeyPoints": "What are the key points?",

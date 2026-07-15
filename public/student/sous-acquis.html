@@ -408,6 +408,20 @@
       }
       .vark-reco-cta:hover { filter: brightness(1.08); }
       .vark-reco-cta[hidden] { display: none; }
+      .vark-reco-close {
+        flex-shrink: 0;
+        border: none;
+        background: transparent;
+        color: #9aa1b0;
+        font-size: 1.25rem;
+        line-height: 1;
+        width: 26px; height: 26px;
+        border-radius: 999px;
+        cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: color 0.15s, background 0.15s;
+      }
+      .vark-reco-close:hover { color: #374151; background: rgba(0, 0, 0, 0.06); }
       /* Recommended-for-you badge on video / quiz elements */
       .reco-tag {
         display: inline-flex; align-items: center;
@@ -974,6 +988,7 @@
               <p class="vark-reco-text" id="vark-reco-text"></p>
             </div>
             <a class="vark-reco-cta" id="vark-reco-cta" href="#"></a>
+            <button type="button" class="vark-reco-close" id="vark-reco-close" aria-label="Masquer la recommandation" title="Masquer" data-i18n-aria="vark.dismiss" data-i18n-title="vark.dismiss">×</button>
           </div>
 
           <section class="media-stage">
@@ -1159,6 +1174,21 @@
       const varkRecoTitle = document.getElementById("vark-reco-title");
       const varkRecoText  = document.getElementById("vark-reco-text");
       const varkRecoCta   = document.getElementById("vark-reco-cta");
+      const varkRecoClose = document.getElementById("vark-reco-close");
+
+      // The banner can be dismissed. We remember WHICH result was dismissed (by
+      // its completedAt, or "no-profile" for the take-the-game nudge), so redoing
+      // Mission Apprenant produces a new result and brings the banner back.
+      const VARK_DISMISS_KEY = "nextlearn_vark_reco_dismissed";
+      let varkRecoCurrentSig = null;
+      const makeVarkSig = (profile) => (profile && profile.completedAt ? "p:" + profile.completedAt : "no-profile");
+      const isVarkDismissed = (sig) => {
+        try { return localStorage.getItem(VARK_DISMISS_KEY) === sig; } catch { return false; }
+      };
+      varkRecoClose?.addEventListener("click", () => {
+        if (varkReco) varkReco.hidden = true;
+        try { if (varkRecoCurrentSig) localStorage.setItem(VARK_DISMISS_KEY, varkRecoCurrentSig); } catch {}
+      });
 
       /* ── Learning-style (VARK) content recommendation ──
          Maps the student's dominant VARK style (from Mission Apprenant) to the
@@ -1203,6 +1233,10 @@
       function renderVarkRecommendation(avail, files, videoFiles) {
         if (!varkReco) return null;
         const profile = getVarkProfile();
+        // Track the current result so the close button knows what to remember,
+        // and keep the banner hidden if this exact result was already dismissed.
+        varkRecoCurrentSig = makeVarkSig(profile);
+        const dismissed = isVarkDismissed(varkRecoCurrentSig);
 
         // No profile yet → gentle nudge to take the Mission Apprenant game.
         if (!profile) {
@@ -1216,7 +1250,7 @@
           varkRecoCta.href = "/student/mission-apprenant";
           varkRecoCta.onclick = null;
           varkRecoCta.hidden = false;
-          varkReco.hidden = false;
+          varkReco.hidden = dismissed;
           return null;
         }
 
@@ -1243,7 +1277,7 @@
           varkRecoCta.hidden = true;
           varkRecoCta.onclick = null;
         }
-        varkReco.hidden = false;
+        varkReco.hidden = dismissed;
 
         if (recType === "video") addRecoTag(videoLinks.querySelector(".video-button"), style.color);
         else if (recType === "quiz") addRecoTag(quizCta.querySelector(".quiz-cta-title"), style.color);
