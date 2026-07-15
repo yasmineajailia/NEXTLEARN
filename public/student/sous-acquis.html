@@ -2435,14 +2435,12 @@
           // to the course material. These files are not rendered as resource cards
           // below, so without this there was no way to reach them once the video
           // opened — which is exactly what a "visual" profile does automatically.
-          const switchableSupport = files.filter((fp) => {
-            const l = String(fp || "").toLowerCase();
-            return l.endsWith(".pdf") || l.endsWith(".ppt") || l.endsWith(".pptx");
-          });
+          // PDFs only. The .pptx slides duplicate the PDF and the Office viewer
+          // often refuses to render them, so we neither offer them here nor open
+          // them automatically below.
+          const switchableSupport = files.filter(isPdfFile);
           switchableSupport.forEach((fp, i) => {
-            const l = fp.toLowerCase();
-            const isSlide = l.endsWith(".ppt") || l.endsWith(".pptx");
-            const base = isSlide ? tSwitch("lesson.slides", "Diapositives") : tSwitch("lesson.material", "Support");
+            const base = tSwitch("lesson.material", "Support");
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "support-button";
@@ -2473,6 +2471,7 @@
           const recType = renderVarkRecommendation(varkAvail, files, videoFiles);
 
           if (recType === "video" && videoFiles.length) previewCourseFile(videoFiles[0]);
+          else if (pdfState.pdfFiles.length) previewCourseFile(pdfState.pdfFiles[0]);
           else if (files.length > 0)  previewCourseFile(files[0]);
           else if (videoFiles.length) previewCourseFile(videoFiles[0]);
 

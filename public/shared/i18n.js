@@ -177,7 +177,6 @@
     "lesson.nextPage": "Next page",
     "lesson.video": "Video",
     "lesson.material": "Materials",
-    "lesson.slides": "Slides",
     "lesson.noMedia": "No media available",
     "lesson.fullscreen": "PDF fullscreen",
     "lesson.pdfPreview": "Course material preview",
