@@ -19,11 +19,11 @@ import {
   featuresToVector,
   vectorToFeatures,
   averageFeatures,
-  runKMeans,
   type RawStudentData,
   type RawQuizResult,
   type StudentFeatures
 } from "../../services/clustering/kmeans";
+import { runKMeans } from "../../services/clustering/kmeansClient";
 import {
   labelKMeansClusters,
   labelSingleCluster,
@@ -235,7 +235,7 @@ async function computeClusteringForClass(classId: string): Promise<ClusteringRes
   }
 
   const points = normalized.map(featuresToVector);
-  const { assignments, centroids, iterations, converged } = runKMeans(points, 3);
+  const { assignments, centroids, iterations, converged } = await runKMeans(points, 3);
   const centroidFeatures = centroids.map(vectorToFeatures);
   const profiles = labelKMeansClusters(centroidFeatures);
 

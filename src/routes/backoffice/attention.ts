@@ -10,6 +10,7 @@ import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import { User } from "../../models/User";
 import { StudentProfile } from "../../models/StudentProfile";
+import { computeAttentionAnalytics } from "../../services/attention/attentionClient";
 
 export const attentionRouter = express.Router();
 
@@ -28,52 +29,6 @@ type StoredSession = {
   focusTimeline?: Array<{ t: number; score: number }>;
   completedAt?: Date | string;
 };
-
-/**
- * Computes the focus trend by comparing the average of the last 3 sessions
- * with the previous 3: "improving" if delta > 5, "declining" if delta < -5,
- * "stable" otherwise (including when there aren't 6 sessions yet).
- *
- * @param sessions - the student's sessions in chronological order.
- */
-function computeTrend(sessions: StoredSession[]): "improving" | "declining" | "stable" {
-  if (sessions.length < 6) return "stable";
-  const score = (s: StoredSession) => Number(s.avgFocusScore) || 0;
-  const last3 = sessions.slice(-3);
-  const prev3 = sessions.slice(-6, -3);
-  const avg = (list: StoredSession[]) => list.reduce((sum, s) => sum + score(s), 0) / list.length;
-  const delta = avg(last3) - avg(prev3);
-  if (delta > 5) return "improving";
-  if (delta < -5) return "declining";
-  return "stable";
-}
-
-/**
- * Finds the most frequent distraction reason across all of a student's
- * sessions (weighted by event count, not duration).
- *
- * @param sessions - the student's sessions.
- * @returns the reason string, or null if the student has no distraction events.
- */
-function computeTopDistraction(sessions: StoredSession[]): string | null {
-  const counts = new Map<string, number>();
-  for (const session of sessions) {
-    for (const event of Array.isArray(session.distractionEvents) ? session.distractionEvents : []) {
-      const reason = String(event?.reason || "");
-      if (!reason) continue;
-      counts.set(reason, (counts.get(reason) || 0) + 1);
-    }
-  }
-  let top: string | null = null;
-  let max = 0;
-  for (const [reason, count] of counts) {
-    if (count > max) {
-      max = count;
-      top = reason;
-    }
-  }
-  return top;
-}
 
 /**
  * GET /api/backoffice/attention/:classId
@@ -104,15 +59,33 @@ attentionRouter.get("/api/backoffice/attention/:classId", async (req: Request, r
       .lean();
     const userByIdentifier = new Map(users.map((u: any) => [u.identifier, u]));
 
-    const students = roster.map((profile: any) => {
+    // Sort each student's sessions chronologically once.
+    const sessionsPerStudent: StoredSession[][] = roster.map((profile: any) => {
       const user: any = userByIdentifier.get(profile.identifier);
-      const sessions: StoredSession[] = Array.isArray(user?.progress?.attentionSessions)
+      return Array.isArray(user?.progress?.attentionSessions)
         ? [...user.progress.attentionSessions].sort(
             (a: StoredSession, b: StoredSession) =>
               new Date(a.completedAt || 0).getTime() - new Date(b.completedAt || 0).getTime()
           )
         : [];
+    });
 
+    // Trend + top-distraction are computed by the Python service over DERIVED
+    // metrics only (per-session scores + distraction reason codes) — one call for
+    // the whole class. No frames or landmarks are ever involved.
+    const analytics = await computeAttentionAnalytics(
+      sessionsPerStudent.map((sessions) => ({
+        avgScores: sessions.map((s) => Number(s.avgFocusScore) || 0),
+        distractions: sessions
+          .flatMap((s) => (Array.isArray(s.distractionEvents) ? s.distractionEvents : []))
+          .map((e) => String(e?.reason || ""))
+          .filter(Boolean)
+      }))
+    );
+
+    const students = roster.map((profile: any, i: number) => {
+      const user: any = userByIdentifier.get(profile.identifier);
+      const sessions = sessionsPerStudent[i];
       const last = sessions.length ? sessions[sessions.length - 1] : null;
 
       return {
@@ -127,8 +100,8 @@ attentionRouter.get("/api/backoffice/attention/:classId", async (req: Request, r
               completedAt: last.completedAt ? new Date(last.completedAt).toISOString() : null
             }
           : null,
-        trend: computeTrend(sessions),
-        topDistraction: computeTopDistraction(sessions),
+        trend: analytics[i].trend,
+        topDistraction: analytics[i].topDistraction,
         // Recent sessions power the detail panel charts + heatmap client-side.
         recentSessions: sessions.slice(-RECENT_SESSIONS).map((s) => ({
           sessionId: String(s.sessionId || ""),

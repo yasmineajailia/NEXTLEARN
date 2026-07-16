@@ -1,55 +1,72 @@
-# SHAP explainer service
+# ML service (predictions + SHAP)
 
-Serves **real** [`shap`](https://github.com/shap/shap) `TreeExplainer` values for
-the **exact** production risk-prediction model, so the dashboard can explain *why*
-a student is flagged based on the actual deployed Random Forest — not heuristics,
-and not a re-trained approximation.
+The platform's whole data-science layer runs here. Two scikit-learn models are
+**trained, served and explained natively in Python** — the Node backend owns no
+ML model and computes no predictions itself; it posts feature vectors and reads
+back numbers.
+
+- `rf-risk.joblib`  — `RandomForestClassifier` → P(caughtUp), the catch-up risk gauge.
+- `rf-grade.joblib` — `RandomForestRegressor`  → predicted exam grade /20.
+
+Because the models are trained here in sklearn, `shap.TreeExplainer` reads them
+directly — there is no JS↔Python tree reconstruction to keep in sync anymore.
 
 ## How it fits in
 
-- The production predictor is a JS `ml-random-forest` model (`data/rf-model.json`,
-  trained by `scripts/train-model.ts`). `shap` can't read that format directly.
-- `js_forest.py` **reconstructs the exact trees** from `data/rf-model.json` as an
-  equivalent scikit-learn `RandomForestClassifier` (same splits, thresholds and
-  leaves; leaves one-hot encoded to reproduce the JS forest's hard voting). No
-  re-training, no separate dataset — SHAP explains the real model.
-- `shap_service.py` builds an interventional `TreeExplainer(model_output="probability")`
-  over it and serves `POST /explain`.
-- The Node backend (`src/routes/web.ts`) calls this service and **falls back** to
-  its in-process JS exact-Shapley implementation if the service is down.
-  `explainSource` in the API response says which ran:
-  `shap-python` (real shap, exact model) | `shap-js` (JS exact Shapley) | `rules`.
-
-### Fidelity
-
-The reconstructed trees are identical to production. The only residual difference
-is a ~0.01 quirk in `ml-random-forest`'s `predictProbability` (its `reduce` has no
-initial value, so one tree is aggregated slightly differently). Reconstruction was
-verified against the live JS model on 200 random inputs: **max |Δ| = 0.0099**,
-within that quirk bound. SHAP attributions are therefore faithful to the model's
-actual decision structure.
+- `train.py` trains both models from `data/student_analytics.csv` (100 trees,
+  max depth 10, seed 42), saves them to `ml/models/*.joblib`, and writes the
+  feature list to `data/model-features.json`.
+- `shap_service.py` loads those joblib models, builds an interventional
+  `TreeExplainer(model_output="probability")` for risk and a `TreeExplainer` for
+  grade, and serves `/predict` and `/explain`.
+- The Node backend (`src/services/MLPredictorService.ts`, `prediction/explain.ts`)
+  calls this service for **every** prediction and explanation. There is **no JS
+  fallback** — the service is auto-started and supervised by
+  `src/services/prediction/shapSupervisor.ts`, so if it can't run, predictions
+  error rather than silently degrade.
 
 ## Setup
 
 ```bash
 python -m pip install -r ml/requirements.txt   # or: npm run shap:install
+python ml/train.py                             # or: npm run train:model  (trains + saves models)
+```
+
+`npm run dev` then auto-starts and supervises the service. To run it standalone:
+
+```bash
 npm run shap:serve                             # starts the service on :8000
 ```
 
-No training step: the service loads `data/rf-model.json` directly. If you retrain
-the JS model (`npm run train:model`), just restart the service.
-
-Override the port with `SHAP_PORT`, and point Node at a different host with
-`SHAP_SERVICE_URL` (default `http://127.0.0.1:8000`).
+Override the port with `SHAP_PORT`, point Node at a different host with
+`SHAP_SERVICE_URL` (default `http://127.0.0.1:8000`), and the Python executable
+with `PYTHON_BIN`.
 
 ## Endpoints
 
-- `GET /health` → `{ status, version, model, trees, features }`
-- `POST /explain` body = the 7 features → `{ catchupProbability, baseValue, shapValues, riskFactors }`
-  (SHAP values are additive in probability space: `baseValue + Σ shapValues = catchupProbability`).
+- `GET  /health`  → `{ status, library, shap, model, trees, gradeModel, features }`
+- `POST /predict` body `{ instances: number[][] }` (rows in feature order) →
+  `{ predictions: [{ catchupProbability, predictedGrade }] }` — fast path, no SHAP.
+- `POST /explain` body = the feature object → `{ catchupProbability, predictedGrade,
+  baseValue, shapValues, riskFactors, gradeShapValues, gradeFactors }`.
+  Risk SHAP values are additive in probability space
+  (`baseValue + Σ shapValues = catchupProbability`); grade SHAP values are in
+  points /20.
+- `POST /cluster` body `{ points: number[][], k }` → `{ assignments, centroids,
+  iterations, converged }` — K-means (scikit-learn) for learning-profile segmentation.
+- `POST /attention-analytics` body `{ students: [{ avgScores, distractions }] }` →
+  `{ results: [{ trend, topDistraction }] }` — teacher-dashboard analytics over DERIVED
+  attention metrics only (no frames/landmarks ever reach the server; frame scoring stays
+  in the browser via MediaPipe).
+- `POST /generate-quiz` body `{ moduleName, subAcquisName, difficulty, count, courseContent, ... }`
+  → `{ questions: [{ prompt, options, correctOptionIndex, source }] }` — teacher quiz
+  generation (`quizgen.py`): Gemini then OpenAI, with a template fallback. Needs the LLM
+  keys in the environment (`GEMINI_API_KEY` / `OPENAI_API_KEY`); loaded from `.env` when
+  run standalone, inherited from Node otherwise.
 
 ## Files
 
-- `js_forest.py` — reconstructs `data/rf-model.json` as an sklearn RandomForest.
-- `shap_service.py` — FastAPI service exposing `shap.TreeExplainer`.
+- `train.py` — trains the two sklearn models, saves joblib, prints honest test/CV metrics.
+- `shap_service.py` — FastAPI service: predict + SHAP explain.
+- `models/` — saved `rf-risk.joblib`, `rf-grade.joblib`.
 - `requirements.txt` — Python dependencies.

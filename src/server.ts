@@ -3,13 +3,14 @@ import path from "node:path";
 import mongoose from "mongoose";
 import { env } from "./config/env";
 import { webRouter } from "./routes/web";
-import { chatbotRouter, warmStudentVectorStore } from "./routes/student/chatbot";
+import { chatbotRouter } from "./routes/student/chatbot";
 import { organizationRouter } from "./routes/backoffice/organization";
 import { pagesRouter } from "./routes/pages";
 import { clusteringRouter } from "./routes/backoffice/clustering";
 import { attentionRouter } from "./routes/backoffice/attention";
 import { attentionSessionRouter } from "./routes/student/attentionSession";
 import { MLPredictorService } from "./services/MLPredictorService";
+import { startShapService, stopShapService } from "./services/prediction/shapSupervisor";
 
 // App bootstrap.
 // Express serves static files from public/ and API/page routes from webRouter.
@@ -61,11 +62,14 @@ async function startServer() {
       console.error("[ML] Failed to initialize ML predictor:", err)
     );
 
-    // Build the chatbot RAG vector store in the background so the first
-    // student question doesn't pay the one-time indexing cost.
-    void warmStudentVectorStore().catch((err) =>
-      console.error("[chatbot] Vector store warm-up failed:", err)
-    );
+    // Keep the Python SHAP microservice running for the whole server lifetime so
+    // canonical TreeExplainer explanations are always the primary source. The
+    // in-process JS exact-Shapley path only covers the brief (re)start windows.
+    startShapService();
+
+    // The chatbot RAG index (ChromaDB) is owned + persisted by the Python service,
+    // so there is no boot-time warm-up here. Populate/refresh it with
+    // `npm run reindex:rag`; curriculum saves also trigger a background reindex.
 
     app.listen(env.port, () => {
       // Startup log helps confirm active environment and server port.
@@ -76,5 +80,18 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+// Terminate the supervised SHAP child on shutdown (including `tsx watch` reloads,
+// which send SIGTERM to the old process) so it doesn't leak or hold port 8000.
+let shuttingDown = false;
+function shutdown(signal: NodeJS.Signals): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  stopShapService();
+  process.exit(signal === "SIGINT" ? 130 : 0);
+}
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("exit", () => stopShapService());
 
 startServer();
