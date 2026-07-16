@@ -210,7 +210,7 @@
     "bo.moduleMgmt": "Module management",
     "bo.teacherMgmt": "Teacher management",
     "bo.classMgmt": "Class management",
-    "bo.accessMgmt": "Manage module access",
+    "bo.accessMgmt": "Course start date",
     "bo.studentMgmt": "Student management",
     "bo.clustering": "Learning profiles",
     "bo.attention": "Attention tracking",
@@ -225,7 +225,7 @@
     /* Backoffice — admin panels (teachers, classes, module access) */
     "bo.teacherMgmtTitle": "Teachers and their classes",
     "bo.classMgmtTitle": "Classes and their students",
-    "bo.accessMgmtTitle": "Schedule and module access",
+    "bo.accessMgmtTitle": "Course schedule",
     "bo.teacherAdd": "Add a teacher",
     "bo.teacherAddSub": "Create the account, then assign classes to it from “Class management”.",
     "bo.teacherList": "Teacher list",

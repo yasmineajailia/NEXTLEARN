@@ -93,6 +93,36 @@ organizationRouter.get("/api/backoffice/organization", async (req, res) => {
       allClasses.map((room) => [String(room._id), (room as any).scheduleStartDate || null])
     );
 
+    // Gather every student's features once, then predict the whole class in a
+    // single call to the Python ML service (one HTTP round trip, not one/student).
+    const studentRows = students.map((student) => {
+      const identifier = String(student.identifier || "").trim();
+      const user = identifier ? userByIdentifier.get(identifier) : null;
+      const prof = identifier ? profileByIdentifier.get(identifier) : null;
+      const stats = user ? computeStudentProgress((user as any).progress) : null;
+      const features = extractMLFeatures({
+        progress: (user as any)?.progress,
+        profile: prof as any,
+        totalSubAcquis: orgTotalSubAcquis,
+        scheduleStartDate: scheduleByClassId.get(String(student.classId || "")) || null
+      });
+      return { student, identifier, user, prof, stats, features };
+    });
+    const predictions = await MLPredictorService.predictBatch(studentRows.map((r) => r.features));
+    const studentsPayload = studentRows.map((r, i) => ({
+      id: String(r.student._id),
+      fullName: r.student.fullName,
+      identifier: r.identifier,
+      email: r.student.email || "",
+      classId: r.student.classId ? String(r.student.classId) : "",
+      lessonsCompleted: r.stats?.lessonsCompleted ?? Number(r.student.lessonsCompleted || 0),
+      quizzesTaken: r.stats?.quizzesPassed ?? Number(r.student.quizzesTaken || 0),
+      averageQuizGrade: r.stats?.averageQuizScoreOn20 ?? Number(r.student.averageQuizGrade || 0),
+      catchupProbability: predictions[i].catchupProbability,
+      lastLoginDate: (r.prof as any)?.lastLoginDate ? new Date((r.prof as any).lastLoginDate).toISOString() : null,
+      quizScoresByModule: computeModuleQuizScores((r.user as any)?.progress?.quizResults)
+    }));
+
     res.status(200).json({
       teachers: teachers.map((teacher) => ({
         id: String(teacher._id),
@@ -110,34 +140,7 @@ organizationRouter.get("/api/backoffice/organization", async (req, res) => {
         scheduleStartDate: toIsoDateOrNull(room.scheduleStartDate),
         accessScheduleBySubAcquis: toScheduleIsoRecord((room as any).accessScheduleBySubAcquis)
       })),
-      students: students.map((student) => {
-        const identifier = String(student.identifier || "").trim();
-        const user = identifier ? userByIdentifier.get(identifier) : null;
-        const prof = identifier ? profileByIdentifier.get(identifier) : null;
-        const stats = user ? computeStudentProgress((user as any).progress) : null;
-
-        const features = extractMLFeatures({
-          progress: (user as any)?.progress,
-          profile: prof as any,
-          totalSubAcquis: orgTotalSubAcquis,
-          scheduleStartDate: scheduleByClassId.get(String(student.classId || "")) || null
-        });
-        const catchupProbability = MLPredictorService.predict(features);
-
-        return {
-          id: String(student._id),
-          fullName: student.fullName,
-          identifier,
-          email: student.email || "",
-          classId: student.classId ? String(student.classId) : "",
-          lessonsCompleted: stats?.lessonsCompleted ?? Number(student.lessonsCompleted || 0),
-          quizzesTaken: stats?.quizzesPassed ?? Number(student.quizzesTaken || 0),
-          averageQuizGrade: stats?.averageQuizScoreOn20 ?? Number(student.averageQuizGrade || 0),
-          catchupProbability,
-          lastLoginDate: (prof as any)?.lastLoginDate ? new Date((prof as any).lastLoginDate).toISOString() : null,
-          quizScoresByModule: computeModuleQuizScores((user as any)?.progress?.quizResults)
-        };
-      })
+      students: studentsPayload
     });
   } catch (error) {
     console.error("Failed to load backoffice organization:", error);

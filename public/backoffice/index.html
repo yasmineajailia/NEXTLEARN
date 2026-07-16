@@ -41,7 +41,7 @@
           <button data-view="content" class="nav-item" type="button" data-i18n="bo.moduleMgmt">Gestion des modules</button>
           <button data-view="teachers" class="nav-item" type="button" data-i18n="bo.teacherMgmt">Gestion des enseignants</button>
           <button data-view="classes-create" class="nav-item" type="button" data-i18n="bo.classMgmt">Gestion des classes</button>
-          <button data-view="classes-access" class="nav-item" type="button" data-i18n="bo.accessMgmt">Gérer l'accès aux modules</button>
+          <button data-view="classes-access" class="nav-item" type="button" data-i18n="bo.accessMgmt">Date de démarrage des cours</button>
           <button data-view="clustering" class="nav-item" type="button" data-i18n="bo.clustering">Profils d'apprentissage</button>
           <button data-view="attention" class="nav-item" type="button" data-i18n="bo.attention">Suivi d'attention</button>
         </nav>
@@ -534,41 +534,6 @@
                   <button type="submit" data-i18n="bo.calendarGenerate">Générer le calendrier global</button>
                 </div>
               </form>
-            </article>
-
-            <article class="card wide">
-              <div class="card-head">
-                <h3 data-i18n="bo.accessRuleTitle">Règle d'accès par classe</h3>
-                <p class="card-sub" data-i18n="bo.accessRuleSub">Autorisez ou bloquez un module pour une classe donnée.</p>
-              </div>
-              <form id="access-form" class="stack-form form-grid form-grid-3">
-                <label>
-                  <span data-i18n="bo.classLabel">Classe</span>
-                  <select id="access-class-select" name="classId" required></select>
-                </label>
-                <label>
-                  <span data-i18n="common.module">Module</span>
-                  <select id="access-module-select" name="moduleId" required></select>
-                </label>
-                <label>
-                  <span data-i18n="bo.accessRule">Règle d'accès</span>
-                  <select name="accessRule" required>
-                    <option value="granted" data-i18n="bo.accessGrant">Autoriser l'accès</option>
-                    <option value="blocked" data-i18n="bo.accessBlock">Bloquer l'accès</option>
-                  </select>
-                </label>
-                <div class="button-row">
-                  <button type="submit" data-i18n="bo.accessApply">Appliquer la règle</button>
-                </div>
-              </form>
-            </article>
-
-            <article class="card wide">
-              <div class="card-head">
-                <h3 data-i18n="bo.accessTableTitle">Accès des classes par module</h3>
-                <p class="card-sub" data-i18n="bo.accessTableSub">État du calendrier et des autorisations, classe par classe.</p>
-              </div>
-              <div id="class-access-table" class="table-wrap"></div>
             </article>
           </div>
         </section>

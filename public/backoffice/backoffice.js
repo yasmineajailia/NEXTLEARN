@@ -881,7 +881,7 @@ function bindEvents() {
       dom.studentClassSelect.value = selectedClassId;
     }
   });
-  dom.accessForm.addEventListener("submit", onApplyAccess);
+  dom.accessForm?.addEventListener("submit", onApplyAccess);
   dom.scheduleForm?.addEventListener("submit", onGenerateSchedule);
 
   dom.scheduleDateTrigger?.addEventListener("click", () => {
@@ -989,8 +989,8 @@ function switchView(viewKey) {
       title: boTr("bo.classMgmtTitle", "Les classes et leurs étudiants")
     },
     "classes-access": {
-      eyebrow: boTr("bo.accessMgmt", "Gérer l'accès aux modules"),
-      title: boTr("bo.accessMgmtTitle", "Calendrier et accès aux modules")
+      eyebrow: boTr("bo.accessMgmt", "Date de démarrage des cours"),
+      title: boTr("bo.accessMgmtTitle", "Calendrier des cours")
     },
     students: {
       eyebrow: boTr("bo.studentMgmt", "Gestion des étudiants"),
@@ -1249,6 +1249,9 @@ function htmlEscape(value) {
 }
 
 function setOptions(selectNode, items, includeAll = false) {
+  if (!selectNode) {
+    return;
+  }
   const optionMarkup = [];
   if (includeAll) {
     optionMarkup.push('<option value="all">Tous</option>');
