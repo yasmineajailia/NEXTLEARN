@@ -8,10 +8,15 @@ yarn-error.log*
 /content/Support_Cours_Préparation/
 /public/generated-quizzes/
 
-# SHAP explainer — Python cache
+# Python service — caches + generated RAG vector store
 ml/__pycache__/
+ml/rag/__pycache__/
 __pycache__/
+ml/rag/chroma_store/
 
 # One-off DB backups produced by scripts/resync-quizzes.ts
 data/quizzes-backup-*.json
+
+# Screen recordings / large scratch media (not source)
+*.mkv
 

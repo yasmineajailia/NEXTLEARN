@@ -20,11 +20,11 @@ the trail that activity leaves behind:
 
 | Subsystem | Question it answers | Where it runs |
 |---|---|---|
-| Risk + grade prediction | Is this student heading for the catch-up exam, and what grade are they heading toward? | Server, in-process |
+| Risk + grade prediction | Is this student heading for the catch-up exam, and what grade are they heading toward? | Python ML service (FastAPI, :8000) |
 | SHAP explanations | *Why* does the model think that? | Python service, with two fallbacks |
 | RAG chatbot | Answer a course question using only the real course material | Server + LLM API |
-| Clustering / recommendation | What kind of learner is this, and what should they do next? | Server |
-| Attention tracking | Is the student actually focused while studying? | **Browser only** |
+| Clustering / recommendation | What kind of learner is this, and what should they do next? | K-means in the Python service; recommendation in Node |
+| Attention tracking | Is the student actually focused while studying? | **Browser only** (frame scoring); derived-metric analytics in Python |
 
 Everything is a single Express app. There is no separate frontend build: `public/` is
 served statically and the pages are hand-written HTML with vanilla JavaScript.
@@ -36,13 +36,13 @@ pretrained ones we merely call — and in a defence you will be asked which is w
 
 | Model | What it does | Ours or third-party? | Where |
 |---|---|---|---|
-| **Random Forest classifier** | Probability the student catches up (the inverse of risk) | **Trained by us** (`npm run train:model`, seed 42), 9 features: 7 behavioural + attention (score + missingness indicator) | `data/rf-model.json`, loaded in-process at boot |
-| **Random Forest regressor** | Predicted exam grade out of 20 | **Trained by us** (`npm run train:grade-model`), same 9 features | `data/rf-grade-model.json`, in-process |
-| **SHAP TreeExplainer** | Explains the two forests above | Third-party library (`shap`), *not* a model — an explainer over our exact trees | `ml/shap_service.py` (FastAPI), with an exact-Shapley JS fallback |
-| **K-means** | Groups a class into learner profiles | **Ours**, hand-written; fitted on demand, nothing persisted | `src/services/clustering/kmeans.ts` |
+| **Random Forest classifier** | Probability the student catches up (the inverse of risk) | **Trained by us** (`python ml/train.py`, seed 42), 9 features: 7 behavioural + attention (score + missingness indicator) | `ml/models/rf-risk.joblib`, served by the Python service |
+| **Random Forest regressor** | Predicted exam grade out of 20 | **Trained by us** (`python ml/train.py`), same 9 features | `ml/models/rf-grade.joblib`, served by the Python service |
+| **SHAP TreeExplainer** | Explains the two forests above | Third-party library (`shap`), *not* a model — an explainer over our native sklearn trees | `ml/shap_service.py` (FastAPI); the only explanation path (no fallback) |
+| **K-means** | Groups a class into learner profiles | **Ours** (scikit-learn `KMeans`, seed 42); fitted on demand, nothing persisted | `ml/shap_service.py` `/cluster`; features/normalization in `src/services/clustering/kmeans.ts` |
 | **MediaPipe FaceMesh** | 478 facial landmarks for the focus score | **Third-party, pretrained** — we never train or fine-tune it | Loaded from CDN, runs **in the browser only** |
-| **Embedding model** | Vectorises course text and questions for the RAG chatbot | Third-party API (OpenAI/OpenRouter, e.g. `text-embedding-3-small`) | Called from `src/services/llm.ts`, vectors cached in Mongo |
-| **Chat LLM** | Writes the chatbot's answer from retrieved course chunks | Third-party API (OpenRouter, e.g. Llama 3.3 70B; Gemini also supported) | `src/services/llm.ts` |
+| **Embedding model** | Vectorises course text and questions for the RAG chatbot | Third-party API (OpenAI/Gemini, e.g. `text-embedding-3-small`) | Called from `ml/rag/embed.py`, vectors stored in ChromaDB |
+| **Chat LLM** | Writes the chatbot's answer from retrieved course chunks | Third-party API (Gemini/OpenAI) | `ml/rag/generate.py` |
 
 Two things are deliberately **not** models, despite looking like they should be: the VARK
 learning profile is a deterministic score over the mini-games, and the "what should I study
@@ -199,46 +199,42 @@ sees behaviour.
 
 ### 6.2 The two models
 
-`src/services/MLPredictorService.ts` loads two pre-trained Random Forests from disk at
-boot (they are committed as JSON, not trained at runtime):
+The whole data-science layer runs in Python. `ml/train.py` trains two native scikit-learn
+Random Forests and saves them with joblib; `ml/shap_service.py` serves them. Node holds no
+model — `src/services/MLPredictorService.ts` is a thin HTTP client that posts feature
+vectors and reads back numbers:
 
-- `data/rf-model.json` — **classifier**. Outputs the probability that the student catches
-  up, i.e. the *inverse* of risk. Higher is better.
-- `data/rf-grade-model.json` — **regressor**. Outputs the predicted exam grade out of 20.
+- `ml/models/rf-risk.joblib` — **classifier**. Outputs the probability that the student
+  catches up, i.e. the *inverse* of risk. Higher is better.
+- `ml/models/rf-grade.joblib` — **regressor**. Outputs the predicted exam grade out of 20.
 
-Both are Random Forests of **100 trees, max depth 10, seed 42** (`scripts/train-model.ts`),
-built with the `ml-random-forest` JavaScript library. Training happens offline through the
-scripts and the resulting forest is committed as JSON; the server only ever *loads* it, so
-predictions are deterministic and cost well under 100 ms in-process.
+Both are Random Forests of **100 trees, max depth 10, seed 42** (`python ml/train.py`).
+Training is offline; the service loads the joblib models at start. Because they are trained
+in sklearn, `shap.TreeExplainer` reads them directly — there is no JS↔Python tree mirror.
 
 Predictions can be scoped to a single module (`extractMLFeatures` takes an optional
 `moduleId`), which is why the dashboard's prediction card has a module dropdown.
 
-### 6.3 The explanation chain — the nicest piece of engineering in the project
+### 6.3 Prediction + explanation — one call, one language
 
 A prediction nobody can explain is useless to a teacher, so every prediction ships with
-its attributions. `src/services/prediction/explain.ts` resolves them through a
-**three-level fallback**:
+its attributions. `src/services/prediction/explain.ts` sends the feature vector to the
+Python service's **`POST /explain`**, which returns the catch-up probability, the predicted
+grade AND their exact SHAP attributions (real `shap.TreeExplainer`, interventional, in
+probability space for risk and points /20 for grade) in a single response. The lighter
+**`POST /predict`** returns just the numbers in batch (used for whole-class lists).
 
-1. **`shap-python`** — POST the feature vector to the FastAPI service on `:8000`
-   (`ml/shap_service.py`). This is the real `shap` library running `TreeExplainer` over
-   trees reconstructed *exactly* from the deployed JSON forest (`ml/js_forest.py`). This
-   is the only path that gives true SHAP values.
-2. **`shap-js`** — if the Python service is unreachable, compute **exact Shapley values in
-   JavaScript** in-process. Exact, not approximate: with 7 features, enumerating coalitions
-   is cheap.
-3. **`rules`** — if the models themselves are not loaded, fall back to hand-written
-   heuristics ("logs in less than once a week" and so on).
+There is **no JS fallback**. The old `shap-js` (in-process exact Shapley) and `rules`
+levels were removed when the model moved fully to Python — the response's `explainSource`
+is always `shap-python`. Predictions therefore *depend* on the service being up, which is
+why it is supervised.
 
-The response always carries an `explainSource` field naming which path produced it, so you
-are never guessing about the provenance of an explanation.
-
-A **circuit breaker** guards level 1: a 2.5s timeout, and on failure the Python service is
-marked down for 30 seconds (`shapServiceDownUntil`) so that every subsequent request skips
-straight to level 2 instead of each paying the timeout.
-
-The upshot: **the SHAP service is optional**. Without it the app degrades quietly rather
-than breaking, which is why `npm run shap:serve` is not part of `npm run dev`.
+A **circuit breaker** (`shapServiceDownUntil`) plus a health-monitoring **supervisor**
+(`src/services/prediction/shapSupervisor.ts`) keep it available: the dev server adopts an
+already-running instance, otherwise spawns `python ml/shap_service.py`, polls `/health`, and
+restarts it with exponential backoff if it dies. If Python genuinely can't run, predictions
+return an error rather than silently degrading — during the brief window while the service
+is (re)starting, a request may fail and can simply be retried once it is healthy.
 
 ---
 
@@ -246,9 +242,10 @@ than breaking, which is why `npm run shap:serve` is not part of `npm run dev`.
 
 ### 7.1 RAG chatbot
 
-`src/services/chatbot/rag.ts` (the engine) and `src/routes/student/chatbot.ts` (the
-routes). The engine is deliberately pure with respect to the database: it takes the
-persisted modules as a *parameter* and never reads the curriculum itself.
+The RAG engine lives in Python (`ml/rag/`: index/retrieve/guards/generate over ChromaDB).
+`src/routes/student/chatbot.ts` is a thin proxy — it does access control and forwards to
+Python via `src/services/chatbot/ragClient.ts`. Node passes the student's allowed module /
+sub-acquis ids; the engine never reads the curriculum itself.
 
 The pipeline:
 
@@ -262,7 +259,7 @@ The pipeline:
    degraded rather than not at all.
 4. **Guard** — before answering: is this question even about C? (`isQuestionOutsideLangageC`)
    Is it too vague to answer? Is there meaningful grounding in the retrieved chunks?
-5. **Generate** — the LLM answers with the chunks as context (`src/services/llm.ts` handles
+5. **Generate** — the LLM answers with the chunks as context (`ml/rag/generate.py` handles
    the providers). Streams over SSE.
 6. **Verify** — `isAnswerGroundedInChunks()` checks the generated answer against the
    retrieved material. **An answer that is not grounded is thrown away** and replaced by a
@@ -279,9 +276,10 @@ These are easy to confuse because both are "personalisation", but they are unrel
 
 **K-means clustering (teacher-facing).** `src/services/clustering/kmeans.ts` builds a
 six-feature vector per student — `completionRate`, `avgQuizScore`, `quizAttemptRate`,
-`weeklyLoginFrequency`, `progressVelocity`, `weakSkillRatio` — normalises it, clusters the
-class, and `clusterLabeler.ts` turns each cluster into a label a human can act on. Shown in
-the backoffice.
+`weeklyLoginFrequency`, `progressVelocity`, `weakSkillRatio` — and normalises it. The
+clustering itself runs in the Python service (`POST /cluster`, scikit-learn `KMeans`);
+`kmeansClient.ts` posts the normalized vectors and `clusterLabeler.ts` turns each returned
+cluster into a label a human can act on. Shown in the backoffice.
 
 **VARK (student-facing).** `public/student/mission-apprenant.html` — eight mini-games (two
 per dimension: Visual, Read/write, Auditory-sequential, Kinesthetic) that never name the
@@ -431,8 +429,12 @@ completedAt
 The server (`src/routes/student/attentionSession.ts`) validates and sanitises this, appends
 it to `user.progress.attentionSessions`, and recomputes `progress.avgFocusScore` as a
 **rolling average over the student's last `ROLLING_WINDOW = 10` sessions**. The teacher's
-class view (`src/routes/backoffice/attention.ts`) aggregates from there: class average, the
-most common distraction reason, and students sorted by focus with unmeasured students last.
+class view (`src/routes/backoffice/attention.ts`) shapes the data and delegates the
+analytics — focus **trend** and **top distraction** — to the Python service
+(`POST /attention-analytics`, `src/services/attention/attentionClient.ts`), over the derived
+metrics only. Students are then sorted by focus with unmeasured students last. Note this is
+the *only* attention computation that runs server-side; the frame-scoring model itself
+cannot leave the browser.
 
 #### The hard rule, and one honest caveat
 
@@ -458,9 +460,6 @@ able to state.** It enters as a *pair* of features: `avgFocusScore` (0–100) an
    figure therefore measures "can the model recover the relationship we asserted", not "does
    focus predict real exams". Say this plainly if asked.
 
-Run `npx tsx scripts/ablate-attention.ts` for the honest before/after: it retrains with and
-without the two attention columns on identical splits.
-
 The clustering vector (six features) still contains no attention data.
 
 ---
@@ -473,8 +472,9 @@ The clustering vector (six features) still contains no attention data.
 - **`clustering.ts`** — the learning-profile dashboard
 - **`attention.ts`** — class concentration
 
-Plus, still inside `web.ts`: AI quiz generation, and the curriculum read/seed/persist
-machinery.
+Plus, still inside `web.ts`: the AI quiz-generation *routes* (the LLM generation itself now
+lives in the Python service, `POST /generate-quiz` via `src/services/quiz/quizGenClient.ts`),
+and the curriculum read/seed/persist machinery.
 
 Teachers are a separate collection (`Teacher`) and are identified by the `X-Teacher-Id`
 header.
@@ -516,14 +516,15 @@ to 50 for a student with no scores at all. Any UI that reads these raw will call
 who never logged in "low risk". The clustering risk badge now checks for the absence of
 evidence first and labels such a student "Inactif" or "Sans évaluation" instead.
 
-**ML metric honesty.** Report test/CV numbers only: risk accuracy ~72–76%, AUC ~0.81–0.84;
-grade MAE ~0.95 points out of 20. Training accuracy (~99%) is meaningless here because the
-labels carry deliberate noise, and quoting it would be dishonest. Retrain with the scripts
-(seed 42) and re-run `evaluate:models` and `test:fresh-data`.
+**ML metric honesty.** Report test/CV numbers only: risk accuracy ~0.70–0.71, AUC ~0.79;
+grade MAE ~1.0 points out of 20 (native scikit-learn soft-voting — a touch lower than the
+old JS hard-voting forest). Training accuracy is meaningless here because the labels carry
+deliberate noise, and quoting it would be dishonest. Retrain with `python ml/train.py`
+(seed 42); it prints the held-out and 5-fold numbers and rewrites `ml/models/*.joblib`.
 
-**SHAP fidelity.** `ml/js_forest.py` reconstructs the deployed trees exactly. If you change
-how `ml-random-forest` serialises a model, that file must change with it or the
-explanations stop describing the model that is actually running.
+**SHAP fidelity.** The forests are trained natively in scikit-learn (`ml/train.py`) and
+saved with joblib, so `shap.TreeExplainer` reads them directly — there is no JS↔Python tree
+reconstruction to keep in sync. `ml/shap_service.py` loads the joblib models at start.
 
 **Quiz sources.** `data/*.normalized.json` is the source of truth; push it into Mongo with
 `npm run resync:quizzes` (it takes a backup first). Module 1 files 1.3, 1.5 and 1.6 are
@@ -549,16 +550,16 @@ src/
     student/                   chatbot, attention sessions
     backoffice/                organization, clustering, attention
   services/
-    MLPredictorService.ts      loads both forests
-    prediction/features.ts     the 7 features + exact JS Shapley
-    prediction/explain.ts      the 3-level explanation fallback
-    chatbot/rag.ts             the RAG engine
-    llm.ts                     provider plumbing (embeddings, chat)
+    MLPredictorService.ts      HTTP client for the Python ML service (batch /predict)
+    prediction/features.ts     the 9 features + extractMLFeatures
+    prediction/explain.ts      Python /explain client (prediction + SHAP), no fallback
+    prediction/shapSupervisor.ts  auto-starts + supervises the Python service
+    chatbot/ragClient.ts       thin client to the Python RAG engine (ml/rag/)
     courseContent.ts           GridFS + PDF/DOCX/PPTX text extraction
     classAccess.ts             who can see which module, and when
     studentProgress.ts         pure progress math
     clustering/, recommendation/
-ml/                            Python: exact tree reconstruction + SHAP service
+ml/                            Python: train.py (native sklearn) + shap_service.py
 scripts/                       seed, train, evaluate
 data/                          trained models, normalized quizzes, calendar
 graph.json                     prerequisite graph (SERVED AS A ROUTE — do not delete)
