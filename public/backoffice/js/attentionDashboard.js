@@ -121,7 +121,9 @@
       ".adb-panel{position:fixed;top:0;right:0;bottom:0;width:min(460px,94vw);background:#fff;z-index:11001;box-shadow:-14px 0 40px rgba(0,0,0,.18);padding:1.2rem 1.3rem;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;}" +
       ".adb-panel.adb-open{transform:translateX(0);}" +
       ".adb-panel-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-bottom:1rem;}" +
-      ".adb-panel-close{border:0;background:#f0f1f4;border-radius:50%;width:30px;height:30px;font-size:.85rem;cursor:pointer;color:#374151;}" +
+      ".adb-panel-close{display:flex;align-items:center;justify-content:center;flex:0 0 auto;border:0;background:#f0f1f4;border-radius:50%;width:32px;height:32px;padding:0;font-size:1rem;line-height:1;cursor:pointer;color:#374151;transition:background .15s ease,color .15s ease;}" +
+      ".adb-panel-close:hover{background:#e2e5ea;color:#0d1117;}" +
+      ".adb-panel-close:focus-visible{outline:2px solid #c41d38;outline-offset:2px;}" +
       ".adb-legend{display:flex;flex-wrap:wrap;gap:.7rem;margin:.5rem 0 .2rem;font-size:.74rem;color:#4b5563;}" +
       ".adb-legend span{display:inline-flex;align-items:center;gap:.3rem;}" +
       ".adb-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}" +
