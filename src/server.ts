@@ -26,8 +26,10 @@ app.use(
   "/Support_Cours_Préparation",
   express.static(path.join(process.cwd(), "content", "Support_Cours_Préparation"))
 );
+// The physical file lives in data/, but the public URL stays /graph.json so no
+// client fetch has to change.
 app.get("/graph.json", (_req, res) => {
-  res.sendFile(path.join(process.cwd(), "graph.json"));
+  res.sendFile(path.join(process.cwd(), "data", "graph.json"));
 });
 app.use(
   "/vendor/pdfjs",

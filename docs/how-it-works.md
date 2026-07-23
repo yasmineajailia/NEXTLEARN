@@ -60,7 +60,7 @@ anything.
 2. Static mounts:
    - `public/` at `/` (all pages, CSS, client JS)
    - `content/Support_Cours_Préparation/` — the course files on disk
-   - `/graph.json` — the prerequisite graph, served from the repo root
+   - `/graph.json` — the prerequisite graph (file lives in `data/graph.json`, served at this URL)
    - `/vendor/pdfjs` — mapped straight into `node_modules/pdfjs-dist/build`, so the
      PDF viewer is served without a bundler
 3. Routers, in order: `webRouter`, `chatbotRouter`, `pagesRouter`, `organizationRouter`,
@@ -288,7 +288,7 @@ dimension being tested. The result is written to `localStorage` under
 first (videos for visual learners, PDFs for readers, the chatbot for the sequential
 profile, quizzes-first for the kinesthetic).
 
-**The prerequisite graph (a third thing again).** `graph.json` at the repo root maps each
+**The prerequisite graph (a third thing again).** `data/graph.json` maps each
 chapter to what it unlocks. `src/services/recommendation/skill-recommender.ts` scores which
 sous-acquis a student is *ready* for — prerequisites met, and how much completing it would
 unlock. This is why `graph.json` is served as a route and must not be deleted.
@@ -561,8 +561,8 @@ src/
     clustering/, recommendation/
 ml/                            Python: train.py (native sklearn) + shap_service.py
 scripts/                       seed, train, evaluate
-data/                          trained models, normalized quizzes, calendar
-graph.json                     prerequisite graph (SERVED AS A ROUTE — do not delete)
+data/                          trained models, normalized quizzes, calendar,
+                               graph.json (prerequisite graph — SERVED AT /graph.json, do not delete)
 public/
   student/, backoffice/, auth/ the pages
   shared/theme.js|css          dark mode + colour-blind palette
