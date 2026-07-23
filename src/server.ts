@@ -9,6 +9,7 @@ import { pagesRouter } from "./routes/pages";
 import { clusteringRouter } from "./routes/backoffice/clustering";
 import { attentionRouter } from "./routes/backoffice/attention";
 import { attentionSessionRouter } from "./routes/student/attentionSession";
+import { requireRole } from "./middleware/auth";
 import { MLPredictorService } from "./services/MLPredictorService";
 import { startShapService, stopShapService } from "./services/prediction/shapSupervisor";
 
@@ -37,6 +38,10 @@ app.use(
 app.use(webRouter);
 app.use(chatbotRouter);
 app.use(pagesRouter);
+// Every backoffice endpoint requires a verified teacher/admin session. One guard
+// covers all three routers because they all live under /api/backoffice. This is
+// what closes the old "no X-Teacher-Id header => treated as admin" backdoor.
+app.use("/api/backoffice", requireRole("enseignant", "admin"));
 app.use(organizationRouter);
 app.use(clusteringRouter);
 app.use(attentionRouter);

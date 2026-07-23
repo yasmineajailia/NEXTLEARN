@@ -12,6 +12,7 @@
     "seed:modules": "tsx scripts/seed-modules.ts",
     "migrate:subject-modules": "tsx scripts/migrate-to-subject-modules.ts",
     "seed:clustering-demo": "tsx scripts/seed-clustering-demo.ts",
+    "seed:demo-classes": "tsx scripts/seed-demo-classes.ts",
     "resync:quizzes": "tsx scripts/resync-quizzes.ts",
     "reindex:rag": "tsx scripts/reindex-rag.ts",
     "generate:training-data": "tsx scripts/generate-training-data.ts",
@@ -31,6 +32,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
     "mammoth": "^1.12.0",
     "mongoose": "^9.3.3",
@@ -40,6 +42,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/jszip": "^3.4.0",
     "@types/node": "^22.13.14",
     "@types/nodemailer": "^8.0.0",

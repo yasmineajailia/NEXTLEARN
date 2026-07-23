@@ -13,6 +13,7 @@ import {
   normalizeChatHistory
 } from "../../services/chatbot/ragClient";
 import { filterOverviewByAccess } from "../../services/classAccess";
+import { requireAuth } from "../../middleware/auth";
 // Transitional: curriculum + class reads still live in web.ts.
 import {
   readClassAccessByStudentIdentifier,
@@ -49,9 +50,9 @@ async function resolveAllowedScope(identifier: string): Promise<{
   };
 }
 
-chatbotRouter.post("/api/student/chatbot", async (req, res) => {
+chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
   try {
-    const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const rawMessage = typeof req.body?.message === "string" ? req.body.message.trim() : "";
 
     if (!identifier) {
@@ -96,7 +97,7 @@ chatbotRouter.post("/api/student/chatbot", async (req, res) => {
 // Streaming variant: emits Server-Sent Events so answers render token-by-token.
 // Events: `meta` { mode }, `delta` { text }, `sources` { sources }, `done` {}, `error` { message }.
 // Python emits the frames; Node does access control then pipes them verbatim.
-chatbotRouter.post("/api/student/chatbot/stream", async (req, res) => {
+chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) => {
   const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
   const rawMessage = typeof req.body?.message === "string" ? req.body.message.trim() : "";
 

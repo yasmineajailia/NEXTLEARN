@@ -28,21 +28,10 @@ export const organizationRouter = Router();
 
 organizationRouter.get("/api/backoffice/organization", async (req, res) => {
   try {
-    // Resolve the caller's identity from the X-Teacher-Id header
-    const requestedTeacherId = String(req.headers["x-teacher-id"] || "").trim();
-    let callerIsAdmin = false;
-    let callerTeacherId = "";
-
-    if (requestedTeacherId && mongoose.Types.ObjectId.isValid(requestedTeacherId)) {
-      const caller = await Teacher.findById(requestedTeacherId).select({ role: 1 }).lean();
-      if (caller) {
-        callerIsAdmin = String((caller as any).role || "").toLowerCase() === "admin";
-        callerTeacherId = requestedTeacherId;
-      }
-    } else {
-      // No valid ID supplied — treat as admin so existing integrations keep working
-      callerIsAdmin = true;
-    }
+    // Identity comes from the verified session (JWT), never a client header.
+    // The /api/backoffice guard guarantees req.auth is a teacher or admin.
+    const callerIsAdmin = req.auth?.role === "admin";
+    const callerTeacherId = req.auth?.id ?? "";
 
     const [teachers, allClasses, allStudents] = await Promise.all([
       Teacher.find().sort({ name: 1 }).lean(),
@@ -285,26 +274,14 @@ organizationRouter.delete("/api/backoffice/teachers/:teacherId", async (req, res
   }
 });
 
-// Returns the classes visible to the caller (resolved from the X-Teacher-Id
-// header, same convention as /api/backoffice/organization), each annotated
-// with its live student count. Used by the clustering dashboard's class
-// selector.
+// Returns the classes visible to the caller (resolved from the verified session),
+// each annotated with its live student count. Used by the clustering dashboard's
+// class selector.
 organizationRouter.get("/api/backoffice/classes", async (req, res) => {
   try {
-    const requestedTeacherId = String(req.headers["x-teacher-id"] || "").trim();
-    let callerIsAdmin = false;
-    let callerTeacherId = "";
-
-    if (requestedTeacherId && mongoose.Types.ObjectId.isValid(requestedTeacherId)) {
-      const caller = await Teacher.findById(requestedTeacherId).select({ role: 1 }).lean();
-      if (caller) {
-        callerIsAdmin = String((caller as any).role || "").toLowerCase() === "admin";
-        callerTeacherId = requestedTeacherId;
-      }
-    } else {
-      // No valid ID supplied — treat as admin so existing integrations keep working.
-      callerIsAdmin = true;
-    }
+    // Identity comes from the verified session (JWT), never a client header.
+    const callerIsAdmin = req.auth?.role === "admin";
+    const callerTeacherId = req.auth?.id ?? "";
 
     const allClasses = await ClassRoom.find().sort({ name: 1 }).lean();
     const classes = callerIsAdmin

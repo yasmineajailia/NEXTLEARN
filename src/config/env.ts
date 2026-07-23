@@ -24,5 +24,15 @@ export const env = {
   smtpSecure: process.env.SMTP_SECURE === "true",
   smtpUser: process.env.SMTP_USER ?? "",
   smtpPass: process.env.SMTP_PASS ?? "",
-  smtpFrom: process.env.SMTP_FROM ?? "NextLearn <no-reply@nextlearn.local>"
+  smtpFrom: process.env.SMTP_FROM ?? "NextLearn <no-reply@nextlearn.local>",
+  // Secret used to sign session JWTs. Must be set in production (see the guard
+  // below); a fixed dev fallback keeps local development frictionless.
+  authSecret: process.env.AUTH_SECRET ?? "dev-only-insecure-change-me"
 };
+
+if (!process.env.AUTH_SECRET) {
+  if (env.nodeEnv === "production") {
+    throw new Error("AUTH_SECRET must be set in production — refusing to start with the insecure default.");
+  }
+  console.warn("[env] AUTH_SECRET is not set — using an insecure development default. Do NOT use in production.");
+}

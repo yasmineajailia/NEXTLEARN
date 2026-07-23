@@ -6,6 +6,24 @@ import { StudentProfile } from "../models/StudentProfile";
 import { Teacher } from "../models/Teacher";
 import { env } from "../config/env";
 import { comparePassword } from "../utils/password";
+import { issueSession, clearSession } from "../middleware/auth";
+import { rateLimit } from "../middleware/rateLimit";
+
+// Brute-force guard for login, keyed by IP+email so a shared campus IP does not
+// lock out different accounts, while attempts against one account are capped.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  keyFn: (req) => `${req.ip || "?"}:${String(req.body?.email || "").toLowerCase()}`,
+  message: "Trop de tentatives de connexion. Réessayez dans quelques minutes."
+});
+
+// Flood guard for the email-sending / token endpoints, keyed by IP.
+const emailLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: "Trop de demandes. Réessayez plus tard."
+});
 
 const authRouter = Router();
 const PASSWORD_RESET_TTL_MS = 1000 * 60 * 60;
@@ -94,7 +112,7 @@ authRouter.post("/api/sign-up", async (_req: Request, res: Response) => {
 });
 
 // Sign-in endpoint
-authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
+authRouter.post("/api/sign-in", loginLimiter, async (req: Request, res: Response) => {
   try {
     const requestedRole = typeof req.body?.role === "string" ? normalizeRole(req.body.role) : "unknown";
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
@@ -123,11 +141,20 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
 
+      const teacherRole = normalizeRole(teacher.role) === "admin" ? "admin" : "enseignant";
+
+      // The admin tab is admin-only: a regular teacher must use the Enseignant tab.
+      // The reverse is fine — an admin may also sign in via the Enseignant tab.
+      if (requestedRole === "admin" && teacherRole !== "admin") {
+        return res.status(403).json({ error: "Ce compte n'est pas administrateur. Utilisez l'onglet Enseignant." });
+      }
+
+      issueSession(res, { id: String(teacher._id), role: teacherRole === "admin" ? "admin" : "enseignant" });
       return res.status(200).json({
         message: "Connexion réussie",
         user: {
           id: teacher._id,
-          role: normalizeRole(teacher.role) === "admin" ? "admin" : "enseignant",
+          role: teacherRole,
           fullName: teacher.name,
           email: teacher.email,
           phone: teacher.phone
@@ -152,6 +179,7 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
         { $inc: { loginCount: 1 }, $set: { lastLoginDate: new Date() } }
       ).catch(() => {});
 
+      issueSession(res, { id: user.identifier, role: "student" });
       return res.status(200).json({
         message: "Connexion réussie",
         user: {
@@ -171,11 +199,13 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
 
+      const fallbackTeacherRole = normalizeRole(teacher.role) === "admin" ? "admin" : "enseignant";
+      issueSession(res, { id: String(teacher._id), role: fallbackTeacherRole });
       return res.status(200).json({
         message: "Connexion réussie",
         user: {
           id: teacher._id,
-          role: normalizeRole(teacher.role) === "admin" ? "admin" : "enseignant",
+          role: fallbackTeacherRole,
           fullName: teacher.name,
           email: teacher.email,
           phone: teacher.phone
@@ -199,6 +229,7 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
       { $inc: { loginCount: 1 }, $set: { lastLoginDate: new Date() } }
     ).catch(() => {});
 
+    issueSession(res, { id: user.identifier, role: "student" });
     return res.status(200).json({
       message: "Connexion réussie",
       user: {
@@ -215,7 +246,13 @@ authRouter.post("/api/sign-in", async (req: Request, res: Response) => {
   }
 });
 
-authRouter.post("/api/forgot-password", async (req: Request, res: Response) => {
+// Clears the session cookie. The client should also drop its local display state.
+authRouter.post("/api/logout", (_req: Request, res: Response) => {
+  clearSession(res);
+  res.status(200).json({ message: "Déconnexion réussie" });
+});
+
+authRouter.post("/api/forgot-password", emailLimiter, async (req: Request, res: Response) => {
   try {
     if (!hasSmtpConfiguration()) {
       return res.status(503).json({
@@ -252,7 +289,7 @@ authRouter.post("/api/forgot-password", async (req: Request, res: Response) => {
   }
 });
 
-authRouter.post("/api/reset-password", async (req: Request, res: Response) => {
+authRouter.post("/api/reset-password", loginLimiter, async (req: Request, res: Response) => {
   try {
     const token = typeof req.body?.token === "string" ? req.body.token.trim() : "";
     const newPassword = typeof req.body?.password === "string" ? req.body.password : "";
