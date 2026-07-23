@@ -437,6 +437,24 @@
       ".cdb-error-msg{color:#374151;margin:0 0 1rem;}",
       ".cdb-admin-warning{color:#9a6400;font-size:.82rem;margin:0 0 .8rem;}",
       ".cdb-row-danger td{background:#fff5f5;}",
+      ".cdb-modal-backdrop{position:fixed;inset:0;background:rgba(13,17,23,.55);display:flex;align-items:center;justify-content:center;padding:1.5rem;z-index:1200;}",
+      ".cdb-modal-backdrop[hidden]{display:none;}",
+      ".cdb-modal{background:#fff;border-radius:16px;width:min(430px,100%);max-height:90vh;overflow:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:cdbModalIn 170ms ease;}",
+      "@keyframes cdbModalIn{from{opacity:0;transform:translateY(8px) scale(.985);}to{opacity:1;transform:none;}}",
+      ".cdb-modal-head{display:flex;align-items:flex-start;gap:.9rem;padding:1.3rem 1.4rem 1rem;border-bottom:1px solid #eee;}",
+      ".cdb-modal-avatar{flex-shrink:0;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1rem;}",
+      ".cdb-modal-idwrap{flex:1;min-width:0;}",
+      ".cdb-modal-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.1rem;margin:0;}",
+      ".cdb-modal-sub{margin:.15rem 0 0;font-size:.8rem;color:#6b7280;}",
+      ".cdb-modal-cluster{display:inline-flex;align-items:center;gap:.4rem;margin-top:.45rem;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.76rem;}",
+      ".cdb-modal-close{flex-shrink:0;border:0;background:#f0f0ee;color:#374151;width:30px;height:30px;border-radius:50%;font-size:1.15rem;line-height:1;cursor:pointer;transition:background 160ms ease;}",
+      ".cdb-modal-close:hover{background:#e2e2df;}",
+      ".cdb-modal-metrics{padding:1.1rem 1.4rem 1.45rem;display:flex;flex-direction:column;gap:.7rem;}",
+      ".cdb-metric-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;}",
+      ".cdb-metric-label{font-size:.85rem;color:#374151;white-space:nowrap;}",
+      ".cdb-metric-bar{flex:1;height:7px;background:#e8e8e6;border-radius:999px;overflow:hidden;margin:0 .3rem;}",
+      ".cdb-metric-bar-fill{display:block;height:100%;border-radius:999px;}",
+      ".cdb-metric-value{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.9rem;white-space:nowrap;}",
       "@media (max-width:768px){",
       "  .cdb-kpi-row{grid-template-columns:1fr;}",
       "  .cdb-skel-grid-4{grid-template-columns:1fr;}",
@@ -685,6 +703,17 @@
         renderChartSectionHTML(state.uid) +
         renderTablesSectionHTML(state.uid, data);
 
+      // Delegate "Voir le profil" clicks once — the container element persists
+      // across innerHTML rebuilds (e.g. when a table is re-sorted).
+      if (!state.studentModalBound) {
+        state.studentModalBound = true;
+        state.classViewEl.addEventListener("click", function (e) {
+          var btn = e.target.closest ? e.target.closest(".cdb-view-student-btn") : null;
+          if (!btn) return;
+          openStudentDetailById(state, btn.dataset.clusterId, btn.dataset.identifier);
+        });
+      }
+
       var canvas = document.getElementById(state.uid + "-cdb-canvas");
       var chartWrapper = document.getElementById(state.uid + "-cdb-chart-wrapper");
 
@@ -798,10 +827,97 @@
           "<td>" + logins.toFixed(1) + "</td>" +
           "<td>" + Math.round(weak * 100) + "%</td>" +
           '<td><span class="cdb-badge ' + risk.cls + '">' + escapeHtml(risk.label) + "</span></td>" +
-          '<td><a class="cdb-btn cdb-btn-ghost cdb-btn-sm" href="/backoffice/student-profile.html?id=' + encodeURIComponent(student.identifier) + '">Voir le profil</a></td>' +
+          '<td><button type="button" class="cdb-btn cdb-btn-ghost cdb-btn-sm cdb-view-student-btn" data-identifier="' + escapeAttr(student.identifier) + '" data-cluster-id="' + escapeAttr(cluster.id) + '">Voir le profil</button></td>' +
           "</tr>"
         );
       }).join("");
+    }
+
+    // ── Student detail modal ──────────────────────────────────────────────
+    // "Voir le profil" opens an in-dashboard modal built from the student data
+    // already loaded for the class (no separate page / round-trip).
+    function ensureStudentModal(state) {
+      if (state.studentModalEl) return state.studentModalEl;
+      var backdrop = document.createElement("div");
+      backdrop.className = "cdb-modal-backdrop";
+      backdrop.hidden = true;
+      backdrop.innerHTML =
+        '<div class="cdb-modal" role="dialog" aria-modal="true" aria-labelledby="' + state.uid + '-cdb-modal-name">' +
+        '<div class="cdb-modal-head">' +
+        '<span class="cdb-modal-avatar" id="' + state.uid + '-cdb-modal-avatar"></span>' +
+        '<div class="cdb-modal-idwrap">' +
+        '<p class="cdb-modal-name" id="' + state.uid + '-cdb-modal-name"></p>' +
+        '<p class="cdb-modal-sub" id="' + state.uid + '-cdb-modal-sub"></p>' +
+        '<span class="cdb-modal-cluster" id="' + state.uid + '-cdb-modal-cluster"></span>' +
+        "</div>" +
+        '<button type="button" class="cdb-modal-close" aria-label="Fermer" id="' + state.uid + '-cdb-modal-close">&times;</button>' +
+        "</div>" +
+        '<div class="cdb-modal-metrics" id="' + state.uid + '-cdb-modal-metrics"></div>' +
+        "</div>";
+      document.body.appendChild(backdrop);
+      state.studentModalEl = backdrop;
+
+      var close = function () { backdrop.hidden = true; };
+      backdrop.addEventListener("click", function (e) { if (e.target === backdrop) close(); });
+      document.getElementById(state.uid + "-cdb-modal-close").addEventListener("click", close);
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !backdrop.hidden) close(); });
+      return backdrop;
+    }
+
+    function modalMetricRow(label, valueHtml, pct, color) {
+      var bar = "";
+      if (typeof pct === "number") {
+        var w = Math.max(0, Math.min(100, pct));
+        bar = '<span class="cdb-metric-bar"><span class="cdb-metric-bar-fill" style="width:' + w + "%;background:" + (color || "#c41d38") + '"></span></span>';
+      }
+      return (
+        '<div class="cdb-metric-row"><span class="cdb-metric-label">' + escapeHtml(label) + "</span>" +
+        bar +
+        '<span class="cdb-metric-value">' + valueHtml + "</span></div>"
+      );
+    }
+
+    function openStudentDetail(state, student, cluster) {
+      ensureStudentModal(state);
+      var f = student.features || {};
+      var completion = Math.round(clampNumber(f.completionRate, 0, 1, 0) * 100);
+      var quiz = Math.round(clampNumber(f.avgQuizScore, 0, 100, 0));
+      var logins = clampNumber(f.weeklyLoginFrequency, 0, 7, 0);
+      var weak = Math.round(clampNumber(f.weakSkillRatio, 0, 1, 0) * 100);
+      var risk = riskBadge(f);
+      var name = student.fullName || student.identifier || "—";
+
+      var avatarEl = document.getElementById(state.uid + "-cdb-modal-avatar");
+      avatarEl.textContent = initialsFromName(name);
+      avatarEl.style.background = hexToRgba(cluster.color, 0.14);
+      avatarEl.style.color = cluster.color;
+      document.getElementById(state.uid + "-cdb-modal-name").textContent = name;
+      document.getElementById(state.uid + "-cdb-modal-sub").textContent = student.identifier || "";
+      var clusterEl = document.getElementById(state.uid + "-cdb-modal-cluster");
+      clusterEl.innerHTML = '<span class="cdb-cluster-dot" style="background:' + escapeAttr(cluster.color) + '"></span>' + escapeHtml(cluster.label);
+      clusterEl.style.color = cluster.color;
+
+      document.getElementById(state.uid + "-cdb-modal-metrics").innerHTML =
+        modalMetricRow("Complétion", completion + "%", completion, cluster.color) +
+        modalMetricRow("Score quiz moyen", '<span class="' + scoreColorClass(quiz) + '">' + quiz + "%</span>", quiz, cluster.color) +
+        modalMetricRow("Connexions/semaine", logins.toFixed(1), null) +
+        modalMetricRow("Compétences faibles", weak + "%", weak, "#c41d38") +
+        modalMetricRow("Risque de décrochage", '<span class="cdb-badge ' + risk.cls + '">' + escapeHtml(risk.label) + "</span>", null);
+
+      state.studentModalEl.hidden = false;
+    }
+
+    function openStudentDetailById(state, clusterId, identifier) {
+      var data = state.currentData;
+      if (!data || !data.clusters) return;
+      for (var i = 0; i < data.clusters.length; i++) {
+        var c = data.clusters[i];
+        if (String(c.id) !== String(clusterId)) continue;
+        var arr = c.students || [];
+        for (var j = 0; j < arr.length; j++) {
+          if (String(arr[j].identifier) === String(identifier)) { openStudentDetail(state, arr[j], c); return; }
+        }
+      }
     }
 
     function setupClusterSections(uid, data) {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="/shared/theme.js"></script>
+    <script src="/shared/auth-guard.js"></script>
     <script src="/shared/i18n.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
     <title data-i18n="app.studentTitle">Espace Étudiant — NextLearn</title>
@@ -1076,6 +1077,12 @@
         <!--  DASHBOARD — Apprentissage Hub                                -->
         <!-- ════════════════════════════════════════════════════════════════ -->
         <section class="view" id="view-dashboard">
+
+          <!-- ── LEARNING PROFILE (VARK) — populated by student.js, above the grid ──
+               Before the game is taken it shows the "Mission Apprenant" call to
+               action; once taken it keeps showing the student's VARK profile. -->
+          <div class="card-learning-profile" id="dash-learning-profile" hidden></div>
+
           <div class="dash-grid" id="dash-app">
 
             <!-- ── HERO (1/12) ── -->
@@ -1223,17 +1230,8 @@
               <div id="dash-achievements-body" class="ach-body"></div>
             </article>
 
-            <!-- ── MISSION APPRENANT (full-width banner) ── -->
-            <article class="dash-card card-vark" style="background:linear-gradient(135deg,#fdf2f4 0%,#fff 100%);border-color:rgba(196,29,56,.18);display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;">
-              <span style="flex-shrink:0;width:4px;height:44px;border-radius:2px;background:#c41d38;"></span>
-              <div style="flex:1 1 260px;min-width:0;">
-                <h3 style="margin:0 0 0.15rem;font-size:1rem;" data-i18n="sidebar.learnerMission">Mission Apprenant</h3>
-                <p style="margin:0;font-size:0.84rem;color:#6b7280;line-height:1.5;" data-i18n="dash.missionDesc">Huit mini-jeux pour découvrir ton profil d'apprentissage — et la meilleure façon de progresser sur NextLearn.</p>
-              </div>
-              <a href="/student/mission-apprenant" style="flex-shrink:0;display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 1.3rem;border-radius:999px;background:#c41d38;color:#fff;font-size:0.85rem;font-weight:700;text-decoration:none;transition:background .18s;" onmouseover="this.style.background='#a0152c'" onmouseout="this.style.background='#c41d38'">
-                <span data-i18n="dash.missionCta">Relever les défis →</span>
-              </a>
-            </article>
+            <!-- Mission Apprenant moved to the top of the dashboard
+                 (#dash-learning-profile) so the VARK profile stays on top. -->
 
           </div>
           <!-- /dash-grid -->

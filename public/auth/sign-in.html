@@ -76,9 +76,32 @@
           </form>
         </section>
 
+        <section id="admin-signin-panel" class="auth-form-panel" hidden>
+          <p class="auth-subtitle" data-i18n="auth.adminSubtitle">Accédez à l'administration pour gérer les enseignants, les classes et les accès.</p>
+
+          <form class="auth-form" id="signin-form-admin" action="/api/sign-in" method="post">
+            <div id="message-container-admin" class="message-container" style="display: none;"></div>
+
+            <input type="hidden" name="role" value="admin" />
+
+            <label>
+              <span data-i18n="auth.adminEmail">Email administrateur</span>
+              <input type="email" name="email" placeholder="admin@esprit.tn" required />
+            </label>
+
+            <label>
+              <span data-i18n="auth.password">Mot de passe</span>
+              <input type="password" name="password" placeholder="Votre mot de passe administrateur" data-i18n-placeholder="auth.adminPwPh" required />
+            </label>
+
+            <button class="auth-submit" type="submit" data-i18n="auth.signInTitle">Se connecter</button>
+          </form>
+        </section>
+
         <div class="role-switch" id="role-switch" aria-label="Choix du type de compte">
           <button type="button" class="role-switch-btn active" data-role="étudiant" aria-pressed="true" data-i18n="auth.roleStudent">Étudiant</button>
           <button type="button" class="role-switch-btn" data-role="enseignant" aria-pressed="false" data-i18n="auth.roleTeacher">Enseignant</button>
+          <button type="button" class="role-switch-btn" data-role="admin" aria-pressed="false" data-i18n="auth.roleAdmin">Administrateur</button>
         </div>
 
         <p class="auth-alt">
@@ -99,29 +122,40 @@
     </main>
 
     <script>
-      const studentPanel = document.getElementById('student-signin-panel');
-      const teacherPanel = document.getElementById('teacher-signin-panel');
-      const studentForm = document.getElementById('signin-form-student');
-      const teacherForm = document.getElementById('signin-form-teacher');
-      const studentMessage = document.getElementById('message-container-student');
-      const teacherMessage = document.getElementById('message-container-teacher');
+      // Each account type has its own panel/form/message node, keyed by the role
+      // string the switch buttons carry (and that the form posts to the API).
+      const panels = {
+        'étudiant': document.getElementById('student-signin-panel'),
+        'enseignant': document.getElementById('teacher-signin-panel'),
+        'admin': document.getElementById('admin-signin-panel')
+      };
+      const forms = {
+        'étudiant': document.getElementById('signin-form-student'),
+        'enseignant': document.getElementById('signin-form-teacher'),
+        'admin': document.getElementById('signin-form-admin')
+      };
+      const messages = {
+        'étudiant': document.getElementById('message-container-student'),
+        'enseignant': document.getElementById('message-container-teacher'),
+        'admin': document.getElementById('message-container-admin')
+      };
       const roleSwitch = document.getElementById('role-switch');
+      const roles = Object.keys(panels);
 
-      if (!studentPanel || !teacherPanel || !studentForm || !teacherForm || !studentMessage || !teacherMessage || !roleSwitch) {
+      if (roles.some((r) => !panels[r] || !forms[r] || !messages[r]) || !roleSwitch) {
         console.error('Sign-in form elements not found');
       } else {
         const roleButtons = Array.from(roleSwitch.querySelectorAll('.role-switch-btn'));
 
         const syncRoleState = (role) => {
-          const isTeacher = role === 'enseignant';
-          studentPanel.hidden = isTeacher;
-          teacherPanel.hidden = !isTeacher;
-
-          studentMessage.style.display = 'none';
-          teacherMessage.style.display = 'none';
+          const active = panels[role] ? role : 'étudiant';
+          roles.forEach((r) => {
+            panels[r].hidden = r !== active;
+            messages[r].style.display = 'none';
+          });
 
           roleButtons.forEach((button) => {
-            const isActive = button.dataset.role === role;
+            const isActive = button.dataset.role === active;
             button.classList.toggle('active', isActive);
             button.setAttribute('aria-pressed', String(isActive));
           });
@@ -182,14 +216,11 @@
           }
         };
 
-        studentForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          await handleSubmit(studentForm, studentMessage);
-        });
-
-        teacherForm.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          await handleSubmit(teacherForm, teacherMessage);
+        roles.forEach((role) => {
+          forms[role].addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleSubmit(forms[role], messages[role]);
+          });
         });
       }
     </script>

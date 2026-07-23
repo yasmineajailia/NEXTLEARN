@@ -843,6 +843,29 @@ function bindEvents() {
   });
   dom.subEditQuizSelect?.addEventListener("change", populateSubEditorQuizFields);
 
+  // Custom file fields: reflect the chosen file name(s) next to the button.
+  document.addEventListener("change", (event) => {
+    const input = event.target;
+    if (!input || !input.matches || !input.matches(".file-field-control input[type='file']")) return;
+    const nameEl = input.closest(".file-field-control")?.querySelector(".file-field-name");
+    if (!nameEl) return;
+    const files = Array.from(input.files || []);
+    nameEl.textContent = !files.length
+      ? ""
+      : files.length === 1
+        ? files[0].name
+        : `${files.length} fichiers sélectionnés`;
+  });
+
+  // When a form is reset (e.g. after a successful save) clear its file readouts.
+  document.addEventListener("reset", (event) => {
+    const form = event.target;
+    if (!form || typeof form.querySelectorAll !== "function") return;
+    form.querySelectorAll(".file-field-name").forEach((el) => {
+      el.textContent = "";
+    });
+  });
+
   dom.manageModuleSelect?.addEventListener("change", populateManagedAcquisSelect);
   dom.manageAcquisSelect?.addEventListener("change", populateManagedSousAcquisSelect);
   dom.manageSousAcquisSelect?.addEventListener("change", populateManagedQuizSelect);
@@ -2982,8 +3005,9 @@ async function onAddSubFromModuleEditor(event) {
     }
 
     const insertIndex = Number.isInteger(subInsertState.index) ? Number(subInsertState.index) : 0;
+    const acquisId = subInsertState.acquisId || "";
 
-    insertSubAcquisIntoAcquis(module, subInsertState.acquisId, insertIndex, subAcquis);
+    insertSubAcquisIntoAcquis(module, acquisId, insertIndex, subAcquis);
 
     form.reset();
     closeSubInsertEditor();
@@ -2991,7 +3015,7 @@ async function onAddSubFromModuleEditor(event) {
     saveState();
     refreshAll();
     showToast("Sous-acquis ajoute");
-    switchView("content");
+    restoreAcquisSubListView(acquisId);
   } catch (error) {
     console.error("Add sub from editor failed:", error);
     showToast("Echec de l'upload ou de la creation du sous-acquis");
@@ -3053,6 +3077,19 @@ function renderSubEditorExistingFiles(courseFiles) {
 
 function onBackToModuleEditor() {
   contentEditorState.subAcquisId = "";
+  switchView("content");
+}
+
+// After adding/editing/deleting a sous-acquis, refreshAll() re-runs
+// openModuleEditor, which resets selectedAcquisId to "" (the acquis list). Call
+// this AFTER refreshAll to land back on the sous-acquis list of the acquis we
+// were working in, instead of the acquis list.
+function restoreAcquisSubListView(acquisId) {
+  if (acquisId) {
+    contentEditorState.selectedAcquisId = acquisId;
+    const module = findModule(contentEditorState.moduleId);
+    if (module) renderModuleEditorBody(module);
+  }
   switchView("content");
 }
 
@@ -3196,10 +3233,12 @@ async function onSaveSubEditor(event) {
   }
 
   dom.subEditResourceFile.value = "";
+  const acquisId = context.acquis?.id || "";
+  contentEditorState.subAcquisId = "";
   saveState();
   refreshAll();
   showToast("Sous-acquis mis a jour");
-  switchView("content");
+  restoreAcquisSubListView(acquisId);
 }
 
 function onDeleteSubFromEditor() {
@@ -3210,6 +3249,7 @@ function onDeleteSubFromEditor() {
     return;
   }
 
+  const acquisId = context.acquis?.id || "";
   context.acquis.sousAcquis = context.acquis.sousAcquis.filter(
     (entry) => entry.id !== context.subAcquis.id
   );
@@ -3217,7 +3257,7 @@ function onDeleteSubFromEditor() {
   saveState();
   refreshAll();
   showToast("Sous-acquis supprimé");
-  switchView("content");
+  restoreAcquisSubListView(acquisId);
 }
 
 function renderDraftQuestions() {
@@ -4453,6 +4493,7 @@ function setupAiQuizPanel({ prefix, getContext, onValidate }) {
   const footer = document.getElementById(`${prefix}-footer`);
   const titleInput = document.getElementById(`${prefix}-title`);
   const validateBtn = document.getElementById(`${prefix}-validate-btn`);
+  const regenerateBtn = document.getElementById(`${prefix}-regenerate-btn`);
 
   if (!toggleBtn || !body) return;
 
@@ -4467,13 +4508,17 @@ function setupAiQuizPanel({ prefix, getContext, onValidate }) {
     toggleBtn.classList.toggle("ai-quiz-toggle--active", next);
   });
 
-  generateBtn?.addEventListener("click", async () => {
+  let isGenerating = false;
+
+  async function runGeneration() {
+    if (isGenerating) return;
     const ctx = getContext();
     if (!ctx.moduleId) { showToast("Ouvrez d'abord un module"); return; }
     if (!ctx.subAcquisName) { showToast("Remplissez d'abord le nom du sous-acquis"); return; }
 
-    generateBtn.disabled = true;
-    generateBtn.textContent = "Génération…";
+    isGenerating = true;
+    if (generateBtn) { generateBtn.disabled = true; generateBtn.textContent = "Génération…"; }
+    if (regenerateBtn) { regenerateBtn.disabled = true; regenerateBtn.textContent = "Régénération…"; }
     if (resultsEl) resultsEl.innerHTML = '<p class="ai-loading">Génération en cours…</p>';
     if (footer) footer.hidden = true;
 
@@ -4500,10 +4545,14 @@ function setupAiQuizPanel({ prefix, getContext, onValidate }) {
     } catch (_err) {
       if (resultsEl) resultsEl.innerHTML = '<p class="ai-error">Erreur lors de la génération. Réessayez.</p>';
     } finally {
-      generateBtn.disabled = false;
-      generateBtn.textContent = "Générer";
+      isGenerating = false;
+      if (generateBtn) { generateBtn.disabled = false; generateBtn.textContent = "Générer"; }
+      if (regenerateBtn) { regenerateBtn.disabled = false; regenerateBtn.textContent = "Régénérer"; }
     }
-  });
+  }
+
+  generateBtn?.addEventListener("click", runGeneration);
+  regenerateBtn?.addEventListener("click", runGeneration);
 
   resultsEl?.addEventListener("click", (event) => {
     const editBtn = event.target.closest("[data-edit-qi]");

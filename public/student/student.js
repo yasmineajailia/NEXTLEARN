@@ -2344,7 +2344,62 @@ function renderDashModuleProgress(overview, quizTrend) {
   }).join("");
 }
 
+// ── VARK learning profile (Mission Apprenant) ──────────────────────────────
+// The mini-game at /student/mission-apprenant writes the result to
+// localStorage["nextlearn_vark_result"]: { dominant, scores{visual,readwrite,
+// auditory,kinesthetic}, completedAt }. We surface it at the top of the
+// dashboard: the call-to-action before it is taken, the profile after.
+const VARK_STORAGE_KEY = "nextlearn_vark_result";
+const VARK_DIMS = {
+  visual: { label: () => tr("mission.dim.V.label", "Visuel"), color: "#3266ad", emoji: "🗺️",
+    pname: () => tr("mission.dim.V.pname", "Le Cartographe"),
+    rec: () => tr("mission.dim.V.rec", "Sur NextLearn, commence chaque sous-acquis par les <b>vidéos de cours</b> : elles te donnent la vue d'ensemble dont ton cerveau visuel a besoin. Complète avec tes propres schémas et cartes mentales.") },
+  readwrite: { label: () => tr("mission.dim.R.label", "Mots"), color: "#1d9e75", emoji: "📖",
+    pname: () => tr("mission.dim.R.pname", "Le Narrateur"),
+    rec: () => tr("mission.dim.R.rec", "Sur NextLearn, attaque chaque chapitre par les <b>PDFs et les notes de cours</b> : lis d'abord, surligne, résume avec tes propres mots. Tes fiches rédigées seront ta meilleure arme.") },
+  auditory: { label: () => tr("mission.dim.A.label", "Séquence"), color: "#7f77dd", emoji: "🎯",
+    pname: () => tr("mission.dim.A.pname", "Le Stratège"),
+    rec: () => tr("mission.dim.A.rec", "Sur NextLearn, utilise le <b>chatbot</b> comme partenaire de réflexion : pose tes questions, demande des reformulations, explique les notions à voix haute comme si tu les enseignais.") },
+  kinesthetic: { label: () => tr("mission.dim.K.label", "Action"), color: "#d85a30", emoji: "⚙️",
+    pname: () => tr("mission.dim.K.pname", "L'Explorateur"),
+    rec: () => tr("mission.dim.K.rec", "Sur NextLearn, fonce directement sur les <b>quiz et les exercices</b> de chaque sous-acquis, même avant d'avoir tout lu. Teste, observe ce qui coince, puis reviens vers le cours pour combler tes lacunes.") }
+};
+
+function readVarkResult() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(VARK_STORAGE_KEY) || "null");
+    if (parsed && parsed.dominant && parsed.scores && VARK_DIMS[parsed.dominant]) return parsed;
+  } catch (_e) { /* ignore malformed storage */ }
+  return null;
+}
+
+function renderLearningProfile() {
+  const card = document.getElementById("dash-learning-profile");
+  if (!card) return;
+  const result = readVarkResult();
+
+  if (!result) {
+    // Not taken yet — small prompt to play the Mission Apprenant game.
+    card.innerHTML = `
+      <a class="lp-badge lp-badge-cta" href="/student/mission-apprenant" style="--lp-color:#c41d38">
+        <span class="lp-badge-emoji">🎓</span>
+        <span class="lp-badge-text">${tr("dash.discoverProfile", "Découvre ton profil d'apprentissage")}</span>
+      </a>`;
+    card.hidden = false;
+    return;
+  }
+
+  const dom = VARK_DIMS[result.dominant];
+  card.innerHTML = `
+    <a class="lp-badge" href="/student/mission-apprenant" title="${tr("dash.retakeVark", "Refaire le test")}" style="--lp-color:${dom.color}">
+      <span class="lp-badge-emoji">${dom.emoji}</span>
+      <span class="lp-badge-text"><span class="lp-badge-eyebrow">${tr("dash.learningProfile", "Ton profil d'apprentissage")}</span>${dom.pname()}</span>
+    </a>`;
+  card.hidden = false;
+}
+
 async function loadDashboardData() {
+  renderLearningProfile();
   const [modules, stats, overview, calendarPayload] = await Promise.all([
     fetchModules(),
     fetchProgressStats(),

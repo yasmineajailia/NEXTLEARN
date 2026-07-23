@@ -181,6 +181,20 @@
 :root[data-theme="dark"] .vark-reco-title { color: #f2f5f9; }
 :root[data-theme="dark"] .vark-reco-text { color: #aab3bf; }
 
+/* Learning profile (VARK) badge — dashboard top */
+:root[data-theme="dark"] .card-learning-profile .lp-badge {
+  background: color-mix(in srgb, var(--lp-color) 22%, #1a1f27);
+  border-color: color-mix(in srgb, var(--lp-color) 45%, transparent);
+}
+:root[data-theme="dark"] .card-learning-profile .lp-badge:hover {
+  background: color-mix(in srgb, var(--lp-color) 30%, #1a1f27);
+}
+:root[data-theme="dark"] .card-learning-profile .lp-badge-emoji {
+  background: color-mix(in srgb, var(--lp-color) 32%, #1a1f27);
+}
+:root[data-theme="dark"] .card-learning-profile .lp-badge-text { color: color-mix(in srgb, var(--lp-color) 65%, #ffffff); }
+:root[data-theme="dark"] .card-learning-profile .lp-badge-eyebrow { color: #8a94a0; }
+
 /* Chatbot bubbles */
 :root[data-theme="dark"] .chatbot-bubble.bot { background: #1c222b; color: #e6edf3; }
 :root[data-theme="dark"] code.inline-code { background: #232a33; border-color: #333c47; color: #ff8a94; }
@@ -332,3 +346,79 @@ body.sidebar-collapsed .sidebar-footer { align-items: center; }
 
 /* Success/progress bars & positive dots → blue in CVD mode. */
 :root[data-cvd="on"] .pred-factor-good .pred-factor-dot { background: #0072b2 !important; }
+
+/* =====================================================================
+   SHARED POLISH — loaded on every page. theme.css loads BEFORE each
+   section's stylesheet, so this layer stays additive and low-specificity
+   (:where() = 0) or targets properties pages don't set. It refines the
+   whole app — focus, scrollbars, controls, selection, motion, text — with
+   no change to any page's layout or identity. `--accent` is a shared token
+   name across student/backoffice/auth, so everything below auto-adapts to
+   each section's own accent (and to the dark override higher up this file).
+   ===================================================================== */
+
+/* Crisper text rendering everywhere. */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Balanced headings — nicer line breaks, no layout change. */
+:where(h1, h2, h3) { text-wrap: balance; }
+
+/* Branded form controls (checkbox / radio) across the app. */
+:where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--accent, #cf1f2e); }
+
+/* Consistent, smooth motion on interactive elements. :where() keeps
+   specificity at 0, so any page defining its own transition still wins. */
+:where(a, button, input, select, textarea, summary, .nav-item, .card,
+  .dash-card, .kpi-card, .module-card, .chip, .btn, [role="button"]) {
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease,
+    box-shadow .18s ease, transform .18s ease;
+}
+
+/* Modern keyboard focus ring, in each section's accent colour. Pages rarely
+   define :focus-visible, so this wins and stays consistent everywhere. */
+:where(a, button, input, select, textarea, [tabindex], [role="button"]):focus-visible {
+  outline: 2px solid var(--accent, #cf1f2e);
+  outline-offset: 2px;
+}
+/* Drop the legacy outline on pointer focus, now that we have a better one. */
+:where(a, button):focus:not(:focus-visible) { outline: none; }
+
+/* Brand-tinted text selection. */
+::selection { background: color-mix(in srgb, var(--accent, #cf1f2e) 24%, transparent); }
+
+/* Slim, branded scrollbars (Chromium + Firefox). */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent, #cf1f2e) 38%, #b9bcc6) transparent; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent, #cf1f2e) 30%, #c3c6cf);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent, #cf1f2e) 52%, #9aa0ab);
+  background-clip: padding-box;
+}
+:root[data-theme="dark"] * { scrollbar-color: color-mix(in srgb, var(--accent, #ff5f6d) 46%, #39414d) transparent; }
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent, #ff5f6d) 42%, #39414d);
+  background-clip: padding-box;
+}
+
+/* Smooth in-page anchor scrolling. */
+html { scroll-behavior: smooth; }
+
+/* Respect reduced-motion everywhere — overrides every page's animation. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

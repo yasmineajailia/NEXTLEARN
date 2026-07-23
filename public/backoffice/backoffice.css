@@ -334,6 +334,13 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(207, 31, 46, 0.2), 0 8px 18px rgba(207, 31, 46, 0.12);
 }
 
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(207, 31, 46, 0.15);
+}
+
 select:disabled {
   background-color: #f4f5f8;
   color: #8b90a0;
@@ -1287,31 +1294,79 @@ textarea {
   border: 1px solid #f2edf0;
 }
 
-.sub-acquis-create-form input[type="file"] {
-  padding: 0.38rem;
+/* ── Custom file field ──────────────────────────────────
+   Replaces the browser's native "Sélect. fichiers / Aucun fichier choisi"
+   widget with an on-brand button + a filename readout. The real <input> is
+   kept (form logic reads its .files) but laid transparently over the control
+   so a click anywhere still opens the native picker — no JS needed to open it;
+   a small delegated listener fills in the selected name(s). */
+.file-field-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.36rem 0.4rem 0.36rem 0.42rem;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  border: 1px dashed #efb6c0;
-  background: linear-gradient(180deg, #fff8fa, #fff2f4);
-  color: #5f2a34;
+  background: #fafbfd;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
-.sub-acquis-create-form input[type="file"]::file-selector-button {
-  margin-right: 0.65rem;
-  padding: 0.42rem 0.72rem;
-  border: 1px solid #da9aa6;
-  border-radius: 999px;
+.file-field-control:hover {
+  border-color: #d8b7bc;
   background: #ffffff;
-  color: #7a2433;
+}
+
+.file-field-control:focus-within {
+  border-color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(207, 31, 46, 0.12);
+}
+
+.file-field-control input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-field-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.46rem 0.9rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #cf1f2e, #8f0916);
+  color: #ffffff;
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
-  cursor: pointer;
-  transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease;
+  font-size: 0.85rem;
+  box-shadow: 0 6px 14px rgba(207, 31, 46, 0.22);
+  transition: transform 140ms ease, box-shadow 140ms ease;
 }
 
-.sub-acquis-create-form input[type="file"]:hover::file-selector-button {
+.file-field-control:hover .file-field-btn {
   transform: translateY(-1px);
-  background: #fff3f6;
-  border-color: #cf6a7d;
+  box-shadow: 0 8px 18px rgba(207, 31, 46, 0.28);
+}
+
+.file-field-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.86rem;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-field-name:empty::before {
+  content: "Aucun fichier";
+  color: var(--muted);
 }
 
 #import-students-form input[type="file"] {
@@ -1366,6 +1421,73 @@ textarea {
 .sub-acquis-submit-row {
   justify-content: flex-end;
   margin-top: 0.15rem;
+}
+
+/* ── Sous-acquis editor (create + modify) — unified, richer layout ──
+   Both the "Ajouter" and "Modifier" views share the same look: a headed card,
+   an accent-barred title with a one-line description, and each top-level field
+   sitting in its own soft panel that lights up when focused. */
+#sub-add-form-card,
+#view-sub-editor > .card {
+  padding: 1.15rem 1.25rem 1.3rem;
+}
+
+#view-sub-add .editor-head,
+#view-sub-editor .editor-head {
+  align-items: flex-start;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.editor-head-title {
+  display: grid;
+  gap: 0.22rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--accent);
+}
+
+.editor-head-title h3 {
+  font-size: 1.16rem;
+}
+
+.editor-head-sub {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* Every top-level field is its own soft panel, so the form reads as a set of
+   discrete, aligned cards rather than a flat wall of inputs. */
+#module-add-sub-form > label,
+#sub-edit-form > label,
+#view-sub-editor .sub-edit-files-section {
+  padding: 0.62rem 0.72rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  font-weight: 600;
+  color: #3a4150;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+#module-add-sub-form > label:focus-within,
+#sub-edit-form > label:focus-within {
+  border-color: var(--accent);
+  background: #fffdfd;
+}
+
+/* The controls themselves stay normal weight — only the field label is bold. */
+#module-add-sub-form > label :is(input, select, textarea),
+#sub-edit-form > label :is(input, select, textarea) {
+  font-weight: 400;
+}
+
+/* The manual-quiz builder chip row and AI panel align with the field panels. */
+#module-add-sub-form .ai-quiz-panel,
+#sub-edit-form .ai-quiz-panel {
+  border-radius: 12px;
 }
 
 .classes-create-card {
@@ -2032,6 +2154,12 @@ th {
 
 .ai-edit-opt-row input[type="radio"] {
   flex-shrink: 0;
+  /* Undo the global `input { width: 100% }` rule — without this the radio
+     claims the whole row (flex-shrink:0) and pushes the label + text field
+     off-screen, forcing a horizontal scrollbar. */
+  width: 16px;
+  height: 16px;
+  margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
 }

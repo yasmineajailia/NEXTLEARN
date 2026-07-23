@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <script src="/shared/theme.js"></script>
+    <script src="/shared/auth-guard.js"></script>
     <script src="/shared/i18n.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
 
@@ -157,6 +158,10 @@
     .memq-opt:hover { border-color: var(--c-v); transform: translateY(-2px); }
     .memq-opt.good { border-color: #22c55e; animation: goodPulse .4s ease; }
     .memq-opt.bad  { border-color: #ef4444; animation: shake .3s ease; }
+    /* After answering, the real image is revealed back in its grid position. */
+    .mem9 .ph.reveal-good { border-color: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,.4); }
+    .mem9 .ph.reveal-bad  { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.35); }
+    .mem9 .ph.reveal-good img, .mem9 .ph.reveal-bad img { animation: goodPulse .4s ease; }
 
     /* ── L1 : pendu ── */
     .hang-wrap { display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: start; margin-bottom: 14px; }
@@ -807,7 +812,14 @@ function runV2(host, done) {
         btn.classList.add("bad");
         host.querySelectorAll(".memq-opt").forEach((b) => { if (b.dataset.id === correct) b.classList.add("good"); });
       }
-      after(850, () => { qi++; ask(); });
+      // Reveal the correct image back in its grid cell — on a right OR wrong
+      // guess — so the student sees where it actually was.
+      const cell = host.querySelectorAll("#v2-grid .ph")[pos];
+      if (cell) {
+        cell.innerHTML = IMG(correct, 200, 200);
+        cell.classList.add(good ? "reveal-good" : "reveal-bad");
+      }
+      after(1100, () => { qi++; ask(); });
     }));
   }
 }
