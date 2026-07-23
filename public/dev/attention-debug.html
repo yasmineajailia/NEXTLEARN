@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attention Tracker — Debug View</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --bg:      #0b0f1a;
+        --card:    #151d2e;
+        --card2:   #1a2235;
+        --border:  rgba(255,255,255,0.08);
+        --text:    #f1f5f9;
+        --muted:   #64748b;
+        --muted2:  #94a3b8;
+        --accent:  #6366f1;
+        --green:   #22c55e;
+        --amber:   #f59e0b;
+        --red:     #ef4444;
+        --cyan:    #22d3ee;
+        --pink:    #ec4899;
+        --radius:  14px;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 1.5rem;
+        line-height: 1.5;
+      }
+
+      .wrap { max-width: 1340px; margin: 0 auto; }
+
+      header { margin-bottom: 1.25rem; }
+      h1 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+      .sub { color: var(--muted2); font-size: 0.88rem; margin-top: 0.3rem; }
+      .warn {
+        margin-top: 0.8rem; padding: 0.6rem 0.85rem; border-radius: 10px;
+        background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.28);
+        color: #fcd34d; font-size: 0.82rem;
+      }
+      .warn code { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+      .grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap: 1.1rem; }
+      @media (max-width: 1080px) { .grid { grid-template-columns: 1fr; } }
+
+      .card {
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 1rem 1.1rem;
+      }
+      .card + .card { margin-top: 1.1rem; }
+      .card h2 {
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em;
+        color: var(--muted2); font-weight: 700; margin-bottom: 0.8rem;
+      }
+
+      /* ── Video stage ─────────────────────────────────────────────── */
+      .stage { position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 4/3; }
+      .stage canvas { display: block; width: 100%; height: 100%; }
+      .stage-empty {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 0.6rem; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 1rem;
+      }
+      video { display: none; }
+
+      .verdict {
+        position: absolute; top: 0.7rem; left: 0.7rem; padding: 0.35rem 0.75rem;
+        border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+        font-family: 'JetBrains Mono', monospace; backdrop-filter: blur(8px);
+      }
+      .verdict.ok  { background: rgba(34,197,94,0.22);  color: #86efac; border: 1px solid rgba(34,197,94,0.4); }
+      .verdict.bad { background: rgba(239,68,68,0.22);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+
+      .controls { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 0.85rem; }
+      button {
+        font: inherit; font-size: 0.85rem; font-weight: 600; border: 0; border-radius: 9px;
+        padding: 0.55rem 1rem; cursor: pointer; transition: filter 0.15s;
+      }
+      button:hover:not(:disabled) { filter: brightness(1.14); }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      .btn-primary { background: var(--accent); color: #fff; }
+      .btn-ghost { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+
+      .toggles { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-top: 0.75rem; font-size: 0.82rem; color: var(--muted2); }
+      .toggles label { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+      .toggles input { accent-color: var(--accent); cursor: pointer; }
+
+      /* ── Metric rows ─────────────────────────────────────────────── */
+      .metric { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+      .metric:last-child { border-bottom: 0; }
+      .metric-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+      .metric-name { font-size: 0.86rem; font-weight: 600; display: flex; align-items: center; gap: 0.45rem; }
+      .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+      .metric-val { font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .metric-note { font-size: 0.73rem; color: var(--muted); margin-top: 0.2rem; }
+
+      .track { position: relative; height: 7px; border-radius: 4px; background: var(--card2); margin-top: 0.45rem; overflow: hidden; }
+      .track-fill { position: absolute; inset-block: 0; left: 0; border-radius: 4px; transition: width 0.1s linear, background 0.15s; }
+      .track-band { position: absolute; inset-block: 0; background: rgba(34,197,94,0.16); }
+      .track-mark { position: absolute; inset-block: -2px; width: 2px; background: var(--amber); }
+
+      /* ── Status pills ────────────────────────────────────────────── */
+      .pills { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .pill {
+        padding: 0.5rem 0.65rem; border-radius: 9px; font-size: 0.79rem; font-weight: 600;
+        display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
+        background: var(--card2); border: 1px solid var(--border); transition: all 0.15s;
+      }
+      .pill.ok  { border-color: rgba(34,197,94,0.35);  color: #86efac; }
+      .pill.bad { border-color: rgba(239,68,68,0.45);  color: #fca5a5; background: rgba(239,68,68,0.10); }
+      .pill-state { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; opacity: 0.85; }
+
+      /* ── Score ───────────────────────────────────────────────────── */
+      .score-row { display: flex; align-items: center; gap: 1rem; }
+      .score-big { font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+      .score-meta { font-size: 0.78rem; color: var(--muted); }
+      #spark { width: 100%; height: 56px; margin-top: 0.7rem; display: block; }
+
+      /* ── Sliders ─────────────────────────────────────────────────── */
+      .slider { margin-bottom: 0.85rem; }
+      .slider:last-child { margin-bottom: 0; }
+      .slider-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.8rem; margin-bottom: 0.3rem; }
+      .slider-head code { font-family: 'JetBrains Mono', monospace; color: var(--muted2); font-size: 0.76rem; }
+      .slider-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.83rem; }
+      .slider input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+      .dirty { color: var(--amber) !important; }
+
+      /* ── Event log ───────────────────────────────────────────────── */
+      .log { max-height: 190px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; }
+      .log-row { display: flex; gap: 0.7rem; padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
+      .log-row:last-child { border-bottom: 0; }
+      .log-t { color: var(--muted); flex: none; width: 3.6rem; font-variant-numeric: tabular-nums; }
+      .log-reason { color: #fca5a5; flex: 1; }
+      .log-dur { color: var(--muted2); flex: none; font-variant-numeric: tabular-nums; }
+      .log-empty { color: var(--muted); font-family: 'Inter', sans-serif; font-size: 0.82rem; padding: 0.5rem 0; }
+
+      .legend { font-size: 0.78rem; color: var(--muted2); }
+      .legend li { margin-bottom: 0.5rem; padding-left: 0.9rem; position: relative; list-style: none; }
+      .legend li::before { content: "—"; position: absolute; left: 0; color: var(--muted); }
+      .legend code { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 0.74rem; }
+      .legend strong { color: var(--text); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Attention Tracker — Debug View</h1>
+        <p class="sub">
+          Live visualisation of every signal behind the focus score: the landmarks each formula reads,
+          the geometry it measures, and the thresholds it compares against.
+        </p>
+        <div class="warn">
+          Dev-only page, not linked from the app and it never uploads anything &mdash; there is no
+          <code>POST /api/student/attention-session</code> here. The detection constants and formulas below are
+          <strong>duplicated</strong> from <code>public/student/js/attentionTracker.js</code> (lines 39&ndash;50 and 256&ndash;309).
+          If you change them there, change them here too or this view will quietly lie to you.
+        </div>
+      </header>
+
+      <div class="grid">
+        <!-- ── Left column ──────────────────────────────────────── -->
+        <div>
+          <div class="card">
+            <h2>Camera</h2>
+            <div class="stage">
+              <canvas id="overlay" width="640" height="480"></canvas>
+              <div class="stage-empty" id="stage-empty">
+                <span>Camera off</span>
+                <span style="font-size:0.78rem;color:#475569">Start tracking to grant access and begin</span>
+              </div>
+              <div class="verdict ok" id="verdict" hidden>FOCUSED</div>
+            </div>
+            <video id="video" playsinline muted></video>
+
+            <div class="controls">
+              <button class="btn-primary" id="btn-start">Start tracking</button>
+              <button class="btn-ghost" id="btn-stop" disabled>Stop</button>
+              <button class="btn-ghost" id="btn-reset">Reset thresholds</button>
+            </div>
+
+            <div class="toggles">
+              <label><input type="checkbox" id="t-mesh" /> Full mesh (468 pts)</label>
+              <label><input type="checkbox" id="t-geom" checked /> Measured geometry</label>
+              <label><input type="checkbox" id="t-labels" checked /> Landmark numbers</label>
+              <label><input type="checkbox" id="t-mirror" checked /> Mirror</label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Focus score</h2>
+            <div class="score-row">
+              <div class="score-big" id="score">--</div>
+              <div>
+                <div class="score-meta" id="score-meta">No samples yet</div>
+                <div class="score-meta" id="window-meta" style="margin-top:0.2rem">Window empty</div>
+              </div>
+            </div>
+            <canvas id="spark"></canvas>
+            <p class="metric-note" style="margin-top:0.45rem">
+              Score = focused frames &divide; total frames in the rolling 30s window, sampled every 5s &mdash;
+              identical to <code style="font-family:'JetBrains Mono',monospace">sampleScore()</code>.
+            </p>
+          </div>
+
+          <div class="card">
+            <h2>Distraction events</h2>
+            <div class="log" id="log"><div class="log-empty">No distraction events recorded yet.</div></div>
+          </div>
+        </div>
+
+        <!-- ── Right column ─────────────────────────────────────── -->
+        <div>
+          <div class="card">
+            <h2>Per-frame checks</h2>
+            <div class="pills">
+              <div class="pill" id="p-face"><span>Face detected</span><span class="pill-state">--</span></div>
+              <div class="pill" id="p-eyes"><span>Eyes open</span><span class="pill-state">--</span></div>
+              <div class="pill" id="p-head"><span>Head forward</span><span class="pill-state">--</span></div>
+              <div class="pill" id="p-gaze"><span>Gaze on screen</span><span class="pill-state">--</span></div>
+            </div>
+            <p class="metric-note" style="margin-top:0.7rem">
+              Any single failing check marks the whole frame distracted. The first failure in order
+              (eyes &rarr; head &rarr; gaze) becomes the event reason.
+            </p>
+          </div>
+
+          <div class="card">
+            <h2>Live measurements</h2>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name"><span class="swatch" style="background:#22d3ee"></span>EAR (eye aspect ratio)</span>
+                <span class="metric-val" id="m-ear">--</span>
+              </div>
+              <div class="track"><div class="track-fill" id="f-ear"></div><div class="track-mark" id="k-ear"></div></div>
+              <div class="metric-note" id="n-ear">Vertical lid gap &divide; horizontal eye width, averaged over both eyes.</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name"><span class="swatch" style="background:#f59e0b"></span>Yaw A &mdash; contour <code style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#64748b">234/454</code></span>
+                <span class="metric-val" id="m-yaw">--</span>
+              </div>
+              <div class="track"><div class="track-band" id="b-yaw"></div><div class="track-mark" id="k-yaw" style="background:#fff"></div></div>
+              <div class="metric-note" id="n-yaw">Production formula. Nose-to-left-cheek &divide; nose-to-right-cheek. 1.0 = facing forward.</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name"><span class="swatch" style="background:#818cf8"></span>Yaw B &mdash; eye corners <code style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#64748b">33/263</code></span>
+                <span class="metric-val" id="m-yawalt">--</span>
+              </div>
+              <div class="track"><div class="track-band" id="b-yawalt"></div><div class="track-mark" id="k-yawalt" style="background:#fff"></div></div>
+              <div class="metric-note" id="n-yawalt">Candidate formula. Interior landmarks, so hands on the temples do not occlude them.</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name">Jitter &mdash; A / B</span>
+                <span class="metric-val" id="m-jitter">--</span>
+              </div>
+              <div class="metric-note" id="n-jitter">Standard deviation of each ratio over recent frames. Lower is steadier.</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name"><span class="swatch" style="background:#ec4899"></span>Gaze shift</span>
+                <span class="metric-val" id="m-gaze">--</span>
+              </div>
+              <div class="track"><div class="track-fill" id="f-gaze"></div><div class="track-mark" id="k-gaze"></div></div>
+              <div class="metric-note" id="n-gaze">Iris offset from eye centre. 0 = centred, 1 = at a corner.</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name"><span class="swatch" style="background:#94a3b8"></span>Brightness</span>
+                <span class="metric-val" id="m-bright">--</span>
+              </div>
+              <div class="track"><div class="track-fill" id="f-bright"></div><div class="track-mark" id="k-bright"></div></div>
+              <div class="metric-note">Below the threshold the frame is discarded entirely, not counted as distracted.</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-head">
+                <span class="metric-name">Frames processed</span>
+                <span class="metric-val" id="m-frames">0</span>
+              </div>
+              <div class="metric-note" id="n-fps">Target 8 fps (one frame per 125 ms).</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Yaw method comparison</h2>
+            <div style="display:flex;gap:1.1rem;flex-wrap:wrap;font-size:0.78rem;margin-bottom:0.5rem">
+              <span style="display:flex;align-items:center;gap:0.35rem"><span class="swatch" style="background:#c2820e"></span>A &mdash; contour 234/454</span>
+              <span style="display:flex;align-items:center;gap:0.35rem"><span class="swatch" style="background:#7079e0"></span>B &mdash; eye corners 33/263</span>
+            </div>
+            <canvas id="yaw-chart" style="width:100%;height:130px;display:block"></canvas>
+            <p class="metric-note" style="margin-top:0.5rem">
+              Both ratios over the last ~30s. The shaded band is each method's accept range.
+              Put your hands on your head: the line that jumps out of its band is the one causing the false positive.
+            </p>
+            <div class="slider" style="margin-top:0.85rem">
+              <div class="slider-head"><code>YAW_METHOD</code><span class="slider-val" id="v-method">contour</span></div>
+              <div style="display:flex;gap:0.4rem;margin-top:0.35rem">
+                <button class="btn-ghost" data-method="contour" style="flex:1;font-size:0.78rem;padding:0.4rem">A only</button>
+                <button class="btn-ghost" data-method="alt" style="flex:1;font-size:0.78rem;padding:0.4rem">B only</button>
+                <button class="btn-ghost" data-method="both" style="flex:1;font-size:0.78rem;padding:0.4rem">Both agree</button>
+              </div>
+              <p class="metric-note" style="margin-top:0.4rem">Chooses which formula drives the actual head_turned verdict above.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Thresholds — drag to experiment</h2>
+            <div class="slider">
+              <div class="slider-head"><code>EAR_THRESHOLD</code><span class="slider-val" id="v-ear">0.20</span></div>
+              <input type="range" id="s-ear" min="0.05" max="0.40" step="0.01" value="0.20" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>EYES_CLOSED_MS</code><span class="slider-val" id="v-blink">2000</span></div>
+              <input type="range" id="s-blink" min="0" max="5000" step="100" value="2000" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>YAW_LOW / YAW_HIGH</code> <span style="color:#f59e0b">A</span><span class="slider-val" id="v-yaw">0.65 / 1.35</span></div>
+              <input type="range" id="s-yaw" min="0.05" max="0.60" step="0.01" value="0.35" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>YAW_ALT band</code> <span style="color:#818cf8">B</span><span class="slider-val" id="v-yawalt">0.65 / 1.35</span></div>
+              <input type="range" id="s-yawalt" min="0.05" max="0.60" step="0.01" value="0.35" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>HEAD_TURNED_MS</code><span class="slider-val" id="v-headms">0</span></div>
+              <input type="range" id="s-headms" min="0" max="4000" step="100" value="0" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>GAZE_AWAY_MS</code><span class="slider-val" id="v-gazems">0</span></div>
+              <input type="range" id="s-gazems" min="0" max="4000" step="100" value="0" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>GAZE_SHIFT_LIMIT</code><span class="slider-val" id="v-gaze">0.40</span></div>
+              <input type="range" id="s-gaze" min="0.05" max="0.95" step="0.01" value="0.40" />
+            </div>
+            <div class="slider">
+              <div class="slider-head"><code>BRIGHTNESS_MIN</code><span class="slider-val" id="v-bright">40</span></div>
+              <input type="range" id="s-bright" min="0" max="150" step="1" value="40" />
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>What you are looking at</h2>
+            <ul class="legend">
+              <li><strong>Cyan</strong> lines are the EAR measurement: the vertical pair
+                (<code>159-145</code>, <code>386-374</code>) over the horizontal pair
+                (<code>33-133</code>, <code>362-263</code>). Close your eyes slowly and watch the ratio collapse.</li>
+              <li><strong>Amber solid</strong> lines are yaw method A, the production one: nose <code>1</code> to the face
+                contour at <code>234</code> and <code>454</code>. Those points sit at your temples.</li>
+              <li><strong>Indigo dashed</strong> lines are yaw method B, the candidate: nose <code>1</code> to the outer eye
+                corners <code>33</code> and <code>263</code>. Rest your hands on your head and watch A jump while B stays put
+                &mdash; occlusion at the temples drags the contour landmarks, but not the eye corners. That is the
+                false positive you found, on screen.</li>
+              <li><strong>Pink</strong> marks the iris centroid (<code>468-472</code>, <code>473-477</code>) against the
+                eye-corner span. Keep your head still and look sideways &mdash; only this one should move.</li>
+              <li>The EAR check has a <strong>debounce</strong>: it needs the ratio held below threshold for
+                <code>EYES_CLOSED_MS</code> before firing, which is what stops ordinary blinking from scoring as distraction.
+                Set the slider to 0 and blink to see the difference.</li>
+              <li>There is <strong>no pitch detection</strong>. Look straight down while keeping your head square to the
+                camera &mdash; every check still passes. That is a real blind spot in the production tracker, not a bug in this page.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        // ── Constants mirrored from attentionTracker.js:39-50 ─────────────
+        var PROD = {
+          FRAME_INTERVAL_MS: 125,
+          EAR_THRESHOLD: 0.2,
+          EYES_CLOSED_MS: 2000,
+          YAW_SPREAD: 0.35,          // YAW_HIGH 1.35 / YAW_LOW 0.65
+          GAZE_SHIFT_LIMIT: 0.4,
+          WINDOW_MS: 30000,
+          SCORE_INTERVAL_MS: 5000,
+          BRIGHTNESS_MIN: 40,
+          LIGHTING_CHECK_EVERY: 10,
+          // --- Not in production: experiment knobs -----------------------
+          // Production debounces eyes_closed but NOT head_turned or gaze_away
+          // (attentionTracker.js:356-367), so these default to 0 = current behaviour.
+          HEAD_TURNED_MS: 0,
+          GAZE_AWAY_MS: 0,
+          // Band for the eye-corner yaw. Starts equal to the contour spread; the
+          // whole point of this page is to find the value that actually fits.
+          YAW_ALT_SPREAD: 0.35,
+          // Which yaw formula drives the verdict: "contour" (production) | "alt" | "both"
+          YAW_METHOD: "contour"
+        };
+        var cfg = Object.assign({}, PROD);
+
+        var FACEMESH_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js";
+        var CAMERA_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+        var FACEMESH_ASSET_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/";
+
+        // Overlay colours are the bright steps (they sit on arbitrary video content);
+        // chart colours are the CVD-validated dark-surface steps of the SAME hues, so
+        // each yaw method keeps one identity across the overlay and the comparison plot.
+        var COLORS = {
+          ear: "#22d3ee", yaw: "#f59e0b", yawAlt: "#818cf8",
+          gaze: "#ec4899", mesh: "rgba(148,163,184,0.30)"
+        };
+        var CHART = { yaw: "#c2820e", yawAlt: "#7079e0" };
+
+        var video = document.getElementById("video");
+        var canvas = document.getElementById("overlay");
+        var ctx = canvas.getContext("2d");
+        var spark = document.getElementById("spark");
+        var sctx = spark.getContext("2d");
+        var lightCanvas = document.createElement("canvas");
+        lightCanvas.width = 16; lightCanvas.height = 16;
+
+        var $ = function (id) { return document.getElementById(id); };
+
+        var st = {
+          faceMesh: null, camera: null, running: false,
+          lastFrameTs: 0, frameCount: 0, startedAt: 0,
+          earLowSince: null, yawOutSince: null, gazeOutSince: null,
+          yawHist: [], yawAltHist: [],
+          window: [], samples: [], events: [],
+          currentDistraction: null, scoreTimer: null,
+          brightness: null, lastMetrics: null,
+          opts: { mesh: false, geom: true, labels: true, mirror: true }
+        };
+
+        // ── Formulas duplicated from attentionTracker.js:256-309 ──────────
+        function dist(a, b) { var dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
+
+        function computeEar(lm) {
+          var left = dist(lm[159], lm[145]) / (dist(lm[33], lm[133]) || 1e-6);
+          var right = dist(lm[386], lm[374]) / (dist(lm[362], lm[263]) || 1e-6);
+          return { left: left, right: right, avg: (left + right) / 2 };
+        }
+
+        // Production formula — face-oval contour points, sitting at the temples.
+        function computeYawRatio(lm) {
+          var nose = lm[1];
+          var dLeft = Math.abs(nose.x - lm[234].x);
+          var dRight = Math.abs(nose.x - lm[454].x);
+          return { ratio: dLeft / (dRight || 1e-6), dLeft: dLeft, dRight: dRight };
+        }
+
+        // Candidate replacement — outer eye corners (33 / 263). These are interior
+        // to the face, so a hand resting on the temple does not occlude them.
+        // The ratio has a DIFFERENT scale than the contour version, so it needs its
+        // own band (YAW_ALT_SPREAD) rather than reusing 0.65/1.35.
+        function computeYawAlt(lm) {
+          var nose = lm[1];
+          var dLeft = Math.abs(nose.x - lm[33].x);
+          var dRight = Math.abs(nose.x - lm[263].x);
+          return { ratio: dLeft / (dRight || 1e-6), dLeft: dLeft, dRight: dRight };
+        }
+
+        /** Population standard deviation, used as a jitter measure. */
+        function stdev(arr) {
+          if (arr.length < 2) return 0;
+          var m = arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
+          var v = arr.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / arr.length;
+          return Math.sqrt(v);
+        }
+
+        function eyeShift(lm, irisStart, cornerA, cornerB) {
+          var cx = 0;
+          for (var i = irisStart; i < irisStart + 5; i++) cx += lm[i].x;
+          cx /= 5;
+          var minX = Math.min(lm[cornerA].x, lm[cornerB].x);
+          var maxX = Math.max(lm[cornerA].x, lm[cornerB].x);
+          var span = maxX - minX;
+          if (span < 1e-6) return { shift: 0, cx: cx, minX: minX, maxX: maxX };
+          var ratio = (cx - minX) / span;
+          return { shift: Math.abs(ratio - 0.5) * 2, cx: cx, minX: minX, maxX: maxX };
+        }
+
+        function computeGazeShift(lm) {
+          if (!lm[472] || !lm[477]) return null;
+          var l = eyeShift(lm, 468, 33, 133);
+          var r = eyeShift(lm, 473, 362, 263);
+          return { shift: (l.shift + r.shift) / 2, left: l, right: r };
+        }
+
+        function computeBrightness(image) {
+          var c = lightCanvas.getContext("2d", { willReadFrequently: true });
+          try {
+            c.drawImage(image, 0, 0, 16, 16);
+            var data = c.getImageData(0, 0, 16, 16).data, sum = 0;
+            for (var i = 0; i < data.length; i += 4) {
+              sum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            }
+            return sum / (data.length / 4);
+          } catch (_e) { return 255; }
+        }
+
+        // ── Drawing ───────────────────────────────────────────────────────
+        function P(lm) {
+          return { x: (st.opts.mirror ? 1 - lm.x : lm.x) * canvas.width, y: lm.y * canvas.height };
+        }
+        function line(a, b, color, width) {
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = color; ctx.lineWidth = width || 2; ctx.stroke();
+        }
+        function dot(p, color, r) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, r || 3, 0, Math.PI * 2);
+          ctx.fillStyle = color; ctx.fill();
+        }
+        function tag(p, text, color) {
+          if (!st.opts.labels) return;
+          ctx.font = "600 10px 'JetBrains Mono', monospace";
+          ctx.fillStyle = "rgba(11,15,26,0.75)";
+          var w = ctx.measureText(text).width + 6;
+          ctx.fillRect(p.x + 5, p.y - 13, w, 14);
+          ctx.fillStyle = color; ctx.fillText(text, p.x + 8, p.y - 3);
+        }
+
+        function drawFrame(image, lm, m) {
+          ctx.save();
+          if (st.opts.mirror) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+          ctx.restore();
+
+          if (!lm) return;
+
+          if (st.opts.mesh) {
+            for (var i = 0; i < lm.length; i++) dot(P(lm[i]), COLORS.mesh, 1);
+          }
+
+          if (st.opts.geom) {
+            // EAR: the two ratios it divides
+            [[159, 145, 33, 133], [386, 374, 362, 263]].forEach(function (q) {
+              line(P(lm[q[0]]), P(lm[q[1]]), COLORS.ear, 2);
+              line(P(lm[q[2]]), P(lm[q[3]]), "rgba(34,211,238,0.5)", 2);
+              [q[0], q[1], q[2], q[3]].forEach(function (idx) { dot(P(lm[idx]), COLORS.ear, 3); });
+            });
+            tag(P(lm[159]), "159", COLORS.ear);
+            tag(P(lm[145]), "145", COLORS.ear);
+            tag(P(lm[33]), "33", COLORS.ear);
+            tag(P(lm[133]), "133", COLORS.ear);
+
+            // Yaw A (production): nose to each face-contour point, at the temples.
+            line(P(lm[1]), P(lm[234]), COLORS.yaw, 2);
+            line(P(lm[1]), P(lm[454]), COLORS.yaw, 2);
+            dot(P(lm[1]), COLORS.yaw, 4);
+            dot(P(lm[234]), COLORS.yaw, 4);
+            dot(P(lm[454]), COLORS.yaw, 4);
+            tag(P(lm[1]), "1 nose", COLORS.yaw);
+            tag(P(lm[234]), "234", COLORS.yaw);
+            tag(P(lm[454]), "454", COLORS.yaw);
+
+            // Yaw B (candidate): nose to each outer eye corner. Dashed so the two
+            // methods stay tellable apart without relying on colour alone.
+            ctx.save();
+            ctx.setLineDash([5, 4]);
+            line(P(lm[1]), P(lm[33]), COLORS.yawAlt, 2);
+            line(P(lm[1]), P(lm[263]), COLORS.yawAlt, 2);
+            ctx.restore();
+            dot(P(lm[33]), COLORS.yawAlt, 4);
+            dot(P(lm[263]), COLORS.yawAlt, 4);
+            tag(P(lm[33]), "33", COLORS.yawAlt);
+            tag(P(lm[263]), "263", COLORS.yawAlt);
+
+            // Gaze: iris centroid vs eye-corner span
+            if (m && m.gaze) {
+              [[m.gaze.left, 33, 133], [m.gaze.right, 362, 263]].forEach(function (g) {
+                var eye = g[0];
+                var y = (lm[g[1]].y + lm[g[2]].y) / 2;
+                var a = P({ x: eye.minX, y: y }), b = P({ x: eye.maxX, y: y });
+                line(a, b, "rgba(236,72,153,0.45)", 1);
+                var c = P({ x: eye.cx, y: y });
+                dot(c, COLORS.gaze, 4);
+                var mid = P({ x: (eye.minX + eye.maxX) / 2, y: y });
+                dot(mid, "rgba(236,72,153,0.55)", 2);
+              });
+              for (var k = 468; k <= 477; k++) { if (lm[k]) dot(P(lm[k]), COLORS.gaze, 1.6); }
+            }
+          }
+        }
+
+        // ── Metric panel ──────────────────────────────────────────────────
+        function bar(fillId, markId, value, max, threshold, invert) {
+          var pct = Math.max(0, Math.min(100, (value / max) * 100));
+          var f = $(fillId);
+          f.style.width = pct + "%";
+          var bad = invert ? value < threshold : value > threshold;
+          f.style.background = bad ? "var(--red)" : "var(--green)";
+          $(markId).style.left = Math.max(0, Math.min(100, (threshold / max) * 100)) + "%";
+        }
+
+        function setPill(id, ok, text) {
+          var el = $(id);
+          el.classList.toggle("ok", ok);
+          el.classList.toggle("bad", !ok);
+          el.querySelector(".pill-state").textContent = text;
+        }
+
+        function renderMetrics(m, checks, reason) {
+          if (!m) {
+            $("m-ear").textContent = "--"; $("m-yaw").textContent = "--"; $("m-gaze").textContent = "--";
+            setPill("p-face", false, "no face");
+            setPill("p-eyes", false, "--"); setPill("p-head", false, "--"); setPill("p-gaze", false, "--");
+            return;
+          }
+          $("m-ear").textContent = m.ear.avg.toFixed(3);
+          $("n-ear").textContent = "left " + m.ear.left.toFixed(3) + "  right " + m.ear.right.toFixed(3) +
+            "   closed below " + cfg.EAR_THRESHOLD.toFixed(2);
+          bar("f-ear", "k-ear", m.ear.avg, 0.5, cfg.EAR_THRESHOLD, true);
+
+          var yawMax = 3;
+          function renderYaw(prefix, data, spread, isOut) {
+            $("m-" + prefix).textContent = data.ratio.toFixed(3);
+            $("m-" + prefix).style.color = isOut ? "var(--red)" : "var(--text)";
+            $("n-" + prefix).textContent = "nose to left " + data.dLeft.toFixed(3) +
+              "  right " + data.dRight.toFixed(3) +
+              "   in range " + (1 - spread).toFixed(2) + "-" + (1 + spread).toFixed(2) +
+              (isOut ? "   OUT OF RANGE" : "");
+            $("k-" + prefix).style.left = Math.max(0, Math.min(100, (data.ratio / yawMax) * 100)) + "%";
+            var bd = $("b-" + prefix);
+            bd.style.left = ((1 - spread) / yawMax) * 100 + "%";
+            bd.style.width = ((2 * spread) / yawMax) * 100 + "%";
+          }
+          renderYaw("yaw", m.yaw, cfg.YAW_SPREAD, m.outContour);
+          renderYaw("yawalt", m.yawAlt, cfg.YAW_ALT_SPREAD, m.outAlt);
+
+          // Jitter: standard deviation of each ratio over the recent history.
+          if (st.yawHist.length > 4) {
+            var sA = stdev(st.yawHist), sB = stdev(st.yawAltHist);
+            $("m-jitter").textContent = sA.toFixed(4) + "  /  " + sB.toFixed(4);
+            $("n-jitter").textContent = "Std dev over the last " + st.yawHist.length +
+              " frames. Lower is steadier. " +
+              (sB < sA ? "Eye corners are currently steadier."
+                       : sA < sB ? "Contour is currently steadier." : "Tied.");
+          }
+          drawYawChart();
+
+          if (m.gaze) {
+            $("m-gaze").textContent = m.gaze.shift.toFixed(3);
+            bar("f-gaze", "k-gaze", m.gaze.shift, 1, cfg.GAZE_SHIFT_LIMIT, false);
+          } else {
+            $("m-gaze").textContent = "n/a";
+            $("n-gaze").textContent = "Iris landmarks unavailable (refineLandmarks off?).";
+          }
+
+          setPill("p-face", true, "yes");
+          setPill("p-eyes", checks.eyesOpen, checks.eyesOpen ? "open" : "closed");
+          setPill("p-head", checks.headForward, checks.headForward ? "forward" : "turned");
+          setPill("p-gaze", checks.gazeOnScreen, checks.gazeOnScreen ? "on screen" : "away");
+
+          var v = $("verdict");
+          v.hidden = false;
+          v.className = "verdict " + (reason ? "bad" : "ok");
+          v.textContent = reason ? reason.toUpperCase() : "FOCUSED";
+        }
+
+        // ── Frame pipeline (mirrors onResults) ────────────────────────────
+        function onResults(results) {
+          if (!st.running) return;
+          st.frameCount++;
+          var now = Date.now();
+          var tActive = now - st.startedAt;
+
+          if (st.frameCount % cfg.LIGHTING_CHECK_EVERY === 0 && results.image) {
+            st.brightness = computeBrightness(results.image);
+            $("m-bright").textContent = st.brightness.toFixed(0);
+            bar("f-bright", "k-bright", st.brightness, 255, cfg.BRIGHTNESS_MIN, true);
+          }
+          if (st.brightness != null && st.brightness < cfg.BRIGHTNESS_MIN) {
+            drawFrame(results.image, null, null);
+            $("verdict").hidden = false;
+            $("verdict").className = "verdict bad";
+            $("verdict").textContent = "FRAME DISCARDED (too dark)";
+            return;
+          }
+
+          var lm = results.multiFaceLandmarks && results.multiFaceLandmarks[0];
+          var reason = null;
+          var checks = { eyesOpen: true, headForward: true, gazeOnScreen: true };
+          var m = null;
+
+          if (!lm) {
+            reason = "no_face";
+            checks = { eyesOpen: false, headForward: false, gazeOnScreen: false };
+            st.earLowSince = null;
+          } else {
+            m = {
+              ear: computeEar(lm),
+              yaw: computeYawRatio(lm),
+              yawAlt: computeYawAlt(lm),
+              gaze: computeGazeShift(lm)
+            };
+
+            // Jitter history for the stability comparison.
+            st.yawHist.push(m.yaw.ratio);
+            st.yawAltHist.push(m.yawAlt.ratio);
+            if (st.yawHist.length > 240) { st.yawHist.shift(); st.yawAltHist.shift(); }
+
+            if (m.ear.avg < cfg.EAR_THRESHOLD) {
+              if (st.earLowSince == null) st.earLowSince = now;
+              if (now - st.earLowSince > cfg.EYES_CLOSED_MS) {
+                checks.eyesOpen = false; reason = reason || "eyes_closed";
+              }
+            } else { st.earLowSince = null; }
+
+            // Each formula votes independently; the selector decides who is heard.
+            m.outContour = m.yaw.ratio > 1 + cfg.YAW_SPREAD || m.yaw.ratio < 1 - cfg.YAW_SPREAD;
+            m.outAlt = m.yawAlt.ratio > 1 + cfg.YAW_ALT_SPREAD || m.yawAlt.ratio < 1 - cfg.YAW_ALT_SPREAD;
+            var turned = cfg.YAW_METHOD === "alt" ? m.outAlt
+                       : cfg.YAW_METHOD === "both" ? (m.outContour && m.outAlt)
+                       : m.outContour;
+
+            // Debounce (production has none — HEAD_TURNED_MS defaults to 0).
+            if (turned) {
+              if (st.yawOutSince == null) st.yawOutSince = now;
+              if (now - st.yawOutSince >= cfg.HEAD_TURNED_MS) {
+                checks.headForward = false; reason = reason || "head_turned";
+              }
+            } else { st.yawOutSince = null; }
+
+            if (m.gaze && m.gaze.shift > cfg.GAZE_SHIFT_LIMIT) {
+              if (st.gazeOutSince == null) st.gazeOutSince = now;
+              if (now - st.gazeOutSince >= cfg.GAZE_AWAY_MS) {
+                checks.gazeOnScreen = false; reason = reason || "gaze_away";
+              }
+            } else { st.gazeOutSince = null; }
+          }
+
+          st.lastMetrics = m;
+          drawFrame(results.image, lm, m);
+          renderMetrics(m, checks, reason);
+          $("m-frames").textContent = String(st.frameCount);
+          var secs = (now - st.startedAt) / 1000;
+          $("n-fps").textContent = "Target 8 fps. Actual " + (secs > 0 ? (st.frameCount / secs).toFixed(1) : "0.0") + " fps.";
+
+          var focused = reason == null;
+          st.window.push({ at: tActive, focused: focused });
+          while (st.window.length && st.window[0].at < tActive - cfg.WINDOW_MS) st.window.shift();
+          $("window-meta").textContent = st.window.length + " frames in the 30s window";
+
+          if (!focused) {
+            if (!st.currentDistraction) {
+              st.currentDistraction = { reason: reason, startedAt: tActive };
+            } else if (st.currentDistraction.reason !== reason) {
+              closeDistraction(tActive); st.currentDistraction = { reason: reason, startedAt: tActive };
+            }
+          } else { closeDistraction(tActive); }
+        }
+
+        function closeDistraction(tActive) {
+          if (!st.currentDistraction) return;
+          var d = Math.round((tActive - st.currentDistraction.startedAt) / 1000);
+          st.events.push({ t: Math.round(st.currentDistraction.startedAt / 1000), reason: st.currentDistraction.reason, duration: Math.max(0, d) });
+          st.currentDistraction = null;
+          renderLog();
+        }
+
+        function renderLog() {
+          var el = $("log");
+          if (!st.events.length) { el.innerHTML = '<div class="log-empty">No distraction events recorded yet.</div>'; return; }
+          el.innerHTML = st.events.slice().reverse().map(function (e) {
+            return '<div class="log-row"><span class="log-t">t+' + e.t + 's</span>' +
+              '<span class="log-reason">' + e.reason + '</span>' +
+              '<span class="log-dur">' + e.duration + 's</span></div>';
+          }).join("");
+        }
+
+        function sampleScore() {
+          if (!st.running || !st.window.length) return;
+          var focused = 0;
+          for (var i = 0; i < st.window.length; i++) if (st.window[i].focused) focused++;
+          var score = Math.round((focused / st.window.length) * 100);
+          st.samples.push(score);
+
+          $("score").textContent = String(score);
+          $("score").style.color = score > 70 ? "var(--green)" : score >= 40 ? "var(--amber)" : "var(--red)";
+          var avg = Math.round(st.samples.reduce(function (a, b) { return a + b; }, 0) / st.samples.length);
+          var min = st.samples.reduce(function (a, b) { return Math.min(a, b); }, 100);
+          $("score-meta").textContent = st.samples.length + " samples   avg " + avg + "   min " + min;
+          drawSpark();
+        }
+
+        function drawYawChart() {
+          var c = document.getElementById("yaw-chart");
+          var w = c.clientWidth, h = c.clientHeight;
+          if (!w || !h) return;
+          if (c.width !== w) { c.width = w; c.height = h; }
+          var g = c.getContext("2d");
+          g.clearRect(0, 0, w, h);
+
+          var LO = 0.3, HI = 2.2;                       // visible ratio range
+          var y = function (r) { return h - ((Math.max(LO, Math.min(HI, r)) - LO) / (HI - LO)) * h; };
+
+          // Accept bands, drawn behind everything.
+          [[1 - cfg.YAW_SPREAD, 1 + cfg.YAW_SPREAD, "rgba(194,130,14,0.13)"],
+           [1 - cfg.YAW_ALT_SPREAD, 1 + cfg.YAW_ALT_SPREAD, "rgba(112,121,224,0.13)"]].forEach(function (b) {
+            g.fillStyle = b[2];
+            g.fillRect(0, y(b[1]), w, y(b[0]) - y(b[1]));
+          });
+
+          // 1.0 reference — a perfectly forward-facing head.
+          g.strokeStyle = "rgba(148,163,184,0.45)";
+          g.setLineDash([4, 4]); g.lineWidth = 1;
+          g.beginPath(); g.moveTo(0, y(1)); g.lineTo(w, y(1)); g.stroke();
+          g.setLineDash([]);
+          g.font = "500 9px 'JetBrains Mono', monospace";
+          g.fillStyle = "rgba(148,163,184,0.75)";
+          g.fillText("1.0", 3, y(1) - 3);
+
+          function series(hist, color, dashed) {
+            if (hist.length < 2) return;
+            var pts = hist.slice(-240);
+            var step = w / Math.max(1, pts.length - 1);
+            g.save();
+            if (dashed) g.setLineDash([5, 4]);
+            g.beginPath();
+            pts.forEach(function (r, i) {
+              var px = i * step, py = y(r);
+              if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+            });
+            g.strokeStyle = color; g.lineWidth = 2; g.stroke();
+            g.restore();
+          }
+          series(st.yawHist, CHART.yaw, false);
+          series(st.yawAltHist, CHART.yawAlt, true);
+        }
+
+        function drawSpark() {
+          var w = spark.clientWidth, h = spark.clientHeight;
+          if (spark.width !== w) { spark.width = w; spark.height = h; }
+          sctx.clearRect(0, 0, w, h);
+          sctx.strokeStyle = "rgba(148,163,184,0.18)";
+          sctx.lineWidth = 1;
+          [0.25, 0.5, 0.75].forEach(function (f) {
+            sctx.beginPath(); sctx.moveTo(0, h * f); sctx.lineTo(w, h * f); sctx.stroke();
+          });
+          if (st.samples.length < 2) return;
+          var pts = st.samples.slice(-80);
+          var step = w / Math.max(1, pts.length - 1);
+          sctx.beginPath();
+          pts.forEach(function (s, i) {
+            var x = i * step, y = h - (s / 100) * h;
+            if (i === 0) sctx.moveTo(x, y); else sctx.lineTo(x, y);
+          });
+          sctx.strokeStyle = "#6366f1"; sctx.lineWidth = 2; sctx.stroke();
+          var last = pts[pts.length - 1];
+          sctx.beginPath();
+          sctx.arc((pts.length - 1) * step, h - (last / 100) * h, 3.5, 0, Math.PI * 2);
+          sctx.fillStyle = last > 70 ? "#22c55e" : last >= 40 ? "#f59e0b" : "#ef4444";
+          sctx.fill();
+        }
+
+        // ── Setup ─────────────────────────────────────────────────────────
+        function loadScript(src) {
+          return new Promise(function (res, rej) {
+            var el = document.createElement("script");
+            el.src = src; el.crossOrigin = "anonymous";
+            el.onload = res; el.onerror = function () { rej(new Error("Failed to load " + src)); };
+            document.head.appendChild(el);
+          });
+        }
+
+        function setup() {
+          if (st.faceMesh) return Promise.resolve();
+          return Promise.resolve()
+            .then(function () { if (typeof window.FaceMesh === "undefined") return loadScript(FACEMESH_CDN); })
+            .then(function () { if (typeof window.Camera === "undefined") return loadScript(CAMERA_CDN); })
+            .then(function () {
+              if (typeof window.FaceMesh === "undefined" || typeof window.Camera === "undefined") {
+                throw new Error("MediaPipe unavailable after load");
+              }
+              var fm = new window.FaceMesh({ locateFile: function (f) { return FACEMESH_ASSET_BASE + f; } });
+              fm.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+              fm.onResults(onResults);
+              st.faceMesh = fm;
+              st.camera = new window.Camera(video, {
+                onFrame: function () {
+                  var now = Date.now();
+                  if (now - st.lastFrameTs < cfg.FRAME_INTERVAL_MS) return Promise.resolve();
+                  st.lastFrameTs = now;
+                  if (!st.running) return Promise.resolve();
+                  return st.faceMesh.send({ image: video });
+                },
+                width: 640, height: 480
+              });
+            });
+        }
+
+        $("btn-start").addEventListener("click", function () {
+          $("btn-start").disabled = true;
+          $("btn-start").textContent = "Loading MediaPipe...";
+          setup().then(function () {
+            return st.camera.start();
+          }).then(function () {
+            st.running = true;
+            st.startedAt = Date.now();
+            st.frameCount = 0; st.window = []; st.samples = []; st.events = [];
+            st.earLowSince = null; st.yawOutSince = null; st.gazeOutSince = null;
+            st.yawHist = []; st.yawAltHist = [];
+            st.currentDistraction = null; st.brightness = null;
+            $("stage-empty").hidden = true;
+            $("btn-start").textContent = "Tracking";
+            $("btn-stop").disabled = false;
+            st.scoreTimer = setInterval(sampleScore, cfg.SCORE_INTERVAL_MS);
+            renderLog();
+          }).catch(function (err) {
+            $("btn-start").disabled = false;
+            $("btn-start").textContent = "Start tracking";
+            var denied = err && /NotAllowed|Permission|denied|dismissed/i.test(String(err.name || "") + String(err.message || ""));
+            $("stage-empty").innerHTML = "<span>" + (denied
+              ? "Camera permission denied. Allow it via the padlock icon in the address bar, then reload."
+              : "Could not start: " + (err && err.message ? err.message : "unknown error")) + "</span>";
+          });
+        });
+
+        $("btn-stop").addEventListener("click", function () {
+          st.running = false;
+          if (st.scoreTimer) { clearInterval(st.scoreTimer); st.scoreTimer = null; }
+          if (st.camera && st.camera.stop) { try { st.camera.stop(); } catch (_e) {} }
+          closeDistraction(Date.now() - st.startedAt);
+          $("btn-stop").disabled = true;
+          $("btn-start").disabled = false;
+          $("btn-start").textContent = "Start tracking";
+          $("verdict").hidden = true;
+          $("stage-empty").hidden = false;
+          $("stage-empty").innerHTML = "<span>Camera stopped</span><span style='font-size:0.78rem;color:#475569'>"
+            + st.frameCount + " frames processed, " + st.events.length + " distraction events</span>";
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // ── Toggles + sliders ─────────────────────────────────────────────
+        ["mesh", "geom", "labels", "mirror"].forEach(function (k) {
+          $("t-" + k).addEventListener("change", function (e) { st.opts[k] = e.target.checked; });
+        });
+
+        function markDirty(valId, key, current) {
+          $(valId).classList.toggle("dirty", Math.abs(current - PROD[key]) > 1e-9);
+        }
+
+        $("s-ear").addEventListener("input", function (e) {
+          cfg.EAR_THRESHOLD = parseFloat(e.target.value);
+          $("v-ear").textContent = cfg.EAR_THRESHOLD.toFixed(2);
+          markDirty("v-ear", "EAR_THRESHOLD", cfg.EAR_THRESHOLD);
+        });
+        $("s-blink").addEventListener("input", function (e) {
+          cfg.EYES_CLOSED_MS = parseInt(e.target.value, 10);
+          $("v-blink").textContent = String(cfg.EYES_CLOSED_MS);
+          markDirty("v-blink", "EYES_CLOSED_MS", cfg.EYES_CLOSED_MS);
+        });
+        $("s-yaw").addEventListener("input", function (e) {
+          cfg.YAW_SPREAD = parseFloat(e.target.value);
+          $("v-yaw").textContent = (1 - cfg.YAW_SPREAD).toFixed(2) + " / " + (1 + cfg.YAW_SPREAD).toFixed(2);
+          markDirty("v-yaw", "YAW_SPREAD", cfg.YAW_SPREAD);
+        });
+        $("s-yawalt").addEventListener("input", function (e) {
+          cfg.YAW_ALT_SPREAD = parseFloat(e.target.value);
+          $("v-yawalt").textContent = (1 - cfg.YAW_ALT_SPREAD).toFixed(2) + " / " + (1 + cfg.YAW_ALT_SPREAD).toFixed(2);
+          markDirty("v-yawalt", "YAW_ALT_SPREAD", cfg.YAW_ALT_SPREAD);
+          drawYawChart();
+        });
+        $("s-headms").addEventListener("input", function (e) {
+          cfg.HEAD_TURNED_MS = parseInt(e.target.value, 10);
+          $("v-headms").textContent = String(cfg.HEAD_TURNED_MS);
+          markDirty("v-headms", "HEAD_TURNED_MS", cfg.HEAD_TURNED_MS);
+        });
+        $("s-gazems").addEventListener("input", function (e) {
+          cfg.GAZE_AWAY_MS = parseInt(e.target.value, 10);
+          $("v-gazems").textContent = String(cfg.GAZE_AWAY_MS);
+          markDirty("v-gazems", "GAZE_AWAY_MS", cfg.GAZE_AWAY_MS);
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-method]"), function (btn) {
+          btn.addEventListener("click", function () {
+            cfg.YAW_METHOD = btn.getAttribute("data-method");
+            $("v-method").textContent = cfg.YAW_METHOD;
+            $("v-method").classList.toggle("dirty", cfg.YAW_METHOD !== PROD.YAW_METHOD);
+            Array.prototype.forEach.call(document.querySelectorAll("[data-method]"), function (b) {
+              b.style.borderColor = b === btn ? "var(--accent)" : "";
+              b.style.color = b === btn ? "#c7d2fe" : "";
+            });
+          });
+        });
+
+        $("s-gaze").addEventListener("input", function (e) {
+          cfg.GAZE_SHIFT_LIMIT = parseFloat(e.target.value);
+          $("v-gaze").textContent = cfg.GAZE_SHIFT_LIMIT.toFixed(2);
+          markDirty("v-gaze", "GAZE_SHIFT_LIMIT", cfg.GAZE_SHIFT_LIMIT);
+        });
+        $("s-bright").addEventListener("input", function (e) {
+          cfg.BRIGHTNESS_MIN = parseInt(e.target.value, 10);
+          $("v-bright").textContent = String(cfg.BRIGHTNESS_MIN);
+          markDirty("v-bright", "BRIGHTNESS_MIN", cfg.BRIGHTNESS_MIN);
+        });
+
+        $("btn-reset").addEventListener("click", function () {
+          cfg = Object.assign({}, PROD);
+          $("s-ear").value = PROD.EAR_THRESHOLD;   $("v-ear").textContent = PROD.EAR_THRESHOLD.toFixed(2);
+          $("s-blink").value = PROD.EYES_CLOSED_MS; $("v-blink").textContent = String(PROD.EYES_CLOSED_MS);
+          $("s-yaw").value = PROD.YAW_SPREAD;      $("v-yaw").textContent = "0.65 / 1.35";
+          $("s-yawalt").value = PROD.YAW_ALT_SPREAD; $("v-yawalt").textContent = "0.65 / 1.35";
+          $("s-headms").value = PROD.HEAD_TURNED_MS; $("v-headms").textContent = String(PROD.HEAD_TURNED_MS);
+          $("s-gazems").value = PROD.GAZE_AWAY_MS;   $("v-gazems").textContent = String(PROD.GAZE_AWAY_MS);
+          $("s-gaze").value = PROD.GAZE_SHIFT_LIMIT; $("v-gaze").textContent = PROD.GAZE_SHIFT_LIMIT.toFixed(2);
+          $("s-bright").value = PROD.BRIGHTNESS_MIN; $("v-bright").textContent = String(PROD.BRIGHTNESS_MIN);
+          $("v-method").textContent = PROD.YAW_METHOD;
+          Array.prototype.forEach.call(document.querySelectorAll("[data-method]"), function (b) {
+            b.style.borderColor = ""; b.style.color = "";
+          });
+          ["v-ear", "v-blink", "v-yaw", "v-yawalt", "v-headms", "v-gazems", "v-gaze", "v-bright", "v-method"].forEach(function (id) {
+            $(id).classList.remove("dirty");
+          });
+          drawYawChart();
+        });
+
+        window.addEventListener("resize", function () { drawSpark(); drawYawChart(); });
+        drawSpark();
+        drawYawChart();   // show the accept bands before tracking starts
+      })();
+    </script>
+  </body>
+</html>
