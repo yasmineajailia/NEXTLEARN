@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/shared/quiz-code.js"></script>
   <style>
     .options-list { list-style: none; margin: 10px 0 0; padding: 0; }
     .option-item { border: 1px solid #e7e3e5; background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
@@ -161,7 +162,8 @@
         const header = document.createElement('div'); header.className = 'question-header'; header.innerHTML = `<div><div class="question-number">Question ${i+1}</div></div>`;
         header.appendChild(checkbox);
         card.appendChild(header);
-        const prompt = document.createElement('div'); prompt.className = 'question-prompt'; prompt.textContent = q.prompt || '';
+        const prompt = document.createElement('div'); prompt.className = 'question-prompt';
+        if (window.NextLearnQuizCode) prompt.innerHTML = NextLearnQuizCode.render(q.prompt || ''); else prompt.textContent = q.prompt || '';
         card.appendChild(prompt);
 
         const options = Array.isArray(q.options) ? q.options : [];
@@ -175,7 +177,9 @@
           options.forEach((optionText, optionIndex) => {
             const item = document.createElement('li');
             item.className = `option-item ${optionIndex === correctIndex ? 'correct' : ''}`.trim();
-            item.textContent = optionIndex === correctIndex ? `${optionText} (Réponse correcte)` : optionText;
+            const suffix = optionIndex === correctIndex ? ' (Réponse correcte)' : '';
+            if (window.NextLearnQuizCode) item.innerHTML = NextLearnQuizCode.render(optionText) + suffix;
+            else item.textContent = optionText + suffix;
             list.appendChild(item);
           });
           card.appendChild(list);

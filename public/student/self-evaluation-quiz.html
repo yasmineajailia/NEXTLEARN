@@ -7,6 +7,7 @@
     <script src="/shared/theme.js"></script>
     <script src="/shared/auth-guard.js"></script>
     <script src="/shared/i18n.js"></script>
+    <script src="/shared/quiz-code.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
     <title>Auto-evaluation | Quiz</title>
     <link rel="icon" type="image/png" href="/images/favicon.png" />
@@ -423,7 +424,8 @@
         const button = document.createElement("button");
         button.type = "button";
         button.className = "option-btn";
-        button.textContent = optionText;
+        if (window.NextLearnQuizCode) button.innerHTML = NextLearnQuizCode.render(optionText);
+        else button.textContent = optionText;
         button.dataset.index = String(index);
         button.addEventListener("click", () => {
           if (!state.locked) {
@@ -462,7 +464,8 @@
 
         const title = document.createElement("h2");
         title.className = "question-title";
-        title.textContent = question.prompt;
+        if (window.NextLearnQuizCode) title.innerHTML = NextLearnQuizCode.render(question.prompt);
+        else title.textContent = question.prompt;
 
         const options = document.createElement("div");
         options.className = "options";

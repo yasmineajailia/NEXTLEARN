@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/shared/quiz-code.js"></script>
 </head>
 <body>
   <div class="page">
@@ -252,6 +253,15 @@
       displayQuestions();
     }
 
+    // Safe render of question / option text: styles code AND escapes HTML, so
+    // snippets like #include <stdio.h> are no longer swallowed as tags and no
+    // generated text can inject markup.
+    function renderQ(text) {
+      if (window.NextLearnQuizCode) return NextLearnQuizCode.render(text);
+      return String(text == null ? '' : text)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     function displayQuestions() {
       const container = document.getElementById('questions-container');
       container.innerHTML = '';
@@ -266,7 +276,7 @@
         const isCorrect = (optIndex) => optIndex === question.correctOptionIndex;
         const optionsHtml = question.options.map((opt, optIndex) => `
           <li class="option-item ${isCorrect(optIndex) ? 'correct' : ''}">
-            ${opt}
+            ${renderQ(opt)}
           </li>
         `).join('');
 
@@ -279,7 +289,7 @@
             <input type="checkbox" ${currentSession.selectedIndices.has(index) ? 'checked' : ''} 
                    onchange="toggleQuestion(${index})">
           </div>
-          <div class="question-prompt">${question.prompt}</div>
+          <div class="question-prompt">${renderQ(question.prompt)}</div>
           <ul class="options-list">${optionsHtml}</ul>
           <div class="question-actions">
             <button class="btn-small btn-secondary" onclick="regenerateQuestion(${index})">

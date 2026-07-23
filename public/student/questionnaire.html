@@ -6,6 +6,7 @@
     <script src="/shared/theme.js"></script>
     <script src="/shared/auth-guard.js"></script>
     <script src="/shared/i18n.js"></script>
+    <script src="/shared/quiz-code.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
     <title data-i18n="title.quiz">Questionnaire — Espace Étudiant</title>
     <link rel="icon" type="image/png" href="/images/favicon.png" />
@@ -188,30 +189,8 @@
         border-color: #ea9c9c;
       }
 
-      /* ── Inline & block code ── */
-      code.inline-code {
-        font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
-        font-size: 0.86em;
-        background: #eef1f7;
-        border: 1px solid #dde3ee;
-        border-radius: 6px;
-        padding: 0.08em 0.4em;
-        color: #b21f2d;
-        white-space: nowrap;
-      }
-      pre.code-block {
-        margin: 0.5rem 0;
-        padding: 0.75rem 0.9rem;
-        background: #1e2430;
-        border-radius: 10px;
-        overflow-x: auto;
-      }
-      pre.code-block code {
-        font-family: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
-        font-size: 0.85rem;
-        color: #e6e9f0;
-        white-space: pre;
-      }
+      /* Inline & block code styling is injected by /shared/quiz-code.js
+         (classes .nl-qc-inline / .nl-qc-block). */
 
       .quiz-submit {
         width: fit-content;
@@ -505,8 +484,8 @@
         return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
       }
 
-      // Escape HTML so code containing <, >, & (e.g. <stdio.h>, a < b) renders
-      // literally instead of being swallowed as markup.
+      // Escape HTML so code containing <, >, & renders literally. Kept as a local
+      // fallback for renderRich when the shared module hasn't loaded.
       function escapeHtml(value) {
         return String(value ?? "")
           .replace(/&/g, "&amp;")
@@ -515,41 +494,15 @@
           .replace(/"/g, "&quot;");
       }
 
-      // Renders question / option text with inline code styling. Detection runs
-      // on the RAW string (so real <, > match), then each slice is escaped —
-      // giving correct rendering AND monospaced code, with no double-wrapping.
-      const CODE_PATTERNS = new RegExp(
-        [
-          "```[\\s\\S]*?```",                                   // fenced block
-          "`[^`]+`",                                             // inline backticks
-          "#include\\s*(?:<[^>\\n]+>|\"[^\"\\n]+\")",           // #include directives
-          "\\b(?:return|int|float|double|char|void|struct|sizeof|const|unsigned|long|short|else|for|while|switch|printf|scanf|typedef|bool)\\b[^?!\\n;]*;", // statements ending in ;
-          "\\b[A-Za-z_]\\w*\\([^()\\n]*\\)"                     // function calls: name(...)
-        ].join("|"),
-        "g"
-      );
-
+      // Renders question / option text with code styling. Delegates to the shared
+      // NextLearnQuizCode module (/shared/quiz-code.js), which detects unmarked
+      // code and merges multi-statement snippets into a single clean block so a
+      // line like "int i = 1; do { printf(...); i++;} while (i < 4);" no longer
+      // fragments into scattered inline chips. Falls back to plain escaping.
       function renderRich(raw) {
-        const src = String(raw ?? "");
-        let out = "";
-        let last = 0;
-        let match;
-        CODE_PATTERNS.lastIndex = 0;
-        while ((match = CODE_PATTERNS.exec(src)) !== null) {
-          out += escapeHtml(src.slice(last, match.index));
-          let token = match[0];
-          if (token.startsWith("```")) {
-            const body = token.replace(/^```[^\n]*\n?/, "").replace(/```$/, "");
-            out += `<pre class="code-block"><code>${escapeHtml(body)}</code></pre>`;
-          } else {
-            const inline = token.startsWith("`") ? token.slice(1, -1) : token;
-            out += `<code class="inline-code">${escapeHtml(inline)}</code>`;
-          }
-          last = match.index + token.length;
-          if (token.length === 0) CODE_PATTERNS.lastIndex++;
-        }
-        out += escapeHtml(src.slice(last));
-        return out;
+        return window.NextLearnQuizCode
+          ? window.NextLearnQuizCode.render(raw)
+          : escapeHtml(raw);
       }
 
       function buildSubAcquisUrl(mId, sId) {
