@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="/shared/theme.js"></script>
+    <script src="/shared/auth-guard.js"></script>
     <script src="/shared/i18n.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
     <title data-i18n="title.quiz">Questionnaire — Espace Étudiant</title>
@@ -329,6 +330,20 @@
         color: #8a96aa;
       }
 
+      .rec-item-tag {
+        display: inline-block;
+        margin-left: 0.4rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(196, 29, 56, 0.12);
+        color: #b3122e;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: none;
+        vertical-align: middle;
+      }
+
       .rec-item-title {
         font-size: 0.88rem;
         font-weight: 600;
@@ -405,10 +420,10 @@
         "qz.loading": "Loading the quiz...",
         "qz.retake": "Retake the quiz",
         "qz.recPassTitle": "Well done! Here is the next part of your path",
-        "qz.recPassSub": "These sub-skills are unlocked thanks to your success.",
+        "qz.recPassSub": "Continue with the next sub-skill in your path.",
         "qz.recFailTitle": "Insufficient score after 2 attempts — review these prerequisites",
         "qz.recFailSub": "Master these sub-skills first before retrying this one.",
-        "qz.recNoneUnlock": "No additional sub-skill to unlock for now.",
+        "qz.recNoneUnlock": "You have completed the last sub-skill of this module.",
         "qz.recNoPrereq": "No prerequisite found for this sub-skill.",
         "qz.alreadyValidated": "This quiz is already validated.",
         "qz.maxAttempts": "Maximum number of attempts reached.",
@@ -542,7 +557,35 @@
         return base;
       }
 
+      // The linear next sous-acquis in this module's ordered list — the same
+      // source the lesson page uses for its "Sous-acquis suivant" button. On a
+      // PASS we recommend this rather than the graph's unlocks; the graph is only
+      // consulted when the quiz is failed. Returns the id, or "" at the end of
+      // the module.
+      async function getNextLinearSubAcquis() {
+        if (!moduleId || !subAcquisId) return "";
+        try {
+          const id  = encodeURIComponent(getCurrentIdentifier());
+          const res = await fetch(`/api/student/modules?identifier=${id}`);
+          if (!res.ok) throw new Error("modules fetch failed");
+          const data = await res.json();
+          const modules = Array.isArray(data.modules) ? data.modules : [];
+          const mod  = modules.find(m => String(m.id) === String(moduleId));
+          const list = Array.isArray(mod?.subAcquis) ? mod.subAcquis : [];
+          const idx  = list.findIndex(s => String(s) === String(subAcquisId));
+          if (idx >= 0 && idx < list.length - 1) return String(list[idx + 1]);
+          return "";
+        } catch (_err) {
+          return "";
+        }
+      }
+
       // ── recommendation rendering ──────────────────────────────────────────
+
+      // The server's response-aware remediation list from the last submit, or
+      // null — in which case showRecommendations falls back to the raw graph
+      // prerequisites (e.g. the reload-lock path, which has no fresh result).
+      let lastRemediationTargets = null;
 
       async function showRecommendations(forward) {
         const graph = await fetchSkillGraph();
@@ -550,16 +593,22 @@
 
         const passed = forward;
 
-        // forward → recommend unlocks (move to the next sous-acquis)
-        // else    → recommend depends_on (go back, 2 levels deep)
+        // passed → recommend the linear next sous-acquis (NOT the graph unlocks)
+        // else   → recommend depends_on from the graph (go back, 2 levels deep)
         let ids = [];
+        const responseDriven = new Set();
 
         if (passed) {
-          ids = (node?.unlocks ?? [])
-            .map(id => id.trim())
-            .filter(id => graph[id]); // only known skills
+          const nextId = await getNextLinearSubAcquis();
+          ids = nextId ? [nextId] : [];
+        } else if (Array.isArray(lastRemediationTargets) && lastRemediationTargets.length) {
+          // Server-computed, response-aware targets: the concepts the wrong
+          // answers point to, with prerequisites as the fallback tail.
+          ids = lastRemediationTargets.map(t => t.id).filter(id => graph[id]);
+          lastRemediationTargets.forEach(t => { if (t.fromResponses) responseDriven.add(t.id); });
         } else {
-          // 2 levels deep on depends_on
+          // Fallback (reload-lock path, or graph unavailable server-side):
+          // 2 levels deep on depends_on, as before.
           const level1 = (node?.depends_on ?? [])
             .map(id => id.trim())
             .filter(id => graph[id]);
@@ -580,10 +629,12 @@
 
         if (passed) {
           recPanelTitle.textContent    = tr("qz.recPassTitle", "Bien joué ! Voici la suite de votre parcours");
-          recPanelSubtitle.textContent = tr("qz.recPassSub", "Ces sous-acquis sont débloqués grâce à votre réussite.");
+          recPanelSubtitle.textContent = tr("qz.recPassSub", "Continuez avec le prochain sous-acquis de votre parcours.");
         } else {
-          recPanelTitle.textContent    = tr("qz.recFailTitle", "Score insuffisant après 2 tentatives — révisez ces prérequis");
-          recPanelSubtitle.textContent = tr("qz.recFailSub", "Maîtrisez d'abord ces sous-acquis avant de retenter celui-ci.");
+          recPanelTitle.textContent    = tr("qz.recFailTitle", "Score insuffisant après 2 tentatives — révisez ces notions");
+          recPanelSubtitle.textContent = responseDriven.size > 0
+            ? tr("qz.recFailSubTargeted", "Ces sous-acquis correspondent aux questions que vous avez manquées.")
+            : tr("qz.recFailSub", "Maîtrisez d'abord ces sous-acquis avant de retenter celui-ci.");
         }
 
         recList.innerHTML = "";
@@ -591,7 +642,7 @@
         if (ids.length === 0) {
           recEmpty.hidden = false;
           recEmpty.textContent = passed
-            ? tr("qz.recNoneUnlock", "Aucun sous-acquis supplémentaire à débloquer pour le moment.")
+            ? tr("qz.recNoneUnlock", "Vous avez terminé le dernier sous-acquis de ce module.")
             : tr("qz.recNoPrereq", "Aucun prérequis trouvé pour ce sous-acquis.");
           return;
         }
@@ -602,18 +653,21 @@
           const skillNode = graph[id];
           const skillTitle = skillNode?.title ?? id;
 
-          // derive moduleId from the skill id (e.g. "3.2" → "3")
-          const skillModuleId = id.split(".")[0];
-
+          // Every recommended sous-acquis (linear next on a pass, prerequisites
+          // on a fail) belongs to the module this quiz was in. The sub-acquis id
+          // (e.g. "3.2") is NOT the module id — the module id is a slug like
+          // "programmation-c" — so we must reuse the current moduleId, not
+          // id.split(".")[0], or the course page can't find the content.
           const li = document.createElement("li");
           li.className = "rec-item";
+          const targeted = responseDriven.has(id);
           li.innerHTML = `
             <div class="rec-item-info">
-              <span class="rec-item-id">Sous-acquis ${id}</span>
+              <span class="rec-item-id">Sous-acquis ${id}${targeted ? ` <span class="rec-item-tag">${tr("qz.recTargeted", "d'après vos réponses")}</span>` : ""}</span>
               <span class="rec-item-title">${skillTitle}</span>
             </div>
             <a class="rec-item-link"
-               href="${buildSubAcquisUrl(skillModuleId, id)}">
+               href="${buildSubAcquisUrl(moduleId, id)}">
               ${passed ? "Commencer →" : "Réviser →"}
             </a>
           `;
@@ -645,6 +699,7 @@
         // attempts). This is the reload-proof safety net behind the client gate.
         if (response.status === 409) {
           const info = await response.json().catch(() => ({}));
+          lastRemediationTargets = null; // no fresh scoring — fall back to the graph
           lockQuiz();
           quizRetry.hidden = true;
           if (info.validated) {
@@ -663,6 +718,7 @@
         }
 
         const result = await response.json();
+        lastRemediationTargets = Array.isArray(result.remediationTargets) ? result.remediationTargets : null;
         const summary = tr("qz.summary", `Résultat : ${result.correct}/${result.total} — Score ${result.score}%`, { c: result.correct, t: result.total, s: result.score });
 
         // colour the labels

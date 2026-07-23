@@ -38,6 +38,13 @@ export type QuizQuestion = {
   prompt: string;
   options: string[];
   correctOptionIndex: number | null;
+  /**
+   * The sous-acquis this question primarily tests (e.g. "1.2"), used to steer
+   * response-based remediation: a wrong answer points the student at this concept.
+   * Optional — populated at quiz-generation time; absent for legacy questions,
+   * which fall back to the failed sous-acquis's prerequisites.
+   */
+  relatedSubAcquis?: string | null;
 };
 
 export type QuizJsonPayload = {

@@ -19,6 +19,27 @@ type UserData = {
       attempts?: number;
       submittedAt?: Date;
     }>;
+    /**
+     * Append-only history of every quiz attempt, kept as a SEQUENCE (unlike
+     * quizResults, which retains only the latest per lessonKey). This is the raw
+     * material for Knowledge Tracing (BKT) and item analysis (IRT): per-attempt
+     * pass/fail plus per-question responses. Capped to the most recent 200.
+     */
+    skillAttempts?: Array<{
+      lessonKey: string;
+      moduleId: string;
+      subAcquisId: string;
+      score: number;
+      correct: boolean;
+      attempts?: number;
+      responses?: Array<{
+        questionIndex: number;
+        selectedIndex: number;
+        correct: boolean;
+        gradable: boolean;
+      }>;
+      submittedAt?: Date;
+    }>;
     selfEvaluationResults?: Array<{
       moduleId: string;
       acquisId: string;
@@ -102,6 +123,28 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
             subAcquisId: { type: String, required: true },
             score: { type: Number, required: true },
             attempts: { type: Number, default: 1 },
+            submittedAt: { type: Date, default: Date.now }
+          }
+        ],
+        default: []
+      },
+      skillAttempts: {
+        type: [
+          {
+            lessonKey: { type: String, required: true },
+            moduleId: { type: String, required: true },
+            subAcquisId: { type: String, required: true },
+            score: { type: Number, required: true },
+            correct: { type: Boolean, required: true },
+            attempts: { type: Number, default: 1 },
+            responses: [
+              {
+                questionIndex: { type: Number, required: true },
+                selectedIndex: { type: Number, default: -1 },
+                correct: { type: Boolean, default: false },
+                gradable: { type: Boolean, default: true }
+              }
+            ],
             submittedAt: { type: Date, default: Date.now }
           }
         ],

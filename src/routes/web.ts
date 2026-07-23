@@ -18,6 +18,8 @@ import { CurriculumModule } from "../models/CurriculumModule";
 import { StudentRemediationQuiz } from "../models/StudentRemediationQuiz";
 import { hashPassword } from "../utils/password";
 import { Recommender, type ChapterScoreEntry, type RecommendOptions, type ScoreEntry, type SkillsJson } from "../services/recommendation/skill-recommender.js";
+import { computeRemediationTargets, type RemediationTarget } from "../services/recommendation/remediationTargets.js";
+import { requireAuth } from "../middleware/auth.js";
 import { env } from "../config/env";
 import { MLPredictorService } from "../services/MLPredictorService";
 import { type PredictionFeatures, type PredictionModuleInfo, extractMLFeatures } from "../services/prediction/features";
@@ -1980,7 +1982,7 @@ webRouter.get("/api/programmation-c/modules", async (req, res) => {
 webRouter.get("/api/programmation-c/overview", async (req, res) => {
   try {
     const modules = await readPersistedProgramCOverview();
-    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const access = await readClassAccessByStudentIdentifier(identifier);
     const filteredModules = filterOverviewByAccess(modules, access);
 
@@ -2280,7 +2282,7 @@ webRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
 webRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", async (req, res) => {
   try {
     const { moduleId, subAcquisId } = req.params;
-    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const access = await readClassAccessByStudentIdentifier(identifier);
 
     if (!isSubAcquisAccessibleByAccessRules(access, moduleId, subAcquisId)) {
@@ -2362,9 +2364,9 @@ webRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", async (r
   }
 });
 
-webRouter.get("/api/student/self-evaluation/overview", async (req, res) => {
+webRouter.get("/api/student/self-evaluation/overview", requireAuth, async (req, res) => {
   try {
-    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }
@@ -2391,9 +2393,9 @@ webRouter.get("/api/student/self-evaluation/overview", async (req, res) => {
   }
 });
 
-webRouter.get("/api/student/self-evaluation/quiz", async (req, res) => {
+webRouter.get("/api/student/self-evaluation/quiz", requireAuth, async (req, res) => {
   try {
-    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const moduleId = typeof req.query?.moduleId === "string" ? req.query.moduleId.trim() : "";
     const acquisId = typeof req.query?.acquisId === "string" ? req.query.acquisId.trim() : "";
 
@@ -2453,9 +2455,9 @@ webRouter.get("/api/student/self-evaluation/quiz", async (req, res) => {
   }
 });
 
-webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
+webRouter.post("/api/student/self-evaluation/submit", requireAuth, async (req, res) => {
   try {
-    const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const moduleId = typeof req.body?.moduleId === "string" ? req.body.moduleId.trim() : "";
     const acquisId = typeof req.body?.acquisId === "string" ? req.body.acquisId.trim() : "";
     const timeSpent = typeof req.body?.timeSpent === "number" ? req.body.timeSpent : 0;
@@ -2560,9 +2562,9 @@ webRouter.post("/api/student/self-evaluation/submit", async (req, res) => {
   }
 });
 
-webRouter.get("/api/student/calendar", async (req, res) => {
+webRouter.get("/api/student/calendar", requireAuth, async (req, res) => {
   try {
-    const identifier = typeof req.query?.identifier === "string" ? req.query.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }
@@ -2587,12 +2589,13 @@ webRouter.get("/api/student/calendar", async (req, res) => {
 
 // Quiz submission endpoint.
 // Receives user answers and computes score from DOCX answer key.
-webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", async (req, res) => {
+webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", requireAuth, async (req, res) => {
   try {
-    const { moduleId, subAcquisId } = req.params;
+    const moduleId = String(req.params.moduleId ?? "");
+    const subAcquisId = String(req.params.subAcquisId ?? "");
     const rawAnswers: unknown[] = Array.isArray(req.body?.answers) ? req.body.answers : [];
     const answers = rawAnswers.map((entry) => Number(entry));
-    const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
 
     if (identifier) {
       const access = await readClassAccessByStudentIdentifier(identifier);
@@ -2620,42 +2623,38 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
         .trim()
         .toLowerCase();
 
-    const correct = resources.quizQuestions.reduce((sum, question, index) => {
-      if (question.correctOptionIndex === null) return sum;
-
+    // Grade every question ONCE. The score, the wrong-question list, the review
+    // payload and the captured attempt record all derive from this, so they can
+    // never disagree about what "correct" means.
+    const perQuestion = resources.quizQuestions.map((question, index) => {
+      const correctIndex =
+        typeof question.correctOptionIndex === "number" ? question.correctOptionIndex : null;
       const selected = Number(answers[index]);
-      const correctIndex = question.correctOptionIndex;
+      const selectedIndex = Number.isFinite(selected) ? selected : -1;
+      if (correctIndex === null) {
+        return { gradable: false, correct: false, selectedIndex, correctIndex: null, isCorrectByText: false };
+      }
       const selectedOption = Number.isFinite(selected) ? question.options[selected] : null;
-      const correctOption = correctIndex !== null ? question.options[correctIndex] : null;
+      const correctOption = question.options[correctIndex] ?? null;
       const isCorrectByIndex = selected === correctIndex;
       const isCorrectByText =
         !isCorrectByIndex &&
         selectedOption !== null &&
         correctOption !== null &&
         normalizeOptionText(selectedOption) === normalizeOptionText(correctOption);
+      return {
+        gradable: true,
+        correct: isCorrectByIndex || isCorrectByText,
+        selectedIndex,
+        correctIndex,
+        isCorrectByText
+      };
+    });
 
-      return isCorrectByIndex || isCorrectByText ? sum + 1 : sum;
-    }, 0);
+    const correct = perQuestion.reduce((sum, q) => (q.gradable && q.correct ? sum + 1 : sum), 0);
 
-    const wrongQuestionIndexes = resources.quizQuestions
-      .map((question, index) => {
-        if (question.correctOptionIndex === null) {
-          return -1;
-        }
-
-        const selected = Number(answers[index]);
-        const correctIndex = question.correctOptionIndex;
-        const selectedOption = Number.isFinite(selected) ? question.options[selected] : null;
-        const correctOption = correctIndex !== null ? question.options[correctIndex] : null;
-        const isCorrectByIndex = selected === correctIndex;
-        const isCorrectByText =
-          !isCorrectByIndex &&
-          selectedOption !== null &&
-          correctOption !== null &&
-          normalizeOptionText(selectedOption) === normalizeOptionText(correctOption);
-
-        return isCorrectByIndex || isCorrectByText ? -1 : index;
-      })
+    const wrongQuestionIndexes = perQuestion
+      .map((q, index) => (q.gradable && !q.correct ? index : -1))
       .filter((index) => index >= 0);
 
     const score = gradable > 0 ? Math.round((correct / gradable) * 100) : 0;
@@ -2713,6 +2712,31 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
               score,
               attempts: newAttempts,
               submittedAt: new Date()
+            },
+            // Append-only attempt history — the per-attempt SEQUENCE that
+            // Knowledge Tracing (BKT) and item analysis (IRT) need, and that
+            // quizResults throws away by $pull-ing the prior entry. Never
+            // $pull-ed here; $slice caps it so the document stays bounded.
+            // This data cannot be backfilled, so capture starts now.
+            "progress.skillAttempts": {
+              $each: [
+                {
+                  lessonKey,
+                  moduleId,
+                  subAcquisId,
+                  score,
+                  correct: validated,
+                  attempts: newAttempts,
+                  responses: perQuestion.map((q, index) => ({
+                    questionIndex: index,
+                    selectedIndex: q.selectedIndex,
+                    correct: q.correct,
+                    gradable: q.gradable
+                  })),
+                  submittedAt: new Date()
+                }
+              ],
+              $slice: -200
             }
           }
         }
@@ -2728,23 +2752,27 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
       };
     }
 
-    const review = resources.quizQuestions.map((question, index) => {
-      const selected = Number(answers[index]);
-      const correctIndex = typeof question.correctOptionIndex === "number" ? question.correctOptionIndex : null;
-      const selectedOption = Number.isFinite(selected) ? question.options[selected] : null;
-      const correctOption = correctIndex !== null ? question.options[correctIndex] : null;
-      const isCorrectByIndex = selected === correctIndex;
-      const isCorrectByText =
-        !isCorrectByIndex &&
-        selectedOption !== null &&
-        correctOption !== null &&
-        normalizeOptionText(selectedOption) === normalizeOptionText(correctOption);
+    const review = perQuestion.map((q) => ({
+      selectedIndex: q.selectedIndex,
+      correctOptionIndex: q.isCorrectByText ? q.selectedIndex : q.correctIndex
+    }));
 
-      return {
-        selectedIndex: Number.isFinite(selected) ? selected : -1,
-        correctOptionIndex: isCorrectByText ? selected : correctIndex
-      };
-    });
+    // On a failed quiz, turn the wrong answers into a ranked list of sous-acquis
+    // to review. Response-driven when questions are tagged; the failed sous-acquis's
+    // prerequisites otherwise (so the panel is never empty). Computed here so the
+    // client renders a definitive list instead of re-deriving it from the raw graph.
+    let remediationTargets: RemediationTarget[] = [];
+    if (!validated) {
+      const graph = await loadRecommendationGraph();
+      if (graph) {
+        remediationTargets = computeRemediationTargets({
+          failedSubAcquisId: subAcquisId,
+          wrongQuestionIndexes,
+          questionTags: resources.quizQuestions.map((q) => q.relatedSubAcquis ?? null),
+          graph
+        });
+      }
+    }
 
     res.status(200).json({
       total,
@@ -2758,7 +2786,8 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
       locked: attemptState.locked,
       wrongQuestionCount: wrongQuestionIndexes.length,
       wrongQuestionIndexes,
-      review
+      review,
+      remediationTargets
     });
   } catch (error) {
     console.error("Failed to score quiz:", error);
@@ -2766,9 +2795,9 @@ webRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/submit", 
   }
 });
 
-webRouter.post("/api/student/progress/lesson-view", async (req, res) => {
+webRouter.post("/api/student/progress/lesson-view", requireAuth, async (req, res) => {
   try {
-    const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const moduleId = typeof req.body?.moduleId === "string" ? req.body.moduleId.trim() : "";
     const subAcquisId = typeof req.body?.subAcquisId === "string" ? req.body.subAcquisId.trim() : "";
 
