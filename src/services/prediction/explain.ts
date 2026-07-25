@@ -9,7 +9,11 @@
  */
 import { type PredictionFeatures, type RiskFactor } from "./features";
 
-export const SHAP_SERVICE_URL = process.env.SHAP_SERVICE_URL || "http://127.0.0.1:8000";
+// SHAP_PORT sets where the Python service listens; deriving the URL from it here
+// keeps both sides in sync from one variable. An explicit SHAP_SERVICE_URL still
+// wins (e.g. when the ML service runs on another host, as in docker-compose).
+const SHAP_PORT = process.env.SHAP_PORT || "8000";
+export const SHAP_SERVICE_URL = process.env.SHAP_SERVICE_URL || `http://127.0.0.1:${SHAP_PORT}`;
 export const SHAP_SERVICE_TIMEOUT_MS = 4000;
 export const SHAP_SERVICE_BACKOFF_MS = 30_000;
 export let shapServiceDownUntil = 0;

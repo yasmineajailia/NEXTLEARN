@@ -41,23 +41,39 @@ let monitorTimer: NodeJS.Timeout | null = null;
 /** True when we adopted an externally-managed service and must not kill it. */
 let adopted = false;
 
-async function pingHealth(timeoutMs = 1500): Promise<boolean> {
+/**
+ * A probe of the service's /health:
+ *   - `alive`  — it answered 200 (the port is taken).
+ *   - `ready`  — it answered AND is actually usable (API key loaded), so the
+ *                chatbot/RAG paths will work, not just SHAP.
+ * `ready` is what gates adoption: a stale instance started without .env answers
+ * /health but silently breaks every RAG request — the exact bug this guards.
+ */
+type ServiceProbe = { alive: boolean; ready: boolean; detail?: string };
+
+async function probeService(timeoutMs = 1500): Promise<ServiceProbe> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(HEALTH_URL, { signal: controller.signal });
-    return res.ok;
+    if (!res.ok) return { alive: false, ready: false };
+    const body = (await res.json().catch(() => ({}))) as { status?: string; apiKeyLoaded?: boolean };
+    if (body?.apiKeyLoaded === false) {
+      return { alive: true, ready: false, detail: "OPENAI_API_KEY not loaded — RAG/chatbot would fail" };
+    }
+    return { alive: true, ready: body?.status === "ok" };
   } catch {
-    return false;
+    return { alive: false, ready: false };
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function waitForHealthy(): Promise<boolean> {
+/** Waits until the service is merely alive (answering) — used after we spawn our own child. */
+async function waitForAlive(): Promise<boolean> {
   const deadline = Date.now() + HEALTH_POLL_TIMEOUT_MS;
   while (Date.now() < deadline && !stopped) {
-    if (await pingHealth()) return true;
+    if ((await probeService()).alive) return true;
     await new Promise((r) => setTimeout(r, HEALTH_POLL_INTERVAL_MS));
   }
   return false;
@@ -77,12 +93,27 @@ function scheduleRestart(): void {
 async function spawnAndWatch(): Promise<void> {
   if (stopped) return;
 
-  // Reuse an already-running service instead of fighting over the port.
-  if (await pingHealth()) {
-    adopted = child === null;
-    markShapServiceUp();
-    restartAttempts = 0;
-    if (adopted) console.log(`[shap] adopted existing SHAP service at ${SHAP_SERVICE_URL}`);
+  // Reuse an already-running service instead of fighting over the port — but
+  // ONLY if it is actually ready. Adopting a stale/misconfigured instance is
+  // what silently broke the chatbot before.
+  const existing = await probeService();
+  if (existing.alive) {
+    if (existing.ready) {
+      adopted = child === null;
+      markShapServiceUp();
+      restartAttempts = 0;
+      if (adopted) console.log(`[shap] adopted healthy service at ${SHAP_SERVICE_URL}`);
+      return;
+    }
+    // Alive but not ready, and we cannot bind the port it holds. Refuse to adopt
+    // it and surface an actionable error instead of serving broken responses.
+    markShapServiceDown();
+    console.error(
+      `[shap] a service is listening on ${SHAP_SERVICE_URL} but is NOT ready ` +
+        `(${existing.detail ?? "unknown reason"}). Refusing to adopt it. ` +
+        `Stop that process to free port ${SHAP_PORT}, or set SHAP_PORT to a free port, then restart. ` +
+        `Re-checking every ${Math.round(MONITOR_INTERVAL_MS / 1000)}s.`
+    );
     return;
   }
 
@@ -112,10 +143,20 @@ async function spawnAndWatch(): Promise<void> {
     scheduleRestart();
   });
 
-  if (await waitForHealthy()) {
+  if (await waitForAlive()) {
     markShapServiceUp();
     restartAttempts = 0;
-    console.log(`[shap] service ready at ${SHAP_SERVICE_URL} (canonical TreeExplainer active)`);
+    // We spawned it ourselves, so we don't refuse on a missing key — but we warn
+    // loudly, because SHAP will work while the chatbot/RAG silently won't.
+    const probe = await probeService();
+    if (probe.ready) {
+      console.log(`[shap] service ready at ${SHAP_SERVICE_URL} (canonical TreeExplainer active)`);
+    } else {
+      console.warn(
+        `[shap] service is up at ${SHAP_SERVICE_URL} but ${probe.detail ?? "not fully ready"} — ` +
+          `SHAP/predictions work, but the chatbot will fail until this is fixed.`
+      );
+    }
   } else if (!stopped) {
     console.warn("[shap] service did not become healthy in time; JS exact-Shapley is covering until it does");
     // The exit handler (or the next tick) will schedule a retry if the child died.
@@ -130,7 +171,7 @@ async function spawnAndWatch(): Promise<void> {
  */
 async function monitorTick(): Promise<void> {
   if (stopped || child || restartTimer) return;
-  if (!(await pingHealth())) {
+  if (!(await probeService()).ready) {
     markShapServiceDown();
     void spawnAndWatch();
   }

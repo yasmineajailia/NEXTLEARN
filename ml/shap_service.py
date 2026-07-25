@@ -312,6 +312,10 @@ def health():
         "model": "RandomForest (native sklearn, joblib)",
         "trees": len(MODEL.estimators_),
         "gradeModel": GRADE_MODEL is not None,
+        # Whether the LLM/embeddings key is loaded. The supervisor uses this to
+        # avoid ADOPTING a stale instance started without .env, which would answer
+        # /health but silently fail every RAG/chatbot request.
+        "apiKeyLoaded": bool(os.environ.get("OPENAI_API_KEY")),
         "features": FEATURES,
     }
 
@@ -516,4 +520,7 @@ def explain(body: Features):
 
 if __name__ == "__main__":
     port = int(os.environ.get("SHAP_PORT", "8000"))
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+    # Bind loopback by default (safe for the local Node supervisor). Containers
+    # set SHAP_HOST=0.0.0.0 so the app container can reach the service.
+    host = os.environ.get("SHAP_HOST", "127.0.0.1")
+    uvicorn.run(app, host=host, port=port, log_level="warning")
