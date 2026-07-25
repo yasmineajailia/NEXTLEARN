@@ -824,6 +824,54 @@ textarea {
   gap: 0.55rem;
 }
 
+/* Collapsible sections in the sous-acquis editor (Informations / Ressources / Quiz). */
+.sub-section {
+  border: 1px solid #efe2e5;
+  border-radius: 12px;
+  background: #fffdfe;
+  overflow: hidden;
+}
+
+.sub-section-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.7rem 0.9rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+}
+
+.sub-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sub-section-summary::before {
+  content: "\25B8";
+  color: #9aa2af;
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.sub-section[open] > .sub-section-summary::before {
+  transform: rotate(90deg);
+}
+
+.sub-section[open] > .sub-section-summary {
+  border-bottom: 1px solid #f2e7e9;
+}
+
+.sub-section-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  padding: 0.85rem 0.9rem;
+}
+
 .schedule-date-picker {
   position: relative;
 }
@@ -954,7 +1002,7 @@ textarea {
   box-shadow: 0 8px 18px rgba(29, 74, 160, 0.28);
 }
 
-.stack-form button:not(.schedule-date-trigger):not(.schedule-date-nav):not(.schedule-date-cell),
+.stack-form button:not(.schedule-date-trigger):not(.schedule-date-nav):not(.schedule-date-cell):not(.qb-btn),
 .button-row button {
   cursor: pointer;
   background: linear-gradient(135deg, #cf1f2e, #8f0916);
@@ -962,7 +1010,7 @@ textarea {
   box-shadow: 0 12px 24px rgba(207, 31, 46, 0.25);
 }
 
-.stack-form button:not(.schedule-date-trigger):not(.schedule-date-nav):not(.schedule-date-cell):hover,
+.stack-form button:not(.schedule-date-trigger):not(.schedule-date-nav):not(.schedule-date-cell):not(.qb-btn):hover,
 .button-row button:hover {
   transform: translateY(-1px);
 }
@@ -1063,9 +1111,10 @@ textarea {
   gap: 0.45rem;
   padding: 0.35rem 0.6rem;
   font-weight: 600;
-  opacity: 0;
-  transform: scaleY(0.9);
+  opacity: 1;
+  transform: scaleY(1);
   transition: opacity 0.16s ease, transform 0.16s ease;
+  cursor: pointer;
 }
 
 /* Generator UI styles */
@@ -1602,6 +1651,38 @@ textarea {
   background: #fff8f9;
 }
 
+.module-row-lead {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.module-drag-handle {
+  flex: 0 0 auto;
+  cursor: grab;
+  color: #b0b6c0;
+  font-size: 1rem;
+  line-height: 1;
+  user-select: none;
+}
+
+.module-editor-sub-row[draggable="true"]:active .module-drag-handle {
+  cursor: grabbing;
+}
+
+.module-editor-sub-row.dragging {
+  opacity: 0.45;
+}
+
+.module-editor-sub-row.drop-before {
+  box-shadow: 0 -2px 0 0 #2f5fb6;
+}
+
+.module-editor-sub-row.drop-after {
+  box-shadow: 0 2px 0 0 #2f5fb6;
+}
+
 .acquis-sub-count {
   color: #8a6a6d;
   font-size: 0.82rem;
@@ -1757,7 +1838,8 @@ textarea {
 
   .form-grid,
   .form-grid-3,
-  .form-inline {
+  .form-inline,
+  .sub-section-body {
     grid-template-columns: 1fr;
   }
 

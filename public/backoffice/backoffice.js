@@ -252,6 +252,7 @@ const dom = {
     students: document.getElementById("view-students"),
     clustering: document.getElementById("view-clustering"),
     attention: document.getElementById("view-attention"),
+    "quiz-quality": document.getElementById("view-quiz-quality"),
     "classes-detail": document.getElementById("view-class-detail"),
     "sub-add": document.getElementById("view-sub-add"),
     "sub-editor": document.getElementById("view-sub-editor")
@@ -310,6 +311,7 @@ const dom = {
   moduleEditName: document.getElementById("module-edit-name"),
   moduleDeleteBtn: document.getElementById("module-delete-btn"),
   moduleEditorSubList: document.getElementById("module-editor-sub-list"),
+  moduleEditorListHeading: document.getElementById("module-editor-list-heading"),
   moduleAddSubTitle: document.getElementById("module-add-sub-title"),
   moduleAddSubCancel: document.getElementById("module-add-sub-cancel"),
   moduleAddSubForm: document.getElementById("module-add-sub-form"),
@@ -339,6 +341,9 @@ const dom = {
   subEditQuizTitle: document.getElementById("sub-edit-quiz-title"),
   subEditQuizType: document.getElementById("sub-edit-quiz-type"),
   subEditQuizQuestions: document.getElementById("sub-edit-quiz-questions"),
+  subEditQuizBuilder: document.getElementById("sub-edit-quiz-builder"),
+  subEditAddQuestion: document.getElementById("sub-edit-add-question"),
+  subEditQuizSummary: document.getElementById("sub-edit-quiz-summary"),
   subEditDeleteBtn: document.getElementById("sub-edit-delete-btn"),
   manageModuleSelect: document.getElementById("manage-module-select"),
   manageAcquisSelect: document.getElementById("manage-acquis-select"),
@@ -814,6 +819,10 @@ function bindEvents() {
   dom.moduleInsertCancel?.addEventListener("click", closeContentEditors);
   dom.moduleInsertCancelBottom?.addEventListener("click", closeContentEditors);
   dom.moduleEditorSubList?.addEventListener("click", onContentManagementListClick);
+  dom.moduleEditorSubList?.addEventListener("dragstart", onModuleListDragStart);
+  dom.moduleEditorSubList?.addEventListener("dragover", onModuleListDragOver);
+  dom.moduleEditorSubList?.addEventListener("drop", onModuleListDrop);
+  dom.moduleEditorSubList?.addEventListener("dragend", onModuleListDragEnd);
   dom.moduleEditorClose?.addEventListener("click", closeContentEditors);
   dom.moduleEditForm?.addEventListener("submit", onSaveModuleEditor);
   dom.moduleDeleteBtn?.addEventListener("click", onDeleteModuleFromEditor);
@@ -1027,6 +1036,10 @@ function switchView(viewKey) {
       eyebrow: boTr("bo.attention", "Suivi d'attention"),
       title: boTr("bo.attentionTitle", "Concentration des étudiants")
     },
+    "quiz-quality": {
+      eyebrow: boTr("bo.quizQuality", "Qualité des quiz"),
+      title: boTr("bo.quizQualityTitle", "Analyse des questions par les réponses des étudiants")
+    },
     "sub-add": {
       eyebrow: boTr("bo.moduleMgmt", "Gestion des modules"),
       title: ""
@@ -1058,6 +1071,8 @@ function switchView(viewKey) {
     initClusteringViewOnce();
   } else if (viewKey === "attention") {
     initAttentionViewOnce();
+  } else if (viewKey === "quiz-quality") {
+    initQuizQualityViewOnce();
   }
 }
 
@@ -1108,6 +1123,58 @@ async function initAttentionViewOnce() {
   } catch (error) {
     console.error("Failed to initialize attention view:", error);
     root.innerHTML = '<p style="color:#676c77">Impossible de charger les classes.</p>';
+  }
+}
+
+let quizQualityViewInitialized = false;
+
+/**
+ * First-visit setup of the quiz-quality view: fills the sous-acquis selector from
+ * the curriculum overview and renders the item analysis for the first one.
+ */
+async function initQuizQualityViewOnce() {
+  if (quizQualityViewInitialized) return;
+  if (typeof window.renderItemAnalysis !== "function") {
+    console.error("renderItemAnalysis is not available — check that itemAnalysisDashboard.js loaded correctly.");
+    return;
+  }
+  quizQualityViewInitialized = true;
+
+  const select = document.getElementById("quiz-quality-select");
+  const root = document.getElementById("quiz-quality-root");
+  if (!select || !root) return;
+
+  try {
+    const res = await fetch("/api/programmation-c/overview");
+    const data = res.ok ? await res.json() : null;
+    const modules = Array.isArray(data && data.modules) ? data.modules : [];
+
+    const options = [];
+    modules.forEach((m) => {
+      const subs = Array.isArray(m.subAcquis) ? m.subAcquis : [];
+      subs.forEach((s) => {
+        const label = htmlEscape(String(s.id)) + " — " + htmlEscape(String(s.name || s.title || ""));
+        options.push(
+          '<option value="' + htmlEscape(String(m.id)) + "::" + htmlEscape(String(s.id)) + '">' + label + "</option>"
+        );
+      });
+    });
+
+    if (!options.length) {
+      root.innerHTML = '<p style="color:#676c77">Aucun sous-acquis disponible.</p>';
+      return;
+    }
+
+    select.innerHTML = options.join("");
+    const renderSelected = () => {
+      const parts = String(select.value).split("::");
+      window.renderItemAnalysis("quiz-quality-root", parts[0], parts[1]);
+    };
+    select.addEventListener("change", renderSelected);
+    renderSelected();
+  } catch (error) {
+    console.error("Failed to initialize quiz-quality view:", error);
+    root.innerHTML = '<p style="color:#676c77">Impossible de charger les sous-acquis.</p>';
   }
 }
 
@@ -2513,42 +2580,14 @@ function renderModuleEditorBody(module) {
 
 function renderModuleEditorAcquisList(module) {
   if (!dom.moduleEditorSubList) return;
+  if (dom.moduleEditorListHeading) dom.moduleEditorListHeading.textContent = "Acquis du module";
 
   const acquisList = Array.isArray(module.acquis) ? module.acquis : [];
-
-  // An "add acquis" affordance shown between each acquis (and at the ends).
-  // Clicking it reveals an inline name input that inserts at that position.
-  const insertLine = (index) => {
-    if (acquisInsertState.index === index) {
-      return `
-        <div class="module-editor-sub-row module-editor-add-acquis-row">
-          <input type="text" id="new-acquis-name-input" class="acquis-inline-input" placeholder="Nom du nouvel acquis" />
-          <span class="module-manage-actions">
-            <button type="button" class="secondary-btn" data-action="save-acquis-at" data-module-id="${escapeAttr(
-              module.id
-            )}" data-insert-index="${index}">Enregistrer</button>
-            <button type="button" class="secondary-btn" data-action="cancel-acquis-at" data-module-id="${escapeAttr(
-              module.id
-            )}">Annuler</button>
-          </span>
-        </div>
-      `;
-    }
-    return `
-      <button type="button" class="module-insert-line" data-action="insert-acquis-at" data-module-id="${escapeAttr(
-        module.id
-      )}" data-insert-index="${index}" aria-label="Ajouter un acquis à cette position">
-        <span class="module-insert-line-mark">+</span>
-        <span>Ajouter un acquis</span>
-      </button>
-    `;
-  };
-
   const parts = [];
+
   if (!acquisList.length) {
     parts.push('<p class="module-editor-empty">Aucun acquis pour ce module.</p>');
   }
-  parts.push(insertLine(0));
 
   acquisList.forEach((acquis, index) => {
     if (acquisRenameState.acquisId === acquis.id) {
@@ -2570,8 +2609,11 @@ function renderModuleEditorAcquisList(module) {
     } else {
       const count = Array.isArray(acquis.sousAcquis) ? acquis.sousAcquis.length : 0;
       parts.push(`
-        <div class="module-editor-sub-row">
-          <span>${htmlEscape(acquis.name || acquis.id)}<span class="acquis-sub-count"> · ${count} sous-acquis</span></span>
+        <div class="module-editor-sub-row" draggable="true" data-drag-type="acquis" data-drag-index="${index}">
+          <span class="module-row-lead">
+            <span class="module-drag-handle" title="Glisser pour réordonner" aria-hidden="true">⠿</span>
+            <span>${htmlEscape(acquis.name || acquis.id)}<span class="acquis-sub-count"> · ${count} sous-acquis</span></span>
+          </span>
           <span class="module-manage-actions">
             <button type="button" class="secondary-btn" data-action="open-acquis" data-module-id="${escapeAttr(
               module.id
@@ -2586,35 +2628,57 @@ function renderModuleEditorAcquisList(module) {
         </div>
       `);
     }
-    parts.push(insertLine(index + 1));
   });
 
+  // Single, always-visible add control at the bottom (inline input when active).
+  if (acquisInsertState.index != null) {
+    parts.push(`
+      <div class="module-editor-sub-row module-editor-add-acquis-row">
+        <input type="text" id="new-acquis-name-input" class="acquis-inline-input" placeholder="Nom du nouvel acquis" />
+        <span class="module-manage-actions">
+          <button type="button" class="secondary-btn" data-action="save-acquis-at" data-module-id="${escapeAttr(
+            module.id
+          )}" data-insert-index="${acquisInsertState.index}">Enregistrer</button>
+          <button type="button" class="secondary-btn" data-action="cancel-acquis-at" data-module-id="${escapeAttr(
+            module.id
+          )}">Annuler</button>
+        </span>
+      </div>
+    `);
+  } else {
+    parts.push(`
+      <button type="button" class="module-insert-line" data-action="insert-acquis-at" data-module-id="${escapeAttr(
+        module.id
+      )}" data-insert-index="${acquisList.length}" aria-label="Ajouter un acquis">
+        <span class="module-insert-line-mark">+</span>
+        <span>Ajouter un acquis</span>
+      </button>
+    `);
+  }
+
   dom.moduleEditorSubList.innerHTML = parts.join("");
+  const addInput = document.getElementById("new-acquis-name-input");
+  if (addInput) addInput.focus();
 }
 
 function renderModuleEditorSubList(module, acquis) {
   if (!dom.moduleEditorSubList) return;
+  if (dom.moduleEditorListHeading) dom.moduleEditorListHeading.textContent = "Sous-acquis";
 
   const subItems = Array.isArray(acquis.sousAcquis) ? acquis.sousAcquis : [];
-  const insertLine = (index) => `
-    <button type="button" class="module-insert-line" data-action="insert-sub-at" data-module-id="${escapeAttr(
-      module.id
-    )}" data-acquis-id="${escapeAttr(acquis.id)}" data-sub-insert-index="${index}" aria-label="Ajouter un sous-acquis à cette position">
-      <span class="module-insert-line-mark">+</span>
-      <span>Ajouter</span>
-    </button>
-  `;
 
   const htmlParts = [
     `<button type="button" class="secondary-btn module-editor-back-btn" data-action="back-to-acquis">← Retour aux acquis</button>`,
-    `<h4 class="module-editor-acquis-title">${htmlEscape(acquis.name || acquis.id)}</h4>`,
-    insertLine(0)
+    `<h4 class="module-editor-acquis-title">${htmlEscape(acquis.name || acquis.id)}</h4>`
   ];
 
   subItems.forEach((subAcquis, index) => {
     htmlParts.push(`
-      <div class="module-editor-sub-row">
-        <span>${htmlEscape(subAcquis.name || subAcquis.id)}</span>
+      <div class="module-editor-sub-row" draggable="true" data-drag-type="sub" data-drag-index="${index}">
+        <span class="module-row-lead">
+          <span class="module-drag-handle" title="Glisser pour réordonner" aria-hidden="true">⠿</span>
+          <span>${htmlEscape(subAcquis.name || subAcquis.id)}</span>
+        </span>
         <span class="module-manage-actions">
           <button type="button" class="secondary-btn" data-action="edit-sub" data-module-id="${escapeAttr(
             module.id
@@ -2625,10 +2689,98 @@ function renderModuleEditorSubList(module, acquis) {
         </span>
       </div>
     `);
-    htmlParts.push(insertLine(index + 1));
   });
 
+  htmlParts.push(`
+    <button type="button" class="module-insert-line" data-action="insert-sub-at" data-module-id="${escapeAttr(
+      module.id
+    )}" data-acquis-id="${escapeAttr(acquis.id)}" data-sub-insert-index="${subItems.length}" aria-label="Ajouter un sous-acquis">
+      <span class="module-insert-line-mark">+</span>
+      <span>Ajouter un sous-acquis</span>
+    </button>
+  `);
+
   dom.moduleEditorSubList.innerHTML = htmlParts.join("");
+}
+
+// ── Drag-and-drop reordering of acquis / sous-acquis in the module editor ─────
+let moduleDragState = null;
+
+function clearModuleDropIndicators() {
+  if (!dom.moduleEditorSubList) return;
+  dom.moduleEditorSubList.querySelectorAll(".dragging, .drop-before, .drop-after").forEach((el) => {
+    el.classList.remove("dragging", "drop-before", "drop-after");
+  });
+}
+
+function onModuleListDragStart(event) {
+  const row = event.target.closest && event.target.closest("[data-drag-index]");
+  if (!row) return;
+  moduleDragState = { type: row.dataset.dragType, index: Number(row.dataset.dragIndex) };
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    try { event.dataTransfer.setData("text/plain", String(moduleDragState.index)); } catch (_e) {}
+  }
+  row.classList.add("dragging");
+}
+
+function onModuleListDragOver(event) {
+  if (!moduleDragState) return;
+  const row = event.target.closest && event.target.closest("[data-drag-index]");
+  if (!row || row.dataset.dragType !== moduleDragState.type) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  const rect = row.getBoundingClientRect();
+  const after = event.clientY > rect.top + rect.height / 2;
+  dom.moduleEditorSubList.querySelectorAll(".drop-before, .drop-after").forEach((el) => el.classList.remove("drop-before", "drop-after"));
+  row.classList.add(after ? "drop-after" : "drop-before");
+}
+
+function onModuleListDrop(event) {
+  if (!moduleDragState) return;
+  const row = event.target.closest && event.target.closest("[data-drag-index]");
+  const type = moduleDragState.type;
+  const from = moduleDragState.index;
+  if (!row || row.dataset.dragType !== type) {
+    clearModuleDropIndicators();
+    moduleDragState = null;
+    return;
+  }
+  event.preventDefault();
+  const rect = row.getBoundingClientRect();
+  const after = event.clientY > rect.top + rect.height / 2;
+  const to = Number(row.dataset.dragIndex) + (after ? 1 : 0);
+  clearModuleDropIndicators();
+  moduleDragState = null;
+  reorderModuleList(type, from, to);
+}
+
+function onModuleListDragEnd() {
+  clearModuleDropIndicators();
+  moduleDragState = null;
+}
+
+function reorderModuleList(type, from, to) {
+  const module = findModule(contentEditorState.moduleId);
+  if (!module) return;
+  const selectedAcquis = (module.acquis || []).find((a) => a.id === contentEditorState.selectedAcquisId);
+  const arr = type === "acquis" ? module.acquis : selectedAcquis && selectedAcquis.sousAcquis;
+  if (!Array.isArray(arr) || from < 0 || from >= arr.length) return;
+
+  let target = to > from ? to - 1 : to; // account for the removal shift
+  target = Math.max(0, Math.min(target, arr.length - 1));
+  if (target === from) return;
+
+  const [item] = arr.splice(from, 1);
+  arr.splice(target, 0, item);
+  saveState();
+  refreshAll();
+  if (type === "acquis") {
+    renderModuleEditorAcquisList(module);
+  } else if (selectedAcquis) {
+    renderModuleEditorSubList(module, selectedAcquis);
+  }
+  showToast("Ordre mis à jour");
 }
 
 function openSubInsertEditor(moduleId, acquisId, insertIndex, options = {}) {
@@ -3063,6 +3215,12 @@ function openSubEditor(moduleId, subAcquisId, options = {}) {
   subEditorPendingDeleteIds = new Set();
   if (dom.subEditResourceFile) dom.subEditResourceFile.value = "";
   renderSubEditorExistingFiles(Array.isArray(context.subAcquis.courseFiles) ? context.subAcquis.courseFiles : []);
+
+  // Load per-question quality stats (difficulty / discrimination / verdict) so the
+  // builder can show them inline in each question card.
+  subEditQuizAnalysis = null;
+  renderSubEditQuizBuilder();
+  void fetchSubEditQuizAnalysis(moduleId, subAcquisId);
 }
 
 function renderSubEditorExistingFiles(courseFiles) {
@@ -3098,6 +3256,218 @@ function restoreAcquisSubListView(acquisId) {
   switchView("content");
 }
 
+// ── Structured quiz editor (replaces the raw JSON textarea) ──────────────────
+// The visible editor is a list of question cards; the hidden textarea stays in
+// sync so onSaveSubEditor keeps reading valid JSON with no change. Each card also
+// shows the item-analysis verdict (difficulty / discrimination) for that index.
+let subEditQuizState = [];
+let subEditQuizAnalysis = null; // { byIndex, summary } | null while loading
+let subEditQuizEventsBound = false;
+
+const QUIZ_BUILDER_FLAGS = {
+  ok: { label: "OK", color: "#1d9e75" },
+  too_easy: { label: "Trop facile", color: "#f59e0b" },
+  too_hard: { label: "Trop difficile", color: "#3266ad" },
+  weak: { label: "Peu discriminante", color: "#f59e0b" },
+  misleading: { label: "Suspecte", color: "#c41d38" },
+  insufficient_data: { label: "Données insuffisantes", color: "#9ca3af" }
+};
+
+function injectQuizBuilderStyles() {
+  if (document.getElementById("qb-styles")) return;
+  const css =
+    ".quiz-builder-label-row{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;margin-bottom:.5rem;}" +
+    ".quiz-builder-label{font-weight:600;font-size:.9rem;}" +
+    ".quiz-builder-summary{font-size:.76rem;color:#6b7280;}" +
+    ".quiz-builder{display:grid;gap:.7rem;margin-bottom:.6rem;}" +
+    ".qb-card{border:1px solid #e4e6eb;border-radius:12px;padding:.75rem .85rem;background:#fff;}" +
+    ".qb-card-head{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;}" +
+    ".qb-qnum{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#6b7280;font-size:.8rem;}" +
+    ".qb-strip{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-left:.2rem;}" +
+    ".qb-stat{font-size:.72rem;color:#4b5563;}" +
+    ".qb-stat strong{color:#182235;}" +
+    ".qb-stat-muted{font-size:.72rem;color:#9ca3af;font-style:italic;}" +
+    ".qb-badge{display:inline-block;padding:.1rem .5rem;border-radius:999px;font-size:.68rem;font-weight:700;color:#fff;}" +
+    ".qb-del-q{margin-left:auto;border:0;background:transparent;color:#c41d38;font-size:.76rem;font-weight:700;cursor:pointer;padding:.15rem .3rem;box-shadow:none;}" +
+    ".qb-del-q:hover{text-decoration:underline;}" +
+    ".qb-prompt{width:100%;border:1px solid #dde3ee;border-radius:8px;padding:.5rem .6rem;font:inherit;font-size:.86rem;resize:vertical;box-shadow:none;}" +
+    ".qb-opts{display:grid;gap:.4rem;margin:.55rem 0 .4rem;}" +
+    ".qb-opt{display:flex;align-items:center;gap:.5rem;}" +
+    // Counter the global `input{width:100%}` that otherwise stretches the radio.
+    ".qb-radio{appearance:auto;-webkit-appearance:auto;width:auto;height:auto;min-width:0;flex:0 0 auto;margin:0;border:0;padding:0;box-shadow:none;background:none;cursor:pointer;}" +
+    ".qb-opt-input{flex:1;min-width:0;width:auto;background:#fff;border:1px solid #dde3ee;border-radius:8px;padding:.4rem .55rem;font:inherit;font-size:.84rem;box-shadow:none;}" +
+    ".qb-icon-btn{flex:0 0 auto;border:0;background:#f0f1f4;color:#374151;border-radius:6px;width:24px;height:24px;min-width:24px;padding:0;cursor:pointer;font-size:.9rem;line-height:1;box-shadow:none;}" +
+    ".qb-icon-btn:hover{background:#e2e5ea;color:#c41d38;}" +
+    ".qb-add-opt{border:0;background:transparent;color:#3266ad;font-size:.76rem;font-weight:700;cursor:pointer;padding:.15rem 0;box-shadow:none;}" +
+    ".qb-add-opt:hover{text-decoration:underline;}" +
+    "#sub-edit-add-question{border:1px solid #d9dce4;background:#fff;color:#1f1f24;border-radius:999px;padding:.4rem 1rem;font:inherit;font-size:.82rem;font-weight:600;cursor:pointer;box-shadow:none;}" +
+    "#sub-edit-add-question:hover{background:#f7f8fb;}" +
+    ".qb-empty{color:#6b7280;font-size:.85rem;padding:.4rem 0;}";
+  const el = document.createElement("style");
+  el.id = "qb-styles";
+  el.textContent = css;
+  document.head.appendChild(el);
+}
+
+function syncQuizBuilderToTextarea() {
+  if (dom.subEditQuizQuestions) dom.subEditQuizQuestions.value = JSON.stringify(subEditQuizState);
+}
+
+function quizStatStripHtml(stat, loaded) {
+  if (!loaded) return "";
+  if (!stat) return '<span class="qb-stat-muted">Nouvelle question — pas encore de données</span>';
+  const f = QUIZ_BUILDER_FLAGS[stat.flag] || QUIZ_BUILDER_FLAGS.ok;
+  const p = Math.round(Number(stat.difficulty) * 100);
+  const disc = stat.discrimination == null ? "—" : Number(stat.discrimination).toFixed(2);
+  return (
+    '<span class="qb-stat">Difficulté <strong>' + p + "%</strong></span>" +
+    '<span class="qb-stat">Discrimination <strong>' + disc + "</strong></span>" +
+    '<span class="qb-badge" style="background:' + f.color + '">' + f.label + "</span>"
+  );
+}
+
+function renderSubEditQuizBuilder() {
+  injectQuizBuilderStyles();
+  const container = dom.subEditQuizBuilder;
+  if (!container) return;
+  const loaded = subEditQuizAnalysis != null;
+  const byIndex = (subEditQuizAnalysis && subEditQuizAnalysis.byIndex) || {};
+
+  if (!subEditQuizState.length) {
+    container.innerHTML = '<p class="qb-empty">Aucune question. Cliquez sur « Ajouter une question ».</p>';
+  } else {
+    container.innerHTML = subEditQuizState
+      .map((q, qi) => {
+        const opts = (q.options || [])
+          .map(
+            (opt, oi) =>
+              '<div class="qb-opt">' +
+              '<input type="radio" class="qb-radio" name="qb-correct-' + qi + '" data-act="set-correct" data-qi="' + qi + '" data-oi="' + oi + '"' +
+              (q.correctAnswerIndex === oi ? " checked" : "") + ' title="Bonne réponse">' +
+              '<input type="text" class="qb-opt-input" data-field="option" data-qi="' + qi + '" data-oi="' + oi +
+              '" value="' + escapeAttr(String(opt || "")) + '" placeholder="Réponse ' + (oi + 1) + '">' +
+              '<button type="button" class="qb-icon-btn qb-btn" data-act="del-opt" data-qi="' + qi + '" data-oi="' + oi + '" title="Supprimer">×</button>' +
+              "</div>"
+          )
+          .join("");
+        return (
+          '<div class="qb-card">' +
+          '<div class="qb-card-head">' +
+          '<span class="qb-qnum">Q' + (qi + 1) + "</span>" +
+          '<span class="qb-strip">' + quizStatStripHtml(byIndex[qi], loaded) + "</span>" +
+          '<button type="button" class="qb-del-q qb-btn" data-act="del-q" data-qi="' + qi + '">Supprimer</button>' +
+          "</div>" +
+          '<textarea class="qb-prompt" data-field="prompt" data-qi="' + qi + '" rows="2" placeholder="Énoncé de la question">' +
+          htmlEscape(String(q.prompt || "")) + "</textarea>" +
+          '<div class="qb-opts">' + opts + "</div>" +
+          '<button type="button" class="qb-add-opt qb-btn" data-act="add-opt" data-qi="' + qi + '">+ Ajouter une option</button>' +
+          "</div>"
+        );
+      })
+      .join("");
+  }
+
+  if (dom.subEditQuizSummary) {
+    const s = subEditQuizAnalysis && subEditQuizAnalysis.summary;
+    dom.subEditQuizSummary.textContent =
+      s && s.nAttempts
+        ? s.nAttempts + " tentative(s) · fiabilité " +
+          (s.reliabilityAlpha == null ? "—" : Number(s.reliabilityAlpha).toFixed(2)) +
+          " · " + (s.flaggedCount || 0) + " à revoir"
+        : "";
+  }
+}
+
+function afterQuizStructuralChange() {
+  syncQuizBuilderToTextarea();
+  renderSubEditQuizBuilder();
+}
+
+function ensureQuizBuilderEvents() {
+  if (subEditQuizEventsBound) return;
+  subEditQuizEventsBound = true;
+  const container = dom.subEditQuizBuilder;
+  if (!container) return;
+
+  // Text edits: update state in place (no re-render, keeps focus).
+  container.addEventListener("input", (event) => {
+    const el = event.target;
+    const qi = Number(el.getAttribute && el.getAttribute("data-qi"));
+    if (Number.isNaN(qi) || !subEditQuizState[qi]) return;
+    const field = el.getAttribute("data-field");
+    if (field === "prompt") {
+      subEditQuizState[qi].prompt = el.value;
+      syncQuizBuilderToTextarea();
+    } else if (field === "option") {
+      const oi = Number(el.getAttribute("data-oi"));
+      subEditQuizState[qi].options[oi] = el.value;
+      syncQuizBuilderToTextarea();
+    }
+  });
+
+  container.addEventListener("change", (event) => {
+    const el = event.target;
+    if (el.getAttribute && el.getAttribute("data-act") === "set-correct") {
+      const qi = Number(el.getAttribute("data-qi"));
+      const oi = Number(el.getAttribute("data-oi"));
+      if (subEditQuizState[qi]) {
+        subEditQuizState[qi].correctAnswerIndex = oi;
+        syncQuizBuilderToTextarea();
+      }
+    }
+  });
+
+  container.addEventListener("click", (event) => {
+    const btn = event.target.closest && event.target.closest("[data-act]");
+    if (!btn) return;
+    const act = btn.getAttribute("data-act");
+    const qi = Number(btn.getAttribute("data-qi"));
+    if (Number.isNaN(qi) || !subEditQuizState[qi]) return;
+    if (act === "del-q") {
+      subEditQuizState.splice(qi, 1);
+      afterQuizStructuralChange();
+    } else if (act === "add-opt") {
+      subEditQuizState[qi].options = subEditQuizState[qi].options || [];
+      subEditQuizState[qi].options.push("");
+      afterQuizStructuralChange();
+    } else if (act === "del-opt") {
+      const oi = Number(btn.getAttribute("data-oi"));
+      subEditQuizState[qi].options.splice(oi, 1);
+      if (subEditQuizState[qi].correctAnswerIndex >= subEditQuizState[qi].options.length) {
+        subEditQuizState[qi].correctAnswerIndex = 0;
+      }
+      afterQuizStructuralChange();
+    }
+  });
+
+  if (dom.subEditAddQuestion) {
+    dom.subEditAddQuestion.addEventListener("click", () => {
+      subEditQuizState.push({ prompt: "", options: ["", ""], correctAnswerIndex: 0 });
+      afterQuizStructuralChange();
+    });
+  }
+}
+
+async function fetchSubEditQuizAnalysis(moduleId, subAcquisId) {
+  try {
+    const res = await fetch(
+      "/api/backoffice/item-analysis/" + encodeURIComponent(moduleId) + "/" + encodeURIComponent(subAcquisId)
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    // Ignore if the teacher has since navigated to another sous-acquis.
+    if (contentEditorState.moduleId !== moduleId || contentEditorState.subAcquisId !== subAcquisId) return;
+    const byIndex = {};
+    (Array.isArray(data.items) ? data.items : []).forEach((it) => {
+      byIndex[it.questionIndex] = it;
+    });
+    subEditQuizAnalysis = { byIndex, summary: data.summary || {} };
+    renderSubEditQuizBuilder();
+  } catch (_error) {
+    /* stats are optional — ignore fetch/parse failures */
+  }
+}
+
 function populateSubEditorQuizFields() {
   const context = findSubAcquisContext(contentEditorState.moduleId, contentEditorState.subAcquisId);
   if (!context) return;
@@ -3109,13 +3479,25 @@ function populateSubEditorQuizFields() {
   if (!quiz) {
     dom.subEditQuizTitle.value = "";
     dom.subEditQuizType.value = "qcm";
-    dom.subEditQuizQuestions.value = "[]";
-    return;
+    subEditQuizState = [];
+  } else {
+    dom.subEditQuizTitle.value = quiz.title || "";
+    dom.subEditQuizType.value = quiz.type || "qcm";
+    subEditQuizState = (Array.isArray(quiz.questions) ? quiz.questions : []).map((q) => ({
+      prompt: String(q.prompt || ""),
+      options: Array.isArray(q.options) ? q.options.map((o) => String(o || "")) : [],
+      correctAnswerIndex:
+        typeof q.correctAnswerIndex === "number"
+          ? q.correctAnswerIndex
+          : typeof q.correctOptionIndex === "number"
+            ? q.correctOptionIndex
+            : 0
+    }));
   }
 
-  dom.subEditQuizTitle.value = quiz.title || "";
-  dom.subEditQuizType.value = quiz.type || "qcm";
-  dom.subEditQuizQuestions.value = JSON.stringify(Array.isArray(quiz.questions) ? quiz.questions : [], null, 2);
+  ensureQuizBuilderEvents();
+  syncQuizBuilderToTextarea();
+  renderSubEditQuizBuilder();
 }
 
 async function onSaveSubEditor(event) {

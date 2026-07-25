@@ -45,6 +45,7 @@
           <button data-view="classes-access" class="nav-item" type="button" data-i18n="bo.accessMgmt">Date de démarrage des cours</button>
           <button data-view="clustering" class="nav-item" type="button" data-i18n="bo.clustering">Profils d'apprentissage</button>
           <button data-view="attention" class="nav-item" type="button" data-i18n="bo.attention">Suivi d'attention</button>
+          <button data-view="quiz-quality" class="nav-item" type="button" data-i18n="bo.quizQuality">Qualité des quiz</button>
         </nav>
 
         <!-- Pinned footer: display settings + home link, separated from navigation. -->
@@ -175,7 +176,7 @@
                 </div>
               </form>
 
-              <h4>Sous-acquis du module</h4>
+              <h4 id="module-editor-list-heading">Acquis du module</h4>
               <div id="module-editor-sub-list" class="module-editor-sub-list"></div>
 
             </article>
@@ -316,92 +317,115 @@
               </div>
               <button type="button" id="sub-editor-back" class="secondary-btn">← Retour au module</button>
             </div>
-            <form id="sub-edit-form" class="stack-form two-col">
-              <label>
-                Nom du sous-acquis
-                <input type="text" id="sub-edit-name" required />
-              </label>
-              <label>
-                Taxonomie de Bloom
-                <select id="sub-edit-bloom" required>
-                  <option value="">Sélectionner un niveau</option>
-                  <option value="Memoriser">Memoriser</option>
-                  <option value="Comprendre">Comprendre</option>
-                  <option value="Appliquer">Appliquer</option>
-                  <option value="Analyser">Analyser</option>
-                  <option value="Evaluer">Evaluer</option>
-                  <option value="Creer">Creer</option>
-                </select>
-              </label>
-              <label>
-                Nombre de lecons
-                <input type="number" min="0" id="sub-edit-lessons" required />
-              </label>
-              <label>
-                Lien video
-                <input type="url" id="sub-edit-video-url" placeholder="https://..." />
-              </label>
-              <div class="full-row sub-edit-files-section">
-                <span class="sub-edit-files-label">Supports PDF/PPT</span>
-                <div id="sub-edit-existing-files" class="existing-files-list"></div>
-                <label class="sub-edit-add-label file-field">
-                  Ajouter des supports
-                  <span class="file-field-control">
-                    <span class="file-field-btn">Choisir des fichiers</span>
-                    <span class="file-field-name"></span>
-                    <input type="file" id="sub-edit-resource-file" multiple accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
-                  </span>
-                </label>
-              </div>
-              <label class="full-row">
-                Quiz a modifier
-                <select id="sub-edit-quiz-select"></select>
-              </label>
-              <label>
-                Titre quiz
-                <input type="text" id="sub-edit-quiz-title" />
-              </label>
-              <label>
-                Type quiz
-                <select id="sub-edit-quiz-type">
-                  <option value="qcm">QCM</option>
-                  <option value="vrai-faux">Vrai/Faux</option>
-                  <option value="reponse-courte">Réponse courte</option>
-                </select>
-              </label>
-              <label class="full-row">
-                Questions du quiz (JSON)
-                <textarea id="sub-edit-quiz-questions" rows="5" placeholder='[{"prompt":"...","options":["A","B","C","D"],"correctAnswerIndex":0}]'></textarea>
-              </label>
-              <div class="ai-quiz-panel full-row">
-                <button type="button" class="ai-quiz-toggle secondary-btn" id="edit-ai-toggle">Générer un quiz avec l'IA</button>
-                <div class="ai-quiz-body" id="edit-ai-body" hidden>
-                  <div class="ai-quiz-config">
-                    <label>Difficulté
-                      <select id="edit-ai-difficulty">
-                        <option value="beginner">Débutant</option>
-                        <option value="intermediate" selected>Intermédiaire</option>
-                        <option value="advanced">Avancé</option>
-                      </select>
+            <form id="sub-edit-form" class="stack-form">
+              <details class="sub-section" open>
+                <summary class="sub-section-summary">Informations</summary>
+                <div class="sub-section-body">
+                  <label>
+                    Nom du sous-acquis
+                    <input type="text" id="sub-edit-name" />
+                  </label>
+                  <label>
+                    Taxonomie de Bloom
+                    <select id="sub-edit-bloom">
+                      <option value="">Sélectionner un niveau</option>
+                      <option value="Memoriser">Memoriser</option>
+                      <option value="Comprendre">Comprendre</option>
+                      <option value="Appliquer">Appliquer</option>
+                      <option value="Analyser">Analyser</option>
+                      <option value="Evaluer">Evaluer</option>
+                      <option value="Creer">Creer</option>
+                    </select>
+                  </label>
+                  <label>
+                    Nombre de lecons
+                    <input type="number" min="0" id="sub-edit-lessons" />
+                  </label>
+                </div>
+              </details>
+
+              <details class="sub-section">
+                <summary class="sub-section-summary">Ressources</summary>
+                <div class="sub-section-body">
+                  <label>
+                    Lien video
+                    <input type="url" id="sub-edit-video-url" placeholder="https://..." />
+                  </label>
+                  <div class="full-row sub-edit-files-section">
+                    <span class="sub-edit-files-label">Supports PDF/PPT</span>
+                    <div id="sub-edit-existing-files" class="existing-files-list"></div>
+                    <label class="sub-edit-add-label file-field">
+                      Ajouter des supports
+                      <span class="file-field-control">
+                        <span class="file-field-btn">Choisir des fichiers</span>
+                        <span class="file-field-name"></span>
+                        <input type="file" id="sub-edit-resource-file" multiple accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                      </span>
                     </label>
-                    <label>Questions
-                      <select id="edit-ai-count">
-                        <option value="3">3</option>
-                        <option value="5" selected>5</option>
-                        <option value="8">8</option>
-                        <option value="10">10</option>
-                      </select>
-                    </label>
-                    <button type="button" class="secondary-btn" id="edit-ai-generate-btn">Générer</button>
-                  </div>
-                  <div id="edit-ai-results" class="ai-quiz-results"></div>
-                  <div id="edit-ai-footer" class="ai-quiz-footer" hidden>
-                    <input type="text" id="edit-ai-title" placeholder="Titre du quiz généré…" class="ai-quiz-title-input" />
-                    <button type="button" class="secondary-btn" id="edit-ai-regenerate-btn">Régénérer</button>
-                    <button type="button" class="secondary-btn" id="edit-ai-validate-btn">Valider la sélection</button>
                   </div>
                 </div>
-              </div>
+              </details>
+
+              <details class="sub-section">
+                <summary class="sub-section-summary">Quiz</summary>
+                <div class="sub-section-body">
+                  <label class="full-row">
+                    Quiz a modifier
+                    <select id="sub-edit-quiz-select"></select>
+                  </label>
+                  <label>
+                    Titre quiz
+                    <input type="text" id="sub-edit-quiz-title" />
+                  </label>
+                  <label>
+                    Type quiz
+                    <select id="sub-edit-quiz-type">
+                      <option value="qcm">QCM</option>
+                      <option value="vrai-faux">Vrai/Faux</option>
+                      <option value="reponse-courte">Réponse courte</option>
+                    </select>
+                  </label>
+                  <div class="full-row quiz-builder-field">
+                    <div class="quiz-builder-label-row">
+                      <span class="quiz-builder-label">Questions du quiz</span>
+                      <span id="sub-edit-quiz-summary" class="quiz-builder-summary"></span>
+                    </div>
+                    <div id="sub-edit-quiz-builder" class="quiz-builder"></div>
+                    <button type="button" id="sub-edit-add-question" class="secondary-btn qb-btn">+ Ajouter une question</button>
+                    <textarea id="sub-edit-quiz-questions" hidden></textarea>
+                  </div>
+                  <div class="ai-quiz-panel full-row">
+                    <button type="button" class="ai-quiz-toggle secondary-btn" id="edit-ai-toggle">Générer un quiz avec l'IA</button>
+                    <div class="ai-quiz-body" id="edit-ai-body" hidden>
+                      <div class="ai-quiz-config">
+                        <label>Difficulté
+                          <select id="edit-ai-difficulty">
+                            <option value="beginner">Débutant</option>
+                            <option value="intermediate" selected>Intermédiaire</option>
+                            <option value="advanced">Avancé</option>
+                          </select>
+                        </label>
+                        <label>Questions
+                          <select id="edit-ai-count">
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="8">8</option>
+                            <option value="10">10</option>
+                          </select>
+                        </label>
+                        <button type="button" class="secondary-btn" id="edit-ai-generate-btn">Générer</button>
+                      </div>
+                      <div id="edit-ai-results" class="ai-quiz-results"></div>
+                      <div id="edit-ai-footer" class="ai-quiz-footer" hidden>
+                        <input type="text" id="edit-ai-title" placeholder="Titre du quiz généré…" class="ai-quiz-title-input" />
+                        <button type="button" class="secondary-btn" id="edit-ai-regenerate-btn">Régénérer</button>
+                        <button type="button" class="secondary-btn" id="edit-ai-validate-btn">Valider la sélection</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
               <div class="button-row full-row">
                 <button type="submit">Enregistrer le sous-acquis</button>
                 <button type="button" id="sub-edit-delete-btn" class="danger-btn">Supprimer ce sous-acquis</button>
@@ -582,6 +606,16 @@
           <div id="attention-dashboard-root"></div>
         </section>
 
+        <section class="view" id="view-quiz-quality">
+          <div class="filters">
+            <label>
+              Sous-acquis
+              <select id="quiz-quality-select"></select>
+            </label>
+          </div>
+          <div id="quiz-quality-root"></div>
+        </section>
+
         <section class="view" id="view-clustering">
           <div id="clustering-dashboard-root"></div>
         </section>
@@ -658,6 +692,7 @@
     <script src="/backoffice/js/clusteringDashboard.js"></script>
     <script src="/backoffice/js/attentionDashboard.js"></script>
     <script src="/backoffice/js/varkDashboard.js"></script>
+    <script src="/backoffice/js/itemAnalysisDashboard.js"></script>
     <script src="/backoffice/backoffice.js"></script>
   </body>
 </html>
