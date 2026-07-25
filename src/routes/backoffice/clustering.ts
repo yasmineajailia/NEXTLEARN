@@ -41,6 +41,24 @@ export type StudentClusterEntry = {
   normalizedFeatures: StudentFeatures;
 };
 
+/**
+ * Count of students in a cluster by their dominant VARK learning style
+ * (from `User.varkProfile.dominant`). `unknown` covers students who have
+ * not completed the VARK questionnaire. This is an *overlay* on the
+ * behavioral clusters, not a clustering feature — it lets a teacher see
+ * how a performance group (e.g. "En difficulté") splits by preferred
+ * learning style, without mixing preference and performance into one
+ * distance metric.
+ */
+export type VarkBreakdown = {
+  visual: number;
+  auditory: number;
+  readwrite: number;
+  kinesthetic: number;
+  unknown: number;
+  total: number;
+};
+
 export type ClusterResult = {
   id: string;
   label: string;
@@ -49,6 +67,7 @@ export type ClusterResult = {
   studentCount: number;
   centroid: StudentFeatures;
   students: StudentClusterEntry[];
+  varkBreakdown?: VarkBreakdown;
 };
 
 export type ClusteringResponse = {
@@ -134,6 +153,46 @@ function adaptToRawStudentData(profile: any, user: any | undefined): RawStudentD
 }
 
 // ---------------------------------------------------------------------------
+// VARK overlay
+// ---------------------------------------------------------------------------
+
+/** Tallies a cluster's students by their dominant VARK style via the lookup map. */
+function computeVarkBreakdown(
+  students: StudentClusterEntry[],
+  varkByIdentifier: Map<string, string>
+): VarkBreakdown {
+  const breakdown: VarkBreakdown = {
+    visual: 0,
+    auditory: 0,
+    readwrite: 0,
+    kinesthetic: 0,
+    unknown: 0,
+    total: 0
+  };
+  for (const student of students) {
+    breakdown.total += 1;
+    const dominant = varkByIdentifier.get(student.identifier);
+    if (dominant === "visual") breakdown.visual += 1;
+    else if (dominant === "auditory") breakdown.auditory += 1;
+    else if (dominant === "readwrite") breakdown.readwrite += 1;
+    else if (dominant === "kinesthetic") breakdown.kinesthetic += 1;
+    else breakdown.unknown += 1;
+  }
+  return breakdown;
+}
+
+/** Attaches a per-cluster VARK breakdown to every cluster in the response. */
+function attachVarkBreakdown(
+  response: ClusteringResponse,
+  varkByIdentifier: Map<string, string>
+): ClusteringResponse {
+  for (const cluster of response.clusters) {
+    cluster.varkBreakdown = computeVarkBreakdown(cluster.students, varkByIdentifier);
+  }
+  return response;
+}
+
+// ---------------------------------------------------------------------------
 // Response assembly
 // ---------------------------------------------------------------------------
 
@@ -201,10 +260,17 @@ async function computeClusteringForClass(classId: string): Promise<ClusteringRes
   const identifiers = roster.map((student: any) => student.identifier).filter(Boolean);
   const users = identifiers.length
     ? await User.find({ identifier: { $in: identifiers } })
-        .select({ identifier: 1, progress: 1, createdAt: 1 })
+        .select({ identifier: 1, progress: 1, varkProfile: 1, createdAt: 1 })
         .lean()
     : [];
   const userByIdentifier = new Map(users.map((user: any) => [user.identifier, user]));
+
+  // Dominant VARK style per student, for the learning-style overlay on each cluster.
+  const varkByIdentifier = new Map<string, string>();
+  for (const user of users as any[]) {
+    const dominant = user?.varkProfile?.dominant;
+    if (user?.identifier && dominant) varkByIdentifier.set(String(user.identifier), String(dominant));
+  }
 
   const totalSubAcquis = await resolveTotalSubAcquis();
   const now = new Date();
@@ -217,10 +283,13 @@ async function computeClusteringForClass(classId: string): Promise<ClusteringRes
   // Edge case: fewer than 3 students -> a single "Groupe unique" cluster, no K-Means run.
   if (roster.length < 3) {
     const profile = labelSingleCluster("too-few-students");
-    return buildSingleClusterResponse(classId, rawStudents, rawFeatures, rawFeatures, profile, {
-      iterations: 0,
-      converged: true
-    });
+    return attachVarkBreakdown(
+      buildSingleClusterResponse(classId, rawStudents, rawFeatures, rawFeatures, profile, {
+        iterations: 0,
+        converged: true
+      }),
+      varkByIdentifier
+    );
   }
 
   const { normalized, hasVariance } = normalizeFeatures(rawFeatures);
@@ -228,10 +297,13 @@ async function computeClusteringForClass(classId: string): Promise<ClusteringRes
   // Edge case: every student has an identical feature vector -> single cluster B, no K-Means run.
   if (!hasVariance) {
     const profile = labelSingleCluster("no-variance");
-    return buildSingleClusterResponse(classId, rawStudents, rawFeatures, normalized, profile, {
-      iterations: 0,
-      converged: true
-    });
+    return attachVarkBreakdown(
+      buildSingleClusterResponse(classId, rawStudents, rawFeatures, normalized, profile, {
+        iterations: 0,
+        converged: true
+      }),
+      varkByIdentifier
+    );
   }
 
   const points = normalized.map(featuresToVector);
@@ -260,12 +332,15 @@ async function computeClusteringForClass(classId: string): Promise<ClusteringRes
     };
   });
 
-  return {
-    classId,
-    totalStudents: roster.length,
-    clusters,
-    metadata: { iterations, converged, computedAt: now.toISOString() }
-  };
+  return attachVarkBreakdown(
+    {
+      classId,
+      totalStudents: roster.length,
+      clusters,
+      metadata: { iterations, converged, computedAt: now.toISOString() }
+    },
+    varkByIdentifier
+  );
 }
 
 // ---------------------------------------------------------------------------

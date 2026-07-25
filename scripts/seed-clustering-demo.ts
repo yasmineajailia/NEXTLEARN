@@ -116,6 +116,41 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+// --- VARK learning-style overlay -------------------------------------------
+// Each behavioral archetype gets a *different* weighting over the four styles
+// so the clustering VARK overlay tells a story (e.g. struggling students skew
+// kinesthetic/auditory rather than read/write). ~15% of students are left
+// without a profile to exercise the "X/Y renseignés" partial state.
+const VARK_KEYS = ["visual", "auditory", "readwrite", "kinesthetic"] as const;
+type VarkKey = (typeof VARK_KEYS)[number];
+
+const VARK_WEIGHTS: Record<string, Record<VarkKey, number>> = {
+  avance: { visual: 3, auditory: 2, readwrite: 4, kinesthetic: 1 },
+  progression: { visual: 3, auditory: 3, readwrite: 2, kinesthetic: 2 },
+  difficulte: { visual: 2, auditory: 3, readwrite: 1, kinesthetic: 4 }
+};
+
+function weightedPickVark(weights: Record<VarkKey, number>): VarkKey {
+  const total = VARK_KEYS.reduce((sum, key) => sum + weights[key], 0);
+  let roll = Math.random() * total;
+  for (const key of VARK_KEYS) {
+    roll -= weights[key];
+    if (roll <= 0) return key;
+  }
+  return "visual";
+}
+
+function buildVarkProfile(archetypeKey: string) {
+  if (Math.random() < 0.15) return null; // hasn't taken the questionnaire yet
+  const weights = VARK_WEIGHTS[archetypeKey] || VARK_WEIGHTS.progression;
+  const dominant = weightedPickVark(weights);
+  const scores = VARK_KEYS.reduce((acc, key) => {
+    acc[key] = key === dominant ? randomInt(60, 90) : randomInt(20, 55);
+    return acc;
+  }, {} as Record<VarkKey, number>);
+  return { dominant, scores, completedAt: daysAgo(randomInt(1, 25)) };
+}
+
 type SubAcquisRef = { moduleId: string; subAcquisId: string };
 
 /** Flattens every sous-acquis across every curriculum module into a flat pool. */
@@ -249,6 +284,7 @@ function buildStudent(index: number, archetype: Archetype, subAcquisPool: SubAcq
     email,
     password: DEMO_PASSWORD,
     createdAt,
+    varkProfile: buildVarkProfile(archetype.key),
     progress: {
       xp,
       completedLessonKeys: completedItems.map((item) => `${item.moduleId}::${item.subAcquisId}`),

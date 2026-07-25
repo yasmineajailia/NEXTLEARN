@@ -32,6 +32,16 @@
   var CLUSTER_COLORS = { A: "#1d9e75", B: "#f59e0b", C: "#c41d38" };
   var CLUSTER_PRIORITY = { A: 0, B: 1, C: 2 };
 
+  // VARK learning-style overlay. A distinct palette (blue/purple/teal/orange)
+  // so it never reads as the green/amber/red cluster-risk semantics.
+  var VARK_META = [
+    { key: "visual", label: "Visuel", color: "#3266ad" },
+    { key: "auditory", label: "Auditif", color: "#7c5cbf" },
+    { key: "readwrite", label: "Lecture/écriture", color: "#1d9e75" },
+    { key: "kinesthetic", label: "Kinesthésique", color: "#e8833a" },
+    { key: "unknown", label: "Non renseigné", color: "#cbd0d8" }
+  ];
+
   // ---------------------------------------------------------------------
   // Auth / current user
   // ---------------------------------------------------------------------
@@ -266,6 +276,74 @@
     return ro;
   }
 
+  /**
+   * Renders the VARK learning-style overlay for a cluster (or an aggregate):
+   * a single stacked bar of dominant styles plus a labelled legend. Degrades
+   * to a short note when no student in the group has a VARK profile yet.
+   */
+  function renderVarkBar(breakdown) {
+    var b = breakdown || {};
+    var total = Number(b.total) || 0;
+    var known = total - (Number(b.unknown) || 0);
+
+    if (total === 0 || known === 0) {
+      return (
+        '<div class="cdb-vark">' +
+        '<div class="cdb-vark-head"><span class="cdb-vark-label">Style d’apprentissage dominant</span></div>' +
+        '<span class="cdb-vark-empty">Aucun profil VARK renseigné dans ce groupe.</span>' +
+        "</div>"
+      );
+    }
+
+    var segments = VARK_META.map(function (meta) {
+      var count = Number(b[meta.key]) || 0;
+      if (count === 0) return "";
+      var pct = (count / total) * 100;
+      return (
+        '<span class="cdb-vark-seg" style="width:' + pct + "%;background:" + meta.color +
+        '" title="' + escapeAttr(meta.label + " : " + count) + '"></span>'
+      );
+    }).join("");
+
+    var legend = VARK_META.map(function (meta) {
+      var count = Number(b[meta.key]) || 0;
+      if (count === 0) return "";
+      return (
+        '<span class="cdb-vark-chip"><span class="cdb-vark-dot" style="background:' + meta.color + '"></span>' +
+        escapeHtml(meta.label) + " <strong>" + count + "</strong></span>"
+      );
+    }).join("");
+
+    return (
+      '<div class="cdb-vark">' +
+      '<div class="cdb-vark-head"><span class="cdb-vark-label">Style d’apprentissage dominant</span>' +
+      (known < total ? '<span class="cdb-vark-note">' + known + "/" + total + " renseignés</span>" : "") +
+      "</div>" +
+      '<div class="cdb-vark-track">' + segments + "</div>" +
+      '<div class="cdb-vark-legend">' + legend + "</div>" +
+      "</div>"
+    );
+  }
+
+  /** Sums the per-cluster VARK breakdowns across every successfully-loaded class. */
+  function aggregateVark(results) {
+    var agg = { visual: 0, auditory: 0, readwrite: 0, kinesthetic: 0, unknown: 0, total: 0 };
+    (results || []).forEach(function (result) {
+      var clusters = result && result.data && result.data.clusters ? result.data.clusters : [];
+      clusters.forEach(function (cluster) {
+        var b = cluster.varkBreakdown;
+        if (!b) return;
+        agg.visual += Number(b.visual) || 0;
+        agg.auditory += Number(b.auditory) || 0;
+        agg.readwrite += Number(b.readwrite) || 0;
+        agg.kinesthetic += Number(b.kinesthetic) || 0;
+        agg.unknown += Number(b.unknown) || 0;
+        agg.total += Number(b.total) || 0;
+      });
+    });
+    return agg;
+  }
+
   function sortClustersForDisplay(clusters) {
     return (clusters || []).slice().sort(function (a, b) {
       var pa = CLUSTER_PRIORITY.hasOwnProperty(a.id) ? CLUSTER_PRIORITY[a.id] : 99;
@@ -456,6 +534,20 @@
       ".cdb-metric-bar{flex:1;height:7px;background:#e8e8e6;border-radius:999px;overflow:hidden;margin:0 .3rem;}",
       ".cdb-metric-bar-fill{display:block;height:100%;border-radius:999px;}",
       ".cdb-metric-value{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.9rem;white-space:nowrap;}",
+      ".cdb-vark{margin:0 0 1.1rem;}",
+      ".cdb-vark-head{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;margin-bottom:.45rem;}",
+      ".cdb-vark-label{font-family:'Space Grotesk',sans-serif;font-size:.76rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;}",
+      ".cdb-vark-note{font-size:.74rem;color:#9ca3af;white-space:nowrap;}",
+      ".cdb-vark-track{display:flex;width:100%;height:12px;border-radius:999px;overflow:hidden;background:#f0f0ee;}",
+      ".cdb-vark-seg{display:block;height:100%;transition:opacity 160ms ease;}",
+      ".cdb-vark-legend{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:.55rem;}",
+      ".cdb-vark-chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;color:#374151;}",
+      ".cdb-vark-chip strong{font-family:'Space Grotesk',sans-serif;font-weight:700;}",
+      ".cdb-vark-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;}",
+      ".cdb-vark-empty{font-size:.8rem;color:#9ca3af;}",
+      ".cdb-vark-admin{margin-top:1.1rem;padding-top:1.1rem;border-top:1px solid #e8e8e6;}",
+      ".cdb-vark-admin-title{font-family:'Space Grotesk',sans-serif;font-size:.92rem;font-weight:700;margin:0 0 .2rem;}",
+      ".cdb-vark-admin-sub{font-size:.8rem;color:#6b7280;margin:0 0 .8rem;}",
       "@media (max-width:768px){",
       "  .cdb-kpi-row{grid-template-columns:1fr;}",
       "  .cdb-skel-grid-4{grid-template-columns:1fr;}",
@@ -790,7 +882,7 @@
         '<span class="cdb-chevron' + (expanded ? " is-open" : "") + '" id="' + sectionId + '-chevron">▾</span>' +
         "</button>" +
         '<div class="cdb-cluster-body' + (expanded ? " is-open" : "") + '" id="' + sectionId + '-body" data-expanded="' + (expanded ? "1" : "0") + '">' +
-        '<div class="cdb-cluster-body-inner"><div class="cdb-table-scroll">' +
+        '<div class="cdb-cluster-body-inner">' + renderVarkBar(cluster.varkBreakdown) + '<div class="cdb-table-scroll">' +
         '<table class="cdb-table" id="' + sectionId + '-table" data-sort-key="fullName" data-sort-dir="asc"><thead><tr>' +
         '<th data-key="fullName">Étudiant<span class="cdb-sort-arrow"></span></th>' +
         '<th data-key="completionRate">Complétion<span class="cdb-sort-arrow"></span></th>' +
@@ -1212,6 +1304,11 @@
         '<div class="cdb-chart-wrapper" id="' + state.uid + '-cdb-admin-chart-wrapper"><canvas id="' + state.uid + '-cdb-admin-canvas"></canvas></div>' +
         '<div class="cdb-legend">' +
         legendChip("Avancés", CLUSTER_COLORS.A) + legendChip("En progression", CLUSTER_COLORS.B) + legendChip("En difficulté", CLUSTER_COLORS.C) +
+        "</div>" +
+        '<div class="cdb-vark-admin">' +
+        '<h4 class="cdb-vark-admin-title">Styles d’apprentissage — toutes les classes</h4>' +
+        '<p class="cdb-vark-admin-sub">Répartition des styles VARK dominants sur l’ensemble des étudiants chargés.</p>' +
+        renderVarkBar(aggregateVark(successful)) +
         "</div>" +
         '<div class="cdb-table-scroll"><table class="cdb-table"><thead><tr>' +
         "<th>Classe</th><th>Total</th><th>% Avancés</th><th>% En progression</th><th>% En difficulté</th><th>Score quiz moy.</th><th>Action</th>" +
