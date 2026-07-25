@@ -19,7 +19,8 @@ import { StudentRemediationQuiz } from "../models/StudentRemediationQuiz";
 import { hashPassword } from "../utils/password";
 import { Recommender, type ChapterScoreEntry, type RecommendOptions, type ScoreEntry, type SkillsJson } from "../services/recommendation/skill-recommender.js";
 import { computeRemediationTargets, type RemediationTarget } from "../services/recommendation/remediationTargets.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
+import { computeItemAnalysis, type ItemAttempt } from "../services/quiz/itemAnalysisClient.js";
 import { env } from "../config/env";
 import { MLPredictorService } from "../services/MLPredictorService";
 import { type PredictionFeatures, type PredictionModuleInfo, extractMLFeatures } from "../services/prediction/features";
@@ -2877,6 +2878,73 @@ webRouter.get("/api/student/vark", requireAuth, async (req, res) => {
     res.status(500).json({ message: "Impossible de lire le profil VARK" });
   }
 });
+
+// Classical item analysis for one quiz (teacher/admin only). Gathers each student's
+// FIRST attempt's gradable responses and asks the Python ML service for per-question
+// difficulty + discrimination + KR-20 reliability, then labels each item with its
+// prompt so a teacher can see which AI-generated questions are broken / too easy /
+// too hard. requireRole guards it directly (webRouter runs before the /api/backoffice
+// role guard in server.ts).
+webRouter.get(
+  "/api/backoffice/item-analysis/:moduleId/:subAcquisId",
+  requireRole("enseignant", "admin"),
+  async (req, res) => {
+    try {
+      const moduleId = String(req.params.moduleId ?? "");
+      const subAcquisId = String(req.params.subAcquisId ?? "");
+      if (!moduleId || !subAcquisId) {
+        return res.status(400).json({ message: "moduleId et subAcquisId sont requis" });
+      }
+
+      const users = await User.find({
+        "progress.skillAttempts": { $elemMatch: { moduleId, subAcquisId } }
+      })
+        .select({ "progress.skillAttempts": 1 })
+        .lean();
+
+      type StoredAttempt = {
+        moduleId?: string;
+        subAcquisId?: string;
+        submittedAt?: Date | string;
+        responses?: Array<{ questionIndex?: number; correct?: boolean; gradable?: boolean }>;
+      };
+
+      const attempts: ItemAttempt[] = [];
+      for (const user of users) {
+        const skillAttempts = (user as { progress?: { skillAttempts?: StoredAttempt[] } }).progress?.skillAttempts;
+        if (!Array.isArray(skillAttempts)) continue;
+        // First attempt per student = item difficulty on first exposure (no learning effect).
+        const forQuiz = skillAttempts
+          .filter((a) => a && a.moduleId === moduleId && a.subAcquisId === subAcquisId && Array.isArray(a.responses))
+          .sort((a, b) => new Date(a.submittedAt || 0).getTime() - new Date(b.submittedAt || 0).getTime());
+        if (!forQuiz.length) continue;
+        const first = forQuiz[0];
+        attempts.push({
+          responses: (first.responses ?? []).map((r) => ({
+            questionIndex: Number(r.questionIndex ?? -1),
+            correct: !!r.correct,
+            gradable: r.gradable !== false
+          }))
+        });
+      }
+
+      const analysis = await computeItemAnalysis(attempts);
+
+      // Best-effort: label each item with its question prompt (by index).
+      const resources = await readPersistedSubAcquisResources(moduleId, subAcquisId).catch(() => null);
+      const questions = (resources?.quizQuestions ?? []) as Array<{ prompt?: string }>;
+      const items = analysis.items.map((item) => ({
+        ...item,
+        prompt: questions[item.questionIndex]?.prompt ?? null
+      }));
+
+      return res.status(200).json({ moduleId, subAcquisId, items, summary: analysis.summary });
+    } catch (error) {
+      console.error("Failed to compute item analysis:", error);
+      return res.status(500).json({ message: "Impossible de calculer l'analyse des questions" });
+    }
+  }
+);
 
 webRouter.get("/api/student/progress/:identifier", async (req, res) => {
   try {

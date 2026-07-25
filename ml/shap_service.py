@@ -45,6 +45,7 @@ from sklearn.cluster import KMeans
 load_dotenv()
 
 from quizgen import generate_quiz
+import item_analysis
 from rag import index as rag_index
 from rag import retrieve as rag_retrieve
 from rag import store as rag_store
@@ -283,6 +284,12 @@ class RagAnswerBody(BaseModel):
     lang: str = "fr"
 
 
+class ItemAnalysisBody(BaseModel):
+    """Per-question responses for one quiz. Each attempt carries the gradable
+    responses captured in User.progress.skillAttempts."""
+    attempts: list[dict] = []
+
+
 class UTF8JSONResponse(JSONResponse):
     """FastAPI's default JSONResponse encodes UTF-8 but ships `Content-Type:
     application/json` with NO charset. Spec-compliant clients (browsers, Node
@@ -454,6 +461,14 @@ def generate_quiz_endpoint(body: QuizGenBody):
     """Teacher quiz generation (LLM, with a template fallback). Returns validated
     questions. Node passes the resolved sous-acquis + course-content snippets."""
     return {"questions": generate_quiz(body.model_dump())}
+
+
+@app.post("/item-analysis")
+def item_analysis_endpoint(body: ItemAnalysisBody):
+    """Classical item analysis (difficulty + rest-corrected point-biserial
+    discrimination + KR-20 reliability) for one quiz, so teachers can spot broken
+    / too-easy / too-hard AI-generated questions from real student responses."""
+    return item_analysis.analyze(body.attempts)
 
 
 @app.post("/explain")

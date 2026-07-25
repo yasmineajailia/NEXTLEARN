@@ -222,6 +222,8 @@
     "bo.clustering": "Learning profiles",
     "bo.attention": "Attention tracking",
     "bo.attentionTitle": "Student concentration",
+    "bo.quizQuality": "Quiz quality",
+    "bo.quizQualityTitle": "Question analysis from student responses",
     "bo.atRisk": "Students at risk",
     "bo.inactive": "Inactive students",
     "bo.progressByClass": "Progress by class",
