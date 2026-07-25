@@ -144,6 +144,7 @@
       ".att-widget{position:fixed;right:1.1rem;bottom:6.2rem;z-index:10500;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 6px 20px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;}" +
       ".att-widget svg{position:absolute;inset:0;transform:rotate(-90deg);}" +
       ".att-widget-score{font-size:.95rem;font-weight:700;color:#182235;line-height:1;}" +
+      ".att-widget-pct{font-size:.58em;font-weight:700;opacity:.7;margin-left:.5px;}" +
       ".att-widget-label{position:absolute;bottom:-1.1rem;left:0;right:0;text-align:center;font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;}" +
       ".att-widget-close{position:absolute;top:-7px;right:-7px;width:18px;height:18px;border-radius:50%;border:0;background:#182235;color:#fff;font-size:.62rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}" +
       "@keyframes attPulse{0%,100%{box-shadow:0 6px 20px rgba(0,0,0,.18);}50%{box-shadow:0 0 0 7px rgba(196,29,56,.30);}}" +
@@ -477,7 +478,8 @@
     ring.setAttribute("stroke", color);
     ring.setAttribute("stroke-dashoffset", String(RING_CIRC * (1 - score / 100)));
     var scoreEl = state.widget.querySelector(".att-widget-score");
-    scoreEl.textContent = String(score);
+    // Score is a 0-100 focus percentage; show the unit so a lone number isn't ambiguous.
+    scoreEl.innerHTML = String(score) + '<span class="att-widget-pct">%</span>';
     scoreEl.style.color = color;
   }
 

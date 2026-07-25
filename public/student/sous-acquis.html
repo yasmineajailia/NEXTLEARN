@@ -609,6 +609,9 @@
         position: relative;
         right: auto; bottom: auto;
         width: 100%;
+        /* Fill the visible viewport height (the column is sticky, top: 1.5rem)
+           so the docked panel doesn't leave dead space beneath it. */
+        height: calc(100vh - 3rem);
       }
       .lesson-chat .chatbot-panel.is-fullscreen {
         position: fixed;
