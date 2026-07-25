@@ -98,7 +98,7 @@ chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
 // Events: `meta` { mode }, `delta` { text }, `sources` { sources }, `done` {}, `error` { message }.
 // Python emits the frames; Node does access control then pipes them verbatim.
 chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) => {
-  const identifier = typeof req.body?.identifier === "string" ? req.body.identifier.trim() : "";
+  const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
   const rawMessage = typeof req.body?.message === "string" ? req.body.message.trim() : "";
 
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
