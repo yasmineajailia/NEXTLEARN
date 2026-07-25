@@ -183,7 +183,6 @@
             <div class="controls">
               <button class="btn-primary" id="btn-start">Start tracking</button>
               <button class="btn-ghost" id="btn-stop" disabled>Stop</button>
-              <button class="btn-ghost" id="btn-reset">Reset thresholds</button>
             </div>
 
             <div class="toggles">
@@ -316,42 +315,6 @@
                 <button class="btn-ghost" data-method="both" style="flex:1;font-size:0.78rem;padding:0.4rem">Both agree</button>
               </div>
               <p class="metric-note" style="margin-top:0.4rem">Chooses which formula drives the actual head_turned verdict above.</p>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Thresholds — drag to experiment</h2>
-            <div class="slider">
-              <div class="slider-head"><code>EAR_THRESHOLD</code><span class="slider-val" id="v-ear">0.20</span></div>
-              <input type="range" id="s-ear" min="0.05" max="0.40" step="0.01" value="0.20" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>EYES_CLOSED_MS</code><span class="slider-val" id="v-blink">2000</span></div>
-              <input type="range" id="s-blink" min="0" max="5000" step="100" value="2000" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>YAW_LOW / YAW_HIGH</code> <span style="color:#f59e0b">A</span><span class="slider-val" id="v-yaw">0.65 / 1.35</span></div>
-              <input type="range" id="s-yaw" min="0.05" max="0.60" step="0.01" value="0.35" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>YAW_ALT band</code> <span style="color:#818cf8">B</span><span class="slider-val" id="v-yawalt">0.65 / 1.35</span></div>
-              <input type="range" id="s-yawalt" min="0.05" max="0.60" step="0.01" value="0.35" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>HEAD_TURNED_MS</code><span class="slider-val" id="v-headms">0</span></div>
-              <input type="range" id="s-headms" min="0" max="4000" step="100" value="0" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>GAZE_AWAY_MS</code><span class="slider-val" id="v-gazems">0</span></div>
-              <input type="range" id="s-gazems" min="0" max="4000" step="100" value="0" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>GAZE_SHIFT_LIMIT</code><span class="slider-val" id="v-gaze">0.40</span></div>
-              <input type="range" id="s-gaze" min="0.05" max="0.95" step="0.01" value="0.40" />
-            </div>
-            <div class="slider">
-              <div class="slider-head"><code>BRIGHTNESS_MIN</code><span class="slider-val" id="v-bright">40</span></div>
-              <input type="range" id="s-bright" min="0" max="150" step="1" value="40" />
             </div>
           </div>
 
@@ -947,41 +910,6 @@
           $("t-" + k).addEventListener("change", function (e) { st.opts[k] = e.target.checked; });
         });
 
-        function markDirty(valId, key, current) {
-          $(valId).classList.toggle("dirty", Math.abs(current - PROD[key]) > 1e-9);
-        }
-
-        $("s-ear").addEventListener("input", function (e) {
-          cfg.EAR_THRESHOLD = parseFloat(e.target.value);
-          $("v-ear").textContent = cfg.EAR_THRESHOLD.toFixed(2);
-          markDirty("v-ear", "EAR_THRESHOLD", cfg.EAR_THRESHOLD);
-        });
-        $("s-blink").addEventListener("input", function (e) {
-          cfg.EYES_CLOSED_MS = parseInt(e.target.value, 10);
-          $("v-blink").textContent = String(cfg.EYES_CLOSED_MS);
-          markDirty("v-blink", "EYES_CLOSED_MS", cfg.EYES_CLOSED_MS);
-        });
-        $("s-yaw").addEventListener("input", function (e) {
-          cfg.YAW_SPREAD = parseFloat(e.target.value);
-          $("v-yaw").textContent = (1 - cfg.YAW_SPREAD).toFixed(2) + " / " + (1 + cfg.YAW_SPREAD).toFixed(2);
-          markDirty("v-yaw", "YAW_SPREAD", cfg.YAW_SPREAD);
-        });
-        $("s-yawalt").addEventListener("input", function (e) {
-          cfg.YAW_ALT_SPREAD = parseFloat(e.target.value);
-          $("v-yawalt").textContent = (1 - cfg.YAW_ALT_SPREAD).toFixed(2) + " / " + (1 + cfg.YAW_ALT_SPREAD).toFixed(2);
-          markDirty("v-yawalt", "YAW_ALT_SPREAD", cfg.YAW_ALT_SPREAD);
-          drawYawChart();
-        });
-        $("s-headms").addEventListener("input", function (e) {
-          cfg.HEAD_TURNED_MS = parseInt(e.target.value, 10);
-          $("v-headms").textContent = String(cfg.HEAD_TURNED_MS);
-          markDirty("v-headms", "HEAD_TURNED_MS", cfg.HEAD_TURNED_MS);
-        });
-        $("s-gazems").addEventListener("input", function (e) {
-          cfg.GAZE_AWAY_MS = parseInt(e.target.value, 10);
-          $("v-gazems").textContent = String(cfg.GAZE_AWAY_MS);
-          markDirty("v-gazems", "GAZE_AWAY_MS", cfg.GAZE_AWAY_MS);
-        });
         Array.prototype.forEach.call(document.querySelectorAll("[data-method]"), function (btn) {
           btn.addEventListener("click", function () {
             cfg.YAW_METHOD = btn.getAttribute("data-method");
@@ -992,37 +920,6 @@
               b.style.color = b === btn ? "#c7d2fe" : "";
             });
           });
-        });
-
-        $("s-gaze").addEventListener("input", function (e) {
-          cfg.GAZE_SHIFT_LIMIT = parseFloat(e.target.value);
-          $("v-gaze").textContent = cfg.GAZE_SHIFT_LIMIT.toFixed(2);
-          markDirty("v-gaze", "GAZE_SHIFT_LIMIT", cfg.GAZE_SHIFT_LIMIT);
-        });
-        $("s-bright").addEventListener("input", function (e) {
-          cfg.BRIGHTNESS_MIN = parseInt(e.target.value, 10);
-          $("v-bright").textContent = String(cfg.BRIGHTNESS_MIN);
-          markDirty("v-bright", "BRIGHTNESS_MIN", cfg.BRIGHTNESS_MIN);
-        });
-
-        $("btn-reset").addEventListener("click", function () {
-          cfg = Object.assign({}, PROD);
-          $("s-ear").value = PROD.EAR_THRESHOLD;   $("v-ear").textContent = PROD.EAR_THRESHOLD.toFixed(2);
-          $("s-blink").value = PROD.EYES_CLOSED_MS; $("v-blink").textContent = String(PROD.EYES_CLOSED_MS);
-          $("s-yaw").value = PROD.YAW_SPREAD;      $("v-yaw").textContent = "0.65 / 1.35";
-          $("s-yawalt").value = PROD.YAW_ALT_SPREAD; $("v-yawalt").textContent = "0.65 / 1.35";
-          $("s-headms").value = PROD.HEAD_TURNED_MS; $("v-headms").textContent = String(PROD.HEAD_TURNED_MS);
-          $("s-gazems").value = PROD.GAZE_AWAY_MS;   $("v-gazems").textContent = String(PROD.GAZE_AWAY_MS);
-          $("s-gaze").value = PROD.GAZE_SHIFT_LIMIT; $("v-gaze").textContent = PROD.GAZE_SHIFT_LIMIT.toFixed(2);
-          $("s-bright").value = PROD.BRIGHTNESS_MIN; $("v-bright").textContent = String(PROD.BRIGHTNESS_MIN);
-          $("v-method").textContent = PROD.YAW_METHOD;
-          Array.prototype.forEach.call(document.querySelectorAll("[data-method]"), function (b) {
-            b.style.borderColor = ""; b.style.color = "";
-          });
-          ["v-ear", "v-blink", "v-yaw", "v-yawalt", "v-headms", "v-gazems", "v-gaze", "v-bright", "v-method"].forEach(function (id) {
-            $(id).classList.remove("dirty");
-          });
-          drawYawChart();
         });
 
         window.addEventListener("resize", function () { drawSpark(); drawYawChart(); });

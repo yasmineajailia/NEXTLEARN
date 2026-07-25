@@ -83,6 +83,10 @@ async function startServer() {
     app.listen(env.port, () => {
       // Startup log helps confirm active environment and server port.
       console.log(`NextLearn server running on http://localhost:${env.port} (${env.nodeEnv})`);
+      // Handy dev-only tool: most terminals render this as a clickable link.
+      if (env.nodeEnv !== "production") {
+        console.log(`Attention tracker tester: http://localhost:${env.port}/dev/attention-debug.html`);
+      }
     });
   } catch (error) {
     console.error("Failed to start server:", error);
