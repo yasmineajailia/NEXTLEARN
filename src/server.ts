@@ -8,6 +8,7 @@ import { organizationRouter } from "./routes/backoffice/organization";
 import { pagesRouter } from "./routes/pages";
 import { clusteringRouter } from "./routes/backoffice/clustering";
 import { attentionRouter } from "./routes/backoffice/attention";
+import { varkRouter } from "./routes/backoffice/vark";
 import { attentionSessionRouter } from "./routes/student/attentionSession";
 import { requireRole } from "./middleware/auth";
 import { MLPredictorService } from "./services/MLPredictorService";
@@ -47,6 +48,7 @@ app.use("/api/backoffice", requireRole("enseignant", "admin"));
 app.use(organizationRouter);
 app.use(clusteringRouter);
 app.use(attentionRouter);
+app.use(varkRouter);
 app.use(attentionSessionRouter);
 
 // Friendly 404 fallback for unknown routes.

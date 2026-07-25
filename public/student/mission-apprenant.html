@@ -1420,6 +1420,17 @@ function showResult() {
   };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); } catch (_e) {}
 
+  // Persist to the server so the profile is durable (survives cache clears / new
+  // devices) and visible in the backoffice analytics. localStorage stays the fast
+  // path; this is fire-and-forget and never blocks the result screen.
+  try {
+    fetch("/api/student/vark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dominant: stored.dominant, scores: stored.scores })
+    }).catch(function () {});
+  } catch (_e) {}
+
   renderProfileScreen(ds, dominant, false);
 }
 
@@ -1590,8 +1601,24 @@ function showStoredResult(stored) {
 
 /* ── init ── */
 const existing = window.getVarkResult();
-if (existing && existing.dominant && existing.scores) showStoredResult(existing);
-else showWelcome();
+if (existing && existing.dominant && existing.scores) {
+  showStoredResult(existing);
+} else {
+  // No local profile — try to hydrate from the server (durable copy, e.g. after a
+  // cache clear or on a new device). Falls back to the welcome screen otherwise.
+  fetch("/api/student/vark", { headers: { Accept: "application/json" } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      const vp = data && data.varkProfile;
+      if (vp && vp.dominant && vp.scores) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(vp)); } catch (_e) {}
+        showStoredResult(vp);
+      } else {
+        showWelcome();
+      }
+    })
+    .catch(() => showWelcome());
+}
 </script>
 <script src="/student/sidebar-loader.js"></script>
 </body>

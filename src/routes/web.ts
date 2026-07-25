@@ -2822,6 +2822,62 @@ webRouter.post("/api/student/progress/lesson-view", requireAuth, async (req, res
   }
 });
 
+const VARK_DOMINANTS = ["visual", "readwrite", "auditory", "kinesthetic"] as const;
+
+// Persist the student's VARK learning-style result (server copy of the localStorage
+// value). Identity comes from the verified session, never the request body.
+webRouter.post("/api/student/vark", requireAuth, async (req, res) => {
+  try {
+    const identifier = req.auth?.id ?? "";
+    if (!identifier) {
+      return res.status(400).json({ message: "Identifiant requis" });
+    }
+    const dominant = typeof req.body?.dominant === "string" ? req.body.dominant.trim() : "";
+    if (!VARK_DOMINANTS.includes(dominant as (typeof VARK_DOMINANTS)[number])) {
+      return res.status(400).json({ message: "dominant invalide" });
+    }
+    const rawScores =
+      req.body?.scores && typeof req.body.scores === "object" ? (req.body.scores as Record<string, unknown>) : {};
+    const clampScore = (value: unknown): number => {
+      const n = Number(value);
+      return Number.isFinite(n) ? Math.max(0, n) : 0;
+    };
+    const scores = {
+      visual: clampScore(rawScores.visual),
+      readwrite: clampScore(rawScores.readwrite),
+      auditory: clampScore(rawScores.auditory),
+      kinesthetic: clampScore(rawScores.kinesthetic)
+    };
+    const updateResult = await User.updateOne(
+      { identifier },
+      { $set: { varkProfile: { dominant, scores, completedAt: new Date() } } }
+    );
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error("Failed to save VARK profile:", error);
+    res.status(500).json({ message: "Impossible d'enregistrer le profil VARK" });
+  }
+});
+
+// Read the student's own persisted VARK profile (used to hydrate the client when
+// localStorage is empty, e.g. on a new device).
+webRouter.get("/api/student/vark", requireAuth, async (req, res) => {
+  try {
+    const identifier = req.auth?.id ?? "";
+    if (!identifier) {
+      return res.status(400).json({ message: "Identifiant requis" });
+    }
+    const user = await User.findOne({ identifier }).select({ varkProfile: 1 }).lean();
+    res.status(200).json({ varkProfile: (user as { varkProfile?: unknown } | null)?.varkProfile ?? null });
+  } catch (error) {
+    console.error("Failed to read VARK profile:", error);
+    res.status(500).json({ message: "Impossible de lire le profil VARK" });
+  }
+});
+
 webRouter.get("/api/student/progress/:identifier", async (req, res) => {
   try {
     const identifier = String(req.params.identifier || "").trim();

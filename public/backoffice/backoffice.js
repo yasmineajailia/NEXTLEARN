@@ -1095,11 +1095,16 @@ async function initAttentionViewOnce() {
     select.innerHTML = classes
       .map((c) => `<option value="${htmlEscape(String(c.id))}">${htmlEscape(String(c.name || c.id))}</option>`)
       .join("");
-    select.addEventListener("change", () => {
-      window.renderAttentionDashboard("attention-dashboard-root", select.value);
-    });
+    const renderBoth = (classId) => {
+      window.renderAttentionDashboard("attention-dashboard-root", classId);
+      if (typeof window.renderVarkDashboard === "function") {
+        window.renderVarkDashboard("vark-dashboard-root", classId);
+      }
+    };
 
-    window.renderAttentionDashboard("attention-dashboard-root", classes[0].id);
+    select.addEventListener("change", () => renderBoth(select.value));
+
+    renderBoth(classes[0].id);
   } catch (error) {
     console.error("Failed to initialize attention view:", error);
     root.innerHTML = '<p style="color:#676c77">Impossible de charger les classes.</p>';

@@ -63,6 +63,17 @@ type UserData = {
     }>;
     avgFocusScore?: number | null;
   };
+  /**
+   * Persisted VARK learning-style result from the "Mission Apprenant" game.
+   * Client-side localStorage stays the fast path; this server copy makes it
+   * durable (survives cache clears / new devices) and readable by the backoffice
+   * (per-class analytics). `dominant` drives resource ordering on lesson pages.
+   */
+  varkProfile?: {
+    dominant: "visual" | "readwrite" | "auditory" | "kinesthetic";
+    scores: { visual: number; readwrite: number; auditory: number; kinesthetic: number };
+    completedAt?: Date;
+  } | null;
 };
 
 type UserMethods = {
@@ -182,6 +193,26 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
         default: []
       },
       avgFocusScore: { type: Number, default: null }
+    },
+    varkProfile: {
+      type: new mongoose.Schema(
+        {
+          dominant: {
+            type: String,
+            enum: ["visual", "readwrite", "auditory", "kinesthetic"],
+            required: true
+          },
+          scores: {
+            visual: { type: Number, default: 0 },
+            readwrite: { type: Number, default: 0 },
+            auditory: { type: Number, default: 0 },
+            kinesthetic: { type: Number, default: 0 }
+          },
+          completedAt: { type: Date, default: Date.now }
+        },
+        { _id: false }
+      ),
+      default: null
     }
   },
   { timestamps: true }
