@@ -1,0 +1,67 @@
+# NextLearn full stack: MongoDB + Python ML service + Node app.
+#
+#   docker compose up --build
+#
+# Secrets (OPENAI_API_KEY, AUTH_SECRET, provider base URLs, SMTP…) come from a
+# local .env file — never commit it. Infrastructure wiring below overrides any
+# host-specific values from .env so containers talk to each other by service name.
+#
+# The RAG index (chatbot) is empty until populated. The app auto-reindexes on
+# every curriculum save; to force one, run `npm run reindex:rag` from a dev
+# checkout with SHAP_SERVICE_URL=http://localhost:8000 while this stack is up.
+name: nextlearn
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.ml
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      SHAP_HOST: "0.0.0.0"          # reachable from the app container
+      SHAP_PORT: "8000"
+      MONGODB_URI: "mongodb://mongo:27017/nextlearn"
+    volumes:
+      - chroma-store:/app/ml/rag/chroma_store   # persist the RAG index across rebuilds
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: "production"
+      PORT: "3000"
+      MONGODB_URI: "mongodb://mongo:27017/nextlearn"
+      SHAP_SERVICE_URL: "http://ml:8000"   # adopt the ML container, never spawn locally
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+
+volumes:
+  mongo-data:
+  chroma-store:

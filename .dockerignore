@@ -1,0 +1,21 @@
+# Build context trimming — keep images small and secrets out.
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+npm-debug.log*
+*.log
+# Runtime-generated RAG index (a named volume persists it instead)
+ml/rag/chroma_store
+# Python caches
+**/__pycache__
+*.pyc
+.venv
+venv
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+Thumbs.db
