@@ -49,7 +49,6 @@ export const ATTENTION_WEIGHT = 0.15;
 export function successPropensity(f: PredictionFeatures): number {
   const norm = {
     delay: 1 - f.delayWeeks / 12, // 1 = on time
-    pace: f.completionPace / 5,
     score: f.averageScore / 100,
     login: f.loginFrequency / 14,
     coverage: 1 - f.gapDepth, // 1 = fully covered
@@ -57,11 +56,12 @@ export function successPropensity(f: PredictionFeatures): number {
     strength: 1 - f.weakSkillRatio // 1 = no weak skills
   };
 
-  // Weighted sum of the seven behavioural features (weights sum to 1).
+  // Weighted sum of the behavioural features (weights sum to 1). The former
+  // completionPace weight (0.16) was folded into score when that feature was
+  // dropped from the model.
   const base =
-    0.24 * norm.score +
+    0.4 * norm.score +
     0.2 * norm.recency +
-    0.16 * norm.pace +
     0.14 * norm.delay +
     0.12 * norm.strength +
     0.08 * norm.coverage +

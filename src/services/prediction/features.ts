@@ -12,7 +12,6 @@
 /** Ordered feature keys — the vector order MUST match the training CSV columns. */
 export const PREDICTION_FEATURE_KEYS = [
   "delayWeeks",
-  "completionPace",
   "averageScore",
   "loginFrequency",
   "gapDepth",
@@ -34,7 +33,6 @@ export type PredictionFeatures = Record<PredictionFeatureKey, number>;
 /** Valid [min, max] range per feature — used for clamping and training jitter. */
 export const PREDICTION_FEATURE_RANGES: Record<PredictionFeatureKey, [number, number]> = {
   delayWeeks: [0, 12],
-  completionPace: [0, 5],
   averageScore: [0, 100],
   loginFrequency: [0, 14],
   gapDepth: [0, 1],
@@ -94,8 +92,6 @@ export function computePredictionFeatures(input: PredictionFeatureInput): Predic
 
   const weeksSinceCreation = Math.max(1, (now - createdAt) / MS_PER_WEEK);
 
-  const completionPace = clamp(completedCount / weeksSinceCreation, 0, 5);
-
   const validScores = (Array.isArray(input.quizScores) ? input.quizScores : [])
     .map((s) => Number(s))
     .filter((s) => Number.isFinite(s) && s > 0);
@@ -144,7 +140,6 @@ export function computePredictionFeatures(input: PredictionFeatureInput): Predic
 
   return {
     delayWeeks,
-    completionPace,
     averageScore,
     loginFrequency,
     gapDepth,

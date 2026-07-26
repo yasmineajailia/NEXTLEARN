@@ -8,7 +8,7 @@
  * by shapSupervisor.ts, so "not reachable" is an error, not a silent fallback.
  *
  * Features (see PREDICTION_FEATURE_KEYS in prediction/features.ts):
- *   delayWeeks, completionPace, averageScore, loginFrequency, gapDepth,
+ *   delayWeeks, averageScore, loginFrequency, gapDepth,
  *   recencyRatio, weakSkillRatio, avgFocusScore, hasAttentionData
  */
 import {

@@ -61,7 +61,6 @@ BACKGROUND_SIZE = 100
 
 FEATURES = [
     "delayWeeks",
-    "completionPace",
     "averageScore",
     "loginFrequency",
     "gapDepth",
@@ -146,8 +145,6 @@ def shap_factor_label(key: str, f: dict, positive: bool) -> str:
         return "Bonne progression dans le programme" if positive else f"{round(f['gapDepth']*100)}% du programme non commencé"
     if key == "loginFrequency":
         return "Connexions fréquentes" if positive else "Connexions rares"
-    if key == "completionPace":
-        return f"Bon rythme ({f['completionPace']:.1f}/sem)" if positive else f"Rythme lent ({f['completionPace']:.1f}/sem)"
     if key == "avgFocusScore":
         s = round(f["avgFocusScore"])
         return f"Bonne concentration ({s}%)" if positive else f"Concentration faible ({s}%)"
@@ -206,7 +203,6 @@ def build_grade_factors(feat: dict, shap_by_feature: dict) -> list:
 
 class Features(BaseModel):
     delayWeeks: float
-    completionPace: float
     averageScore: float
     loginFrequency: float
     gapDepth: float
@@ -274,6 +270,16 @@ class ChatTurn(BaseModel):
     content: str
 
 
+class LearnerProfile(BaseModel):
+    """Derived, non-sensitive learner context used to personalize HOW the
+    chatbot answers (tone/format/reinforcement) — never to invent facts."""
+    name: str | None = None
+    level: int | None = None
+    vark: str | None = None
+    weakAreas: list[str] = []
+    currentLesson: str | None = None
+
+
 class RagAnswerBody(BaseModel):
     question: str = ""
     allowedModuleIds: list[str] = []
@@ -282,6 +288,7 @@ class RagAnswerBody(BaseModel):
     filterToSubAcquisId: str | None = None
     history: list[ChatTurn] = []
     lang: str = "fr"
+    learnerProfile: LearnerProfile | None = None
 
 
 class ItemAnalysisBody(BaseModel):
@@ -440,6 +447,7 @@ def rag_answer_endpoint(body: RagAnswerBody):
         filter_sub=body.filterToSubAcquisId,
         history=[t.model_dump() for t in body.history],
         lang="en" if body.lang == "en" else "fr",
+        learner_profile=body.learnerProfile.model_dump() if body.learnerProfile else None,
     )
 
 
@@ -456,6 +464,7 @@ def rag_stream_endpoint(body: RagAnswerBody):
         filter_sub=body.filterToSubAcquisId,
         history=[t.model_dump() for t in body.history],
         lang="en" if body.lang == "en" else "fr",
+        learner_profile=body.learnerProfile.model_dump() if body.learnerProfile else None,
     )
     return StreamingResponse(gen, media_type="text/event-stream; charset=utf-8")
 

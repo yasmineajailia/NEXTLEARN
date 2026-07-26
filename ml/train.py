@@ -47,7 +47,6 @@ MAX_DEPTH = 10
 # Order MUST match PREDICTION_FEATURE_KEYS in src/services/prediction/features.ts.
 FEATURES = [
     "delayWeeks",
-    "completionPace",
     "averageScore",
     "loginFrequency",
     "gapDepth",
