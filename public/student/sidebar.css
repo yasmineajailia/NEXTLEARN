@@ -60,18 +60,34 @@ body.sidebar-standalone {
 }
 
 .logo-esprit {
-  height: 20px;
+  height: 30px;
   width: auto;
 }
 
 /* Student Card Design */
 .student-card {
+  position: relative;
   margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #fff5f6 0%, #ffebeb 100%);
-  border: 1px solid #fcd3d7;
-  transition: opacity 150ms ease, padding 150ms ease;
+  padding: 1rem 1rem 1rem 1.15rem;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #ececf1;
+  box-shadow: 0 4px 14px rgba(19, 24, 44, 0.05);
+  overflow: hidden;
+  transition: opacity 150ms ease, padding 150ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+/* Brand accent stripe keeps the card's identity without the heavy pink fill,
+   so it belongs to the same card family as the lesson content cards. */
+.student-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--sidebar-accent), #b21f2d);
+}
+.student-card:hover {
+  box-shadow: 0 8px 22px rgba(19, 24, 44, 0.09);
+  transform: translateY(-1px);
 }
 
 .card-label {
@@ -120,7 +136,7 @@ body.sidebar-standalone {
   font-size: 0.95rem;
   width: 100%;
   box-sizing: border-box;
-  transition: background var(--transition-speed), color var(--transition-speed);
+  transition: background var(--transition-speed), color var(--transition-speed), transform 150ms ease;
 }
 
 .nav-item svg {
@@ -132,6 +148,7 @@ body.sidebar-standalone {
 .nav-item:hover {
   background: var(--sidebar-hover-bg);
   color: #0f172a;
+  transform: translateX(2px);
 }
 
 .nav-item:hover svg {

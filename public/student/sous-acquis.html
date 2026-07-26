@@ -120,27 +120,30 @@
       }
 
       /* ── Lesson header ── */
-      .lesson-header { margin-bottom: 1.1rem; }
+      .lesson-header { margin-bottom: 1.25rem; }
 
-      .lesson-eyebrow {
-        display: inline-block;
-        margin-bottom: 0.4rem;
+      /* Breadcrumb: Cours › <module> › Sous-acquis */
+      .crumbs {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+        margin-bottom: 0.55rem;
         font-family: "Space Grotesk", sans-serif;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: #b21f2d;
+        font-size: 0.74rem; font-weight: 700;
+        letter-spacing: 0.04em; text-transform: uppercase;
       }
+      .crumbs a { color: #9aa2b1; text-decoration: none; transition: color 150ms ease; }
+      .crumbs a:hover { color: #b21f2d; }
+      .crumbs .crumb-sep { color: #cbd0da; font-weight: 600; }
+      .crumbs .crumb-current { color: #b21f2d; }
 
       .title-line {
-        margin: 0 0 0.6rem;
+        margin: 0 0 0.7rem;
         font-family: "Space Grotesk", sans-serif;
-        font-size: 1.7rem;
+        font-size: 1.85rem;
         font-weight: 700;
         color: #111827;
-        letter-spacing: -0.01em;
-        line-height: 1.2;
+        letter-spacing: -0.015em;
+        line-height: 1.18;
+        text-wrap: balance;
       }
 
       /* ── Meta row (inline, with icons) ── */
@@ -263,12 +266,14 @@
       .video-thumb-play svg { width: 22px; height: 22px; margin-left: 3px; }
 
       /* ── PDF / iframe viewer (same as before) ── */
+      /* Transparent wrapper: the slide itself is the single floating document,
+         so there is no card-around-a-card nesting — just the page floating. */
       .viewer-shell {
-        border: 1px solid #e7e9f2;
-        border-radius: 18px;
-        background: #ffffff;
-        padding: 1rem;
-        box-shadow: 0 12px 26px rgba(19,24,44,.08);
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        padding: 0;
+        box-shadow: none;
       }
       .video-shell {
         border: 1px solid #e7e9f2;
@@ -294,19 +299,30 @@
       }
       .viewer-controls button:disabled { opacity: .45; cursor: not-allowed; }
       .viewer-page-indicator { color: #6b7280; font-weight: 700; }
+      /* The slide is the one floating element: white page, thin border, soft
+         drop shadow. overflow:visible lets the shadow breathe (no clip box). */
       .pdf-canvas-wrap {
-        overflow: hidden; border-radius: 0; background: #f6f7fb;
-        min-height: 520px; display: flex; justify-content: center;
-        align-items: flex-start; padding: .75rem; border-radius: 16px;
+        overflow: visible; background: transparent;
+        display: flex; justify-content: center; align-items: flex-start;
+        padding: 0.35rem;
       }
-      .pdf-canvas-wrap canvas { display: block; max-width: 100%; height: auto; }
+      .pdf-canvas-wrap canvas {
+        display: block; max-width: 100%; height: auto;
+        background: #fff; border: 1px solid #e4e7f0; border-radius: 12px;
+        box-shadow: 0 18px 44px rgba(19, 24, 44, .18);
+      }
       .viewer-frame {
-        width: 100%; min-height: 520px; border: 0;
-        border-radius: 16px; background: #f6f7fb; overflow: hidden;
+        width: 100%; min-height: 560px;
+        border: 1px solid #e4e7f0; border-radius: 12px;
+        background: #fff; overflow: hidden;
+        box-shadow: 0 18px 44px rgba(19, 24, 44, .18);
       }
       .viewer-video { width: 100%; border-radius: 16px; background: #000; --plyr-color-main: #b21f2d; }
       .plyr { border-radius: 16px; }
       .video-note, .viewer-note { margin: .65rem 0 0; color: #6b7280; }
+      /* Micro-polish: gentle lift on the secondary info card (not the reading surface). */
+      .objectives-card { transition: box-shadow 220ms ease, transform 220ms ease; }
+      .objectives-card:hover { box-shadow: 0 16px 34px rgba(19, 24, 44, .10); transform: translateY(-2px); }
 
       /* ── Objectives card ── */
       .objectives-card {
@@ -989,7 +1005,13 @@
           </div>
 
           <header class="lesson-header">
-            <span class="lesson-eyebrow" data-i18n="lesson.subAcquis">Sous-acquis</span>
+            <nav class="crumbs" aria-label="Fil d'Ariane">
+              <a href="/student/?view=cours" data-i18n="sidebar.courses">Cours</a>
+              <span class="crumb-sep" aria-hidden="true">›</span>
+              <span id="crumb-module">Programmation en C</span>
+              <span class="crumb-sep" aria-hidden="true">›</span>
+              <span class="crumb-current" data-i18n="lesson.subAcquis">Sous-acquis</span>
+            </nav>
             <h1 class="title-line" id="title">Sous-acquis</h1>
             <div id="meta" class="meta"></div>
           </header>
@@ -2189,6 +2211,7 @@
         viewerFrame.hidden = visible;
         videoShell.hidden = true;
         videoThumb.hidden = true;
+        if (visible && window.AttentionTracker) AttentionTracker.setContentType("support");
         refreshFocusTarget();
       }
       function setVideoVisible(visible) {
@@ -2196,6 +2219,7 @@
         viewerShell.hidden = visible;
         videoThumb.hidden = true;
         if (!visible && plyrInstance) plyrInstance.pause();
+        if (visible && window.AttentionTracker) AttentionTracker.setContentType("video");
         refreshFocusTarget();
       }
 
@@ -2213,6 +2237,12 @@
         pageIndicator.textContent = `${fi}Page ${pdfState.pageNumber} / ${pdfState.pageCount||1}`;
         prevPageBtn.disabled = !(pdfState.pageNumber > 1 || pdfState.currentFileIndex > 0);
         nextPageBtn.disabled = !(pdfState.pageNumber < pdfState.pageCount || pdfState.currentFileIndex < pdfState.pdfFiles.length-1);
+        // Nothing to navigate (single page, single file) -> hide the pager entirely,
+        // keeping only the fullscreen control. Avoids dead "Page 1 / 1" + greyed arrows.
+        const single = (pdfState.pageCount || 1) <= 1 && tf <= 1;
+        prevPageBtn.hidden = single;
+        nextPageBtn.hidden = single;
+        pageIndicator.hidden = single;
       }
 
       async function renderPdfPage(pageNumber) {
@@ -2226,7 +2256,11 @@
         const isFS = document.fullscreenElement === pdfCanvasWrap;
         const aw = Math.max(280, pdfCanvasWrap.clientWidth  - (isFS?16:24));
         const ah = Math.max(280, pdfCanvasWrap.clientHeight - (isFS?16:24));
-        const scale = Math.max(0.1, Math.min(aw/vb.width, ah/vb.height));
+        // Normal view: fill the available width so the slide is large. Fullscreen:
+        // fit within both dimensions so the whole page stays on screen.
+        const scale = isFS
+          ? Math.max(0.1, Math.min(aw/vb.width, ah/vb.height))
+          : Math.max(0.1, aw/vb.width);
         const vp = page.getViewport({ scale });
         const ctx = pdfCanvas.getContext("2d");
         pdfCanvas.width  = Math.floor(vp.width);
@@ -2405,10 +2439,12 @@
           const progress   = data.progress != null ? `${Math.round(data.progress)}%` : null;
 
           title.textContent = `${subName}`;
+          const crumbModule = document.getElementById("crumb-module");
+          if (crumbModule) crumbModule.textContent = modName;
 
+          // Module now lives in the breadcrumb, so keep the meta row to duration + completion.
           const metaItems = [];
           if (duration) metaItems.push({ text: `${duration}` });
-          metaItems.push({ text: modName });
           if (progress) metaItems.push({ icon: "✓", text: `Complété à ${progress}`, cls: "completed" });
 
           setMetaItems(metaItems);

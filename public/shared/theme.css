@@ -172,6 +172,19 @@
 }
 :root[data-theme="dark"] .student-card #student-name { color: #f2f5f9; }
 
+/* Brand logos are dark-ink PNGs with no white variant, so they disappear on a
+   dark sidebar. Seat them on a compact light plaque so the (red + dark) brand
+   colors stay intact instead of inverting them. */
+:root[data-theme="dark"] .brand-line {
+  width: fit-content;
+  padding: 0.4rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme="dark"] .brand-line .brand-by { color: #727a8b; }
+
 /* Mission Apprenant banner uses inline light gradient + inline text colours. */
 :root[data-theme="dark"] .card-vark { background: #161b22 !important; border-color: #2a313c !important; }
 :root[data-theme="dark"] .card-vark h3 { color: #f2f5f9 !important; }
@@ -219,6 +232,55 @@
   border-color: #2a313c;
   color: #cdd6e0;
 }
+
+/* ---------- Chatbot dark-mode: fill the remaining light surfaces ---------- */
+:root[data-theme="dark"] .chatbot-panel { box-shadow: 0 10px 30px rgba(0, 0, 0, .5); }
+:root[data-theme="dark"] .chatbot-panel-header { border-bottom-color: #2a313c; }
+:root[data-theme="dark"] .chatbot-icon-btn { color: #8a94a0; }
+:root[data-theme="dark"] .chatbot-icon-btn:hover { color: #e6edf3; background: #232b36; }
+
+/* Bot bubble: give it a visible border and rescue the near-black emphasis text. */
+:root[data-theme="dark"] .chatbot-bubble.bot { border-color: #2f3844; }
+:root[data-theme="dark"] .chatbot-bubble strong { color: #f2f5f9; }
+
+/* User bubble was a bright pink gradient — mute it to a dark red tint. */
+:root[data-theme="dark"] .chatbot-bubble.user {
+  background: linear-gradient(135deg, rgba(196, 29, 56, .28), rgba(154, 19, 37, .34));
+  border-color: rgba(255, 95, 109, .35);
+  color: #fbe3e7;
+}
+
+/* Sources footer inside a bot bubble. */
+:root[data-theme="dark"] .bubble-sources { border-top-color: #2a313c; }
+:root[data-theme="dark"] .bubble-source-chip {
+  background: #232a33;
+  border-color: #2f3844;
+  color: #cdd6e0;
+}
+
+/* Suggestions divider + hover. */
+:root[data-theme="dark"] .chatbot-quick-actions { border-top-color: #2a313c; }
+:root[data-theme="dark"] .chatbot-suggestion:hover {
+  background: #232b36;
+  border-color: rgba(255, 95, 109, .4);
+  color: #ff8a94;
+}
+
+/* Input row: the wrapper stayed white while the global input rule forced the
+   inner field dark — blend them into one dark control. */
+:root[data-theme="dark"] .chatbot-input-row {
+  background: #1c222b;
+  border-color: #2f3844;
+}
+:root[data-theme="dark"] .chatbot-input-row:focus-within {
+  border-color: rgba(255, 95, 109, .5);
+  box-shadow: 0 0 0 3px rgba(255, 95, 109, .12);
+}
+:root[data-theme="dark"] .chatbot-input-row input {
+  background: transparent;
+  color: #e6edf3;
+}
+
 /* Video placeholder is a bright light gradient before playback. */
 :root[data-theme="dark"] .video-thumb-card { border-color: #2a313c; }
 :root[data-theme="dark"] .video-thumb-placeholder {

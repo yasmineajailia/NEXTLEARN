@@ -24,13 +24,13 @@
         <div class="brand-wrap">
           <img class="logo-nextlearn" src="/images/NextLearn_LOGO.png" alt="NextLearn" />
           <span class="brand-by">by</span>
-          <img class="logo-esprit" src="/images/ESPRIT_LOGO.svg" alt="Esprit" />
+          <img class="logo-esprit" src="/images/esprit_logo.png" alt="Esprit" />
         </div>
 
         <nav class="nav-links" aria-label="Navigation principale">
-          <a href="#" class="active">Accueil</a>
-          <a href="#">Modules</a>
-          <a href="#">FAQ</a>
+          <a href="#accueil" class="active">Accueil</a>
+          <a href="#modules">Modules</a>
+          <a href="#faq">FAQ</a>
         </nav>
 
         <div class="top-actions">
@@ -40,7 +40,7 @@
       </header>
 
       <!-- Hero section with primary message and visual cards. -->
-      <section class="hero container">
+      <section class="hero container" id="accueil">
         <div class="hero-copy">
           <h1>
             L'apprentissage<br />
@@ -53,7 +53,7 @@
           </p>
 
           <div class="hero-cta">
-            <a href="/sign-in" class="solid-btn">Accéder au modules</a>
+            <a href="/sign-in" class="solid-btn">Accéder aux modules<span class="btn-arrow" aria-hidden="true">→</span></a>
             <a href="/sign-in" class="outline-btn">Évaluer mon niveau</a>
           </div>
 
@@ -100,7 +100,7 @@
       </section>
 
       <!-- Course catalog preview section. -->
-      <section class="catalog">
+      <section class="catalog" id="modules">
         <div class="container">
           <p class="eyebrow">NEXTLEARN</p>
           <h2>
@@ -151,9 +151,86 @@
           </div>
         </div>
       </section>
+
+      <!-- FAQ section. -->
+      <section class="faq" id="faq">
+        <div class="container">
+          <p class="eyebrow">FAQ</p>
+          <h2 class="faq-title">Questions fréquentes</h2>
+
+          <div class="faq-list">
+            <details class="faq-item" open>
+              <summary>NextLearn, qu'est-ce que c'est ?<span class="faq-chevron" aria-hidden="true">+</span></summary>
+              <p>
+                NextLearn est une plateforme d'apprentissage adaptatif : elle évalue votre niveau,
+                cible vos lacunes et vous propose des contenus personnalisés (cours, vidéos,
+                exercices) pour progresser à votre rythme.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>Comment accéder aux modules ?<span class="faq-chevron" aria-hidden="true">+</span></summary>
+              <p>
+                Créez un compte ou connectez-vous, puis rendez-vous dans la section Modules.
+                Vous pouvez commencer par « Évaluer mon niveau » pour recevoir un parcours adapté.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>Comment fonctionne l'évaluation de niveau ?<span class="faq-chevron" aria-hidden="true">+</span></summary>
+              <p>
+                Un court quiz de positionnement identifie vos points forts et vos lacunes.
+                NextLearn s'appuie ensuite sur vos résultats pour recommander les sous-acquis
+                à travailler en priorité.
+              </p>
+            </details>
+
+            <details class="faq-item">
+              <summary>Mes données sont-elles protégées ?<span class="faq-chevron" aria-hidden="true">+</span></summary>
+              <p>
+                Vos données de progression restent privées et ne servent qu'à personnaliser votre
+                apprentissage et informer vos enseignants de votre avancement.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- Interactive animations for buttons, cards, and mouse tracking effects. -->
     <script src="/animations.js"></script>
+
+    <!-- Nav: highlight the section currently in view (smooth scroll is CSS). -->
+    <script>
+      (function () {
+        var links = Array.prototype.slice.call(
+          document.querySelectorAll('.nav-links a[href^="#"]')
+        );
+        var byId = {};
+        links.forEach(function (a) {
+          var el = document.getElementById(a.getAttribute("href").slice(1));
+          if (el) byId[el.id] = a;
+        });
+        var sections = Object.keys(byId).map(function (id) {
+          return document.getElementById(id);
+        });
+        if (!sections.length || !("IntersectionObserver" in window)) return;
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              links.forEach(function (a) {
+                a.classList.remove("active");
+              });
+              byId[entry.target.id].classList.add("active");
+            });
+          },
+          { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
+        );
+        sections.forEach(function (s) {
+          observer.observe(s);
+        });
+      })();
+    </script>
   </body>
 </html>

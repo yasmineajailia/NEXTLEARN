@@ -1112,9 +1112,6 @@ async function initAttentionViewOnce() {
       .join("");
     const renderBoth = (classId) => {
       window.renderAttentionDashboard("attention-dashboard-root", classId);
-      if (typeof window.renderVarkDashboard === "function") {
-        window.renderVarkDashboard("vark-dashboard-root", classId);
-      }
     };
 
     select.addEventListener("change", () => renderBoth(select.value));

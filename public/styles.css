@@ -25,7 +25,12 @@ body {
   margin: 0;
   font-family: "Source Sans 3", "Segoe UI", sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at 20% -20%, #ffffff, var(--bg) 45%);
+  /* Layered depth: a soft brand glow behind the hero media (top-right), a light
+     wash top-left, over the base surface — so the hero feels lit, not flat. */
+  background:
+    radial-gradient(1100px 720px at 88% -8%, rgba(255, 61, 67, 0.12), transparent 60%),
+    radial-gradient(circle at 18% -20%, #ffffff, var(--bg) 46%);
+  background-attachment: fixed;
 }
 
 .page {
@@ -39,11 +44,27 @@ body {
 
 /* Header layout: logos, nav, and actions aligned in one row. */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.2rem 0;
+  padding: 0.85rem 0;
   gap: 1.4rem;
+}
+/* Full-bleed frosted bar behind the centered header content. */
+.topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  background: rgba(244, 244, 246, 0.72);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border-bottom: 1px solid rgba(23, 32, 51, 0.06);
+  z-index: -1;
 }
 
 .brand-wrap {
@@ -68,7 +89,7 @@ body {
 }
 
 .logo-esprit {
-  height: 26px;
+  height: 40px;
   width: auto;
   display: block;
 }
@@ -80,11 +101,34 @@ body {
 }
 
 .nav-links a {
+  position: relative;
   text-decoration: none;
   color: #242d3f;
   font-size: 0.96rem;
+  padding: 0.3rem 0.1rem;
+  transition: color 0.2s ease;
 }
-
+/* Animated underline indicator for hover + active. */
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  right: 0.1rem;
+  bottom: -0.15rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.26s ease;
+}
+.nav-links a:hover {
+  color: var(--brand);
+}
+.nav-links a:hover::after,
+.nav-links .active::after {
+  transform: scaleX(1);
+}
 .nav-links .active {
   color: var(--brand);
 }
@@ -107,8 +151,8 @@ button,
 .outline-btn,
 .ghost-btn {
   border: 0;
-  border-radius: 10px;
-  padding: 0.62rem 1rem;
+  border-radius: 12px;
+  padding: 0.7rem 1.15rem;
   font-weight: 600;
   font-family: "Space Grotesk", sans-serif;
   font-size: 0.86rem;
@@ -116,8 +160,16 @@ button,
   transition: all 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
   display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
   justify-content: center;
   text-decoration: none;
+}
+/* Arrow on the primary CTA nudges on hover. */
+.solid-btn .btn-arrow {
+  transition: transform 0.25s ease;
+}
+.solid-btn:hover .btn-arrow {
+  transform: translateX(3px);
 }
 
 button:hover,
@@ -135,35 +187,40 @@ button:active,
 }
 
 .ghost-btn {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.55);
   color: #2c3448;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
 }
 
 .ghost-btn:hover {
-  background: rgba(44, 52, 72, 0.06);
+  background: #fff;
+  border-color: var(--brand);
   color: var(--brand);
 }
 
 .solid-btn {
-  background: var(--brand);
+  background: linear-gradient(135deg, #ff5a5f, var(--brand));
   color: #fff;
-  box-shadow: 0 10px 20px rgba(255, 61, 67, 0.22);
+  box-shadow: 0 12px 24px rgba(255, 61, 67, 0.28);
 }
 
 .solid-btn:hover {
-  background: #ff2733;
-  box-shadow: 0 20px 40px rgba(255, 61, 67, 0.35);
+  background: linear-gradient(135deg, #ff464c, #ee2a30);
+  box-shadow: 0 20px 42px rgba(255, 61, 67, 0.4);
 }
 
 .outline-btn {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.7);
   color: var(--brand);
   border: 1px solid #ffc2c5;
 }
 
 .outline-btn:hover {
   border-color: var(--brand);
-  box-shadow: 0 10px 25px rgba(255, 61, 67, 0.15);
+  background: var(--brand-soft);
+  box-shadow: 0 12px 28px rgba(255, 61, 67, 0.16);
 }
 
 /* Hero split: message on left and circular visual composition on right. */
@@ -175,12 +232,22 @@ button:active,
   padding: 2.2rem 0 2.8rem;
 }
 
+/* Staggered entrance for the hero copy. */
+.hero-copy > * {
+  animation: riseIn 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-copy h1 { animation-delay: 60ms; }
+.hero-copy p { animation-delay: 170ms; }
+.hero-copy .hero-cta { animation-delay: 280ms; }
+.hero-copy .hero-points { animation-delay: 380ms; }
+
 .hero-copy h1 {
   margin: 0;
   font-family: "Space Grotesk", sans-serif;
-  font-size: clamp(2.2rem, 4.5vw, 3.65rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.3rem, 4.6vw, 3.8rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
 .hero-copy h1 span {
@@ -236,12 +303,16 @@ button:active,
   place-items: center;
 }
 
+/* Soft brand halo instead of thin orbit rings (dated) — the photo now reads as
+   lit rather than orbited. */
 .media-ring {
   position: absolute;
-  width: 440px;
-  height: 440px;
+  width: 500px;
+  height: 500px;
   border-radius: 50%;
-  border: 1.3px solid rgba(255, 61, 67, 0.35);
+  border: 0;
+  background: radial-gradient(circle, rgba(255, 61, 67, 0.16), rgba(255, 61, 67, 0.05) 52%, transparent 70%);
+  filter: blur(4px);
 }
 
 .media-ring::before,
@@ -249,21 +320,25 @@ button:active,
   content: "";
   position: absolute;
   border-radius: 50%;
-  border: 1.2px solid rgba(255, 61, 67, 0.2);
+  border: 0;
+  filter: blur(2px);
 }
 
+/* Two blurred accent orbs for depth. */
 .media-ring::before {
-  width: 120px;
-  height: 120px;
-  right: -42px;
-  bottom: 35px;
+  width: 96px;
+  height: 96px;
+  right: -28px;
+  bottom: 44px;
+  background: radial-gradient(circle, rgba(255, 61, 67, 0.22), transparent 70%);
 }
 
 .media-ring::after {
-  width: 190px;
-  height: 190px;
-  right: -78px;
-  bottom: 1px;
+  width: 150px;
+  height: 150px;
+  right: -64px;
+  bottom: -6px;
+  background: radial-gradient(circle, rgba(255, 61, 67, 0.1), transparent 70%);
 }
 
 .avatar-frame {
@@ -274,7 +349,9 @@ button:active,
   background: #ccd0d8;
   position: relative;
   z-index: 2;
-  animation: floatIn 650ms ease-out;
+  border: 6px solid #fff;
+  box-shadow: 0 30px 60px rgba(18, 22, 34, 0.18);
+  animation: floatIn 650ms ease-out both;
 }
 
 .avatar-frame img {
@@ -283,27 +360,33 @@ button:active,
   object-fit: cover;
 }
 
+/* Frosted glass floating cards. Entrance fades opacity (staggered); a slow bob
+   on transform runs perpetually — the two never fight since they animate
+   different properties. */
 .stat-card {
   position: absolute;
   z-index: 3;
-  background: #fff;
-  border-radius: 14px;
-  border: 1px solid #ffd3d5;
-  box-shadow: var(--shadow);
-  padding: 0.75rem 0.8rem;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 14px 34px rgba(18, 22, 34, 0.14);
+  padding: 0.75rem 0.85rem;
   min-width: 114px;
   display: flex;
   gap: 0.62rem;
   align-items: center;
-  animation: riseIn 700ms ease-out;
+  opacity: 0;
+  animation: fadeIn 600ms ease-out forwards, floatBob 6s ease-in-out infinite;
   cursor: pointer;
-  transition: all 280ms ease-out;
+  transition: box-shadow 280ms ease-out;
 }
 
 .stat-card:hover {
-  transform: translateY(-6px);
-  border-color: #ffb3b8;
-  box-shadow: 0 15px 35px rgba(255, 61, 67, 0.15);
+  animation-play-state: paused;
+  transform: translateY(-8px) !important;
+  box-shadow: 0 22px 44px rgba(255, 61, 67, 0.2);
 }
 
 .stat-card strong {
@@ -342,22 +425,26 @@ button:active,
 .stat-left {
   left: 0;
   top: 45%;
+  animation-delay: 180ms, 0s;
 }
 
 .stat-top {
   right: 26px;
   top: 32px;
+  animation-delay: 300ms, 1.4s;
 }
 
 .stat-right {
   right: 0;
   bottom: 56px;
+  animation-delay: 420ms, 2.6s;
 }
 
 /* Catalog area with search and cards. */
 .catalog {
-  background: #fff;
-  border-top: 1px solid var(--line);
+  /* Blend the grey hero into the white section instead of a hard border line. */
+  background: linear-gradient(180deg, var(--bg) 0%, #fff 130px);
+  border-top: 0;
   padding: 3.1rem 0 2.5rem;
 }
 
@@ -452,6 +539,90 @@ button:active,
   background: var(--brand);
 }
 
+/* Anchor navigation: smooth scroll with room for the sticky header. */
+html {
+  scroll-behavior: smooth;
+}
+#accueil,
+#modules,
+#faq {
+  scroll-margin-top: 78px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* FAQ section */
+.faq {
+  background: #fff;
+  padding: 2.6rem 0 4rem;
+}
+.faq-title {
+  text-align: center;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  margin: 0.2rem 0 1.9rem;
+  color: var(--ink);
+}
+.faq-list {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.faq-item {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0 1.15rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.faq-item[open] {
+  border-color: #ffc2c5;
+  box-shadow: 0 12px 28px rgba(18, 22, 34, 0.06);
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-chevron {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 1.15rem;
+  line-height: 1;
+  transition: transform 0.25s ease;
+}
+.faq-item[open] .faq-chevron {
+  transform: rotate(45deg);
+}
+.faq-item p {
+  margin: 0 0 1.1rem;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
 @keyframes floatIn {
   from {
     opacity: 0;
@@ -483,6 +654,27 @@ button:active,
   }
   50% {
     transform: scale(1.2);
+  }
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* Gentle perpetual bob for the floating stat cards. */
+@keyframes floatBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Respect users who prefer no motion: land everything in its final state. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy > *,
+  .stat-card,
+  .avatar-frame {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
@@ -521,7 +713,7 @@ button:active,
   }
 
   .logo-esprit {
-    height: 22px;
+    height: 32px;
   }
 
   .nav-links {
