@@ -28,10 +28,63 @@ LLM_TIMEOUT_S = 60
 
 
 # ── prompts (port of buildStudentChatPrompts) ──────────────────────────────
-def build_prompts(question: str, top_chunks: list, lang: str = "fr") -> tuple:
+def _personalization_lines(profile: dict | None, lang: str) -> list:
+    """Personalization directives for the system prompt. These adapt HOW the
+    assistant answers (name, current lesson, weak-area reinforcement, learning
+    style) and NEVER relax the use-only-the-context grounding above."""
+    if not profile:
+        return []
+    name = (profile.get("name") or "").strip()
+    lesson = (profile.get("currentLesson") or "").strip()
+    weak = [w for w in (profile.get("weakAreas") or []) if w][:3]
+    vark = profile.get("vark")
+
+    lines = []
+    if lang == "en":
+        style = {
+            "visual": "Prefer analogies and diagrams described in words or small ASCII sketches.",
+            "readwrite": "Prefer clear written steps and concise note-style summaries.",
+            "auditory": "Prefer a conversational, spoken-style walk-through.",
+            "kinesthetic": "Prefer short hands-on code snippets they can run and tweak.",
+        }
+        if name:
+            lines.append(f"- The student's name is {name}; address them by name occasionally and naturally.")
+        if lesson:
+            lines.append(f'- They are currently studying "{lesson}"; anchor examples to this lesson when relevant.')
+        if weak:
+            lines.append(f"- They have recently struggled with: {', '.join(weak)}. When relevant, briefly reinforce these and link the explanation back to them — but only using the provided context.")
+        if vark in style:
+            lines.append(f"- Learning-style preference: {style[vark]}")
+        header = "Personalization (adapt HOW you answer; never invent facts to fit this profile):"
+    else:
+        style = {
+            "visual": "Privilégie des analogies et des schémas décrits avec des mots ou de petits croquis ASCII.",
+            "readwrite": "Privilégie des étapes écrites claires et des résumés façon prise de notes.",
+            "auditory": "Privilégie une explication conversationnelle, comme à l'oral.",
+            "kinesthetic": "Privilégie de petits extraits de code à exécuter et modifier.",
+        }
+        if name:
+            lines.append(f"- L'étudiant s'appelle {name} ; appelle-le par son prénom de temps en temps, naturellement.")
+        if lesson:
+            lines.append(f"- Il étudie actuellement « {lesson} » ; ancre tes exemples sur cette leçon quand c'est pertinent.")
+        if weak:
+            lines.append(f"- Il a récemment eu des difficultés sur : {', '.join(weak)}. Quand c'est pertinent, renforce brièvement ces points et fais le lien avec eux — mais uniquement à partir du contexte fourni.")
+        if vark in style:
+            lines.append(f"- Style d'apprentissage préféré : {style[vark]}")
+        header = "Personnalisation (adapte la MANIÈRE de répondre ; n'invente jamais de faits pour coller à ce profil) :"
+
+    return ["", header] + lines if lines else []
+
+
+def build_prompts(question: str, top_chunks: list, lang: str = "fr", learner_profile: dict | None = None) -> tuple:
     context = "\n".join(
         f"{i + 1}. [{_label(c)}] ({c.get('kind')}) {c.get('text')}"
         for i, c in enumerate(top_chunks[:6])
+    )
+    language_line = (
+        "Langue : l'étudiant utilise l'interface en ANGLAIS. Réponds intégralement en anglais, même si la question ou le contexte sont en français (le code C reste inchangé)."
+        if lang == "en"
+        else "Langue : réponds en français."
     )
     system = "\n".join([
         "Tu es l'assistant pédagogique NextLearn qui aide des étudiants à comprendre le cours de programmation en C. Ton ton est clair, pédagogique et encourageant.",
@@ -47,10 +100,9 @@ def build_prompts(question: str, top_chunks: list, lang: str = "fr") -> tuple:
         "- Si le contexte contient du code C pertinent, illustre avec un petit bloc ```c ... ```.",
         "- Reste concis et naturel. Évite les formulations rigides comme « est défini comme suit » ou « le contexte indique ».",
         "- N'ajoute PAS de section « Sources » : les sources sont affichées automatiquement sous ta réponse.",
+        *_personalization_lines(learner_profile, lang),
         "",
-        "Langue : l'étudiant utilise l'interface en ANGLAIS. Réponds intégralement en anglais, même si la question ou le contexte sont en français (le code C reste inchangé)."
-        if lang == "en"
-        else "Langue : réponds en français.",
+        language_line,
     ])
     user = "\n\n".join([
         f"Question de l'étudiant : {question}",
@@ -191,12 +243,12 @@ def _openai(system: str, user: str, history: list) -> str:
     return str(content).strip() if content else ""
 
 
-def generate(question: str, top_chunks: list, history: list, lang: str = "fr") -> str | None:
+def generate(question: str, top_chunks: list, history: list, lang: str = "fr", learner_profile: dict | None = None) -> str | None:
     if not (os.environ.get("OPENAI_API_KEY") or os.environ.get("GEMINI_API_KEY")):
         return None
     if not top_chunks:
         return None
-    system, user = build_prompts(question, top_chunks, lang)
+    system, user = build_prompts(question, top_chunks, lang, learner_profile)
     if os.environ.get("GEMINI_API_KEY"):
         text = _gemini(system, user, history)
         if text:
@@ -216,14 +268,14 @@ SCOPE_GUARD_ANSWER = (
 # Mirrors the JS stream route exactly: OpenAI only (Gemini is not streamed),
 # raw token deltas, NO grounding/refusal re-check, mode suffix "+stream",
 # deterministic fallback when nothing streamed.
-def stream_generate(question: str, top_chunks: list, history: list, lang: str = "fr"):
+def stream_generate(question: str, top_chunks: list, history: list, lang: str = "fr", learner_profile: dict | None = None):
     """Yield answer text deltas from the OpenAI streaming endpoint. Yields nothing
     if there is no OpenAI key or no context (caller then uses the deterministic
     fallback). Raises on an HTTP error so the caller can fall back."""
     key = os.environ.get("OPENAI_API_KEY")
     if not key or not top_chunks:
         return
-    system, user = build_prompts(question, top_chunks, lang)
+    system, user = build_prompts(question, top_chunks, lang, learner_profile)
     base = os.environ.get("OPENAI_CHAT_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     model = os.environ.get("OPENAI_CHAT_MODEL", "gpt-4o-mini")
     messages = [{"role": "system", "content": system}] + [
@@ -264,7 +316,7 @@ def _sse(event: str, data: dict) -> str:
 
 
 def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
-                  filter_module=None, filter_sub=None, history=None, lang="fr"):
+                  filter_module=None, filter_sub=None, history=None, lang="fr", learner_profile=None):
     """Yield the full SSE event stream (event:/data: frames) for the streaming
     chatbot route: meta -> delta* -> sources -> done. Node proxies these frames
     straight to the browser, so the events match the JS route 1:1. The 'empty'
@@ -293,7 +345,7 @@ def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
 
     streamed = ""
     try:
-        for delta in stream_generate(question, refined, history or [], lang):
+        for delta in stream_generate(question, refined, history or [], lang, learner_profile):
             streamed += delta
             yield _sse("delta", {"text": delta})
     except Exception:  # noqa: BLE001 — stream failure -> deterministic fallback
@@ -308,7 +360,7 @@ def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
 
 # ── orchestrator (port of buildStudentChatContext + generation block) ──────
 def answer(question, allowed_module_ids, allowed_subacquis_ids,
-           filter_module=None, filter_sub=None, history=None, lang="fr") -> dict:
+           filter_module=None, filter_sub=None, history=None, lang="fr", learner_profile=None) -> dict:
     ranked = retrieve.retrieve(question, allowed_module_ids, allowed_subacquis_ids, filter_module, filter_sub)
     refined = retrieve.refine_chunks(question, ranked)
 
@@ -327,7 +379,7 @@ def answer(question, allowed_module_ids, allowed_subacquis_ids,
     ans = deterministic_answer(question, refined)
     mode = "vector" if embedder.has_provider() else "rag"
     try:
-        gen = generate(question, refined, history or [], lang)
+        gen = generate(question, refined, history or [], lang, learner_profile)
         if gen and not is_refusal_like(gen) and is_answer_grounded(gen, refined):
             ans = gen
             mode = f"{mode}+llm"

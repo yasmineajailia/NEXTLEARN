@@ -14,6 +14,9 @@ import {
 } from "../../services/chatbot/ragClient";
 import { filterOverviewByAccess } from "../../services/classAccess";
 import { requireAuth } from "../../middleware/auth";
+import { User } from "../../models/User";
+import { buildLearnerProfile, type LearnerProfile } from "../../services/chatbot/learnerProfile";
+import type { ModuleOverview } from "../../types/curriculum";
 // Transitional: curriculum + class reads still live in web.ts.
 import {
   readClassAccessByStudentIdentifier,
@@ -25,29 +28,91 @@ export const chatbotRouter = Router();
 const NO_MODULES_MESSAGE =
   "Je ne trouve aucun module disponible pour votre compte actuellement. Vérifiez votre calendrier ou contactez votre enseignant.";
 
+type ChatScope = { allowedModuleIds: string[]; allowedSubAcquisIds: string[] };
+
+type ProgressUser = {
+  progress?: {
+    completedLessonKeys?: string[];
+    skillAttempts?: Array<{ moduleId?: string; subAcquisId?: string }>;
+  } | null;
+} | null;
+
 /**
- * Resolves the modules a student may ask about (access control) and flattens
- * them into the id lists Python needs. Returns null when the student has no
- * accessible modules.
+ * Narrows the accessible overview to the student's progress frontier: the
+ * furthest sous-acquis in curriculum order they have completed, attempted, or
+ * are currently viewing — plus everything before it. This keeps the chatbot
+ * from answering about content ahead of where the student has actually reached
+ * (e.g. a student on 5.1 can ask about 1.1 … 5.1, but not 5.2+).
  */
-async function resolveAllowedScope(identifier: string): Promise<{
-  allowedModuleIds: string[];
-  allowedSubAcquisIds: string[];
-} | null> {
-  const [overview, access] = await Promise.all([
+export function restrictToProgressFrontier(
+  overview: ModuleOverview[],
+  user: ProgressUser,
+  current?: { moduleId?: string; subAcquisId?: string }
+): ModuleOverview[] {
+  // Composite keys (moduleId::subAcquisId) in curriculum order.
+  const ordered = [...overview].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const flatKeys: string[] = [];
+  for (const moduleEntry of ordered) {
+    for (const sub of moduleEntry.subAcquis) flatKeys.push(`${moduleEntry.id}::${sub.id}`);
+  }
+
+  const reached = new Set<string>();
+  for (const key of user?.progress?.completedLessonKeys ?? []) reached.add(String(key));
+  for (const attempt of user?.progress?.skillAttempts ?? []) {
+    if (attempt?.moduleId && attempt?.subAcquisId) reached.add(`${attempt.moduleId}::${attempt.subAcquisId}`);
+  }
+  if (current?.moduleId && current?.subAcquisId) reached.add(`${current.moduleId}::${current.subAcquisId}`);
+
+  // Furthest reached position; a student with no progress yet keeps just the
+  // first sous-acquis so they can still ask about lesson one.
+  let frontier = -1;
+  flatKeys.forEach((key, index) => {
+    if (reached.has(key)) frontier = Math.max(frontier, index);
+  });
+  if (frontier < 0) frontier = 0;
+
+  const allowed = new Set(flatKeys.slice(0, frontier + 1));
+  return overview
+    .map((moduleEntry) => ({
+      ...moduleEntry,
+      subAcquis: moduleEntry.subAcquis.filter((sub) => allowed.has(`${moduleEntry.id}::${sub.id}`))
+    }))
+    .filter((moduleEntry) => moduleEntry.subAcquis.length > 0);
+}
+
+/**
+ * Resolves, from one set of reads, both the access-control scope (which modules
+ * the student may ask about — class access intersected with their progress
+ * frontier) and the learner profile that personalizes the answer (name, level,
+ * VARK style, weak areas, current lesson). `scope` is null when nothing is in
+ * scope.
+ */
+async function buildChatContext(
+  identifier: string,
+  filterToModuleId?: string,
+  filterToSubAcquisId?: string
+): Promise<{ scope: ChatScope | null; learnerProfile?: LearnerProfile }> {
+  const [overview, access, user] = await Promise.all([
     readPersistedProgramCOverview(),
-    readClassAccessByStudentIdentifier(identifier)
+    readClassAccessByStudentIdentifier(identifier),
+    User.findOne({ identifier }).select({ fullName: 1, progress: 1, varkProfile: 1 }).lean()
   ]);
   const accessibleOverview = filterOverviewByAccess(overview, access);
-  if (!accessibleOverview.length) {
-    return null;
-  }
-  return {
-    allowedModuleIds: accessibleOverview.map((entry) => entry.id),
-    allowedSubAcquisIds: accessibleOverview.flatMap((entry) =>
-      entry.subAcquis.map((sub) => `${entry.id}::${sub.id}`)
-    )
-  };
+  // Class access ∩ what the student has actually progressed to.
+  const scopedOverview = restrictToProgressFrontier(accessibleOverview, user as ProgressUser, {
+    moduleId: filterToModuleId,
+    subAcquisId: filterToSubAcquisId
+  });
+  const scope: ChatScope | null = scopedOverview.length
+    ? {
+        allowedModuleIds: scopedOverview.map((entry) => entry.id),
+        allowedSubAcquisIds: scopedOverview.flatMap((entry) =>
+          entry.subAcquis.map((sub) => `${entry.id}::${sub.id}`)
+        )
+      }
+    : null;
+  const learnerProfile = buildLearnerProfile(user as never, overview, filterToSubAcquisId);
+  return { scope, learnerProfile };
 }
 
 chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
@@ -67,7 +132,7 @@ chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
     const history = normalizeChatHistory(req.body?.history);
     const lang: "fr" | "en" = req.body?.lang === "en" ? "en" : "fr";
 
-    const scope = await resolveAllowedScope(identifier);
+    const { scope, learnerProfile } = await buildChatContext(identifier, filterToModuleId, filterToSubAcquisId);
     if (!scope) {
       return res.status(200).json({ answer: NO_MODULES_MESSAGE });
     }
@@ -79,7 +144,8 @@ chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
       filterToModuleId,
       filterToSubAcquisId,
       history,
-      lang
+      lang,
+      learnerProfile
     });
 
     return res.status(200).json({
@@ -122,7 +188,7 @@ chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) 
     const history = normalizeChatHistory(req.body?.history);
     const lang: "fr" | "en" = req.body?.lang === "en" ? "en" : "fr";
 
-    const scope = await resolveAllowedScope(identifier);
+    const { scope, learnerProfile } = await buildChatContext(identifier, filterToModuleId, filterToSubAcquisId);
     if (!scope) {
       send("meta", { mode: "empty" });
       send("delta", { text: NO_MODULES_MESSAGE });
@@ -139,7 +205,8 @@ chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) 
         filterToModuleId,
         filterToSubAcquisId,
         history,
-        lang
+        lang,
+        learnerProfile
       },
       (chunk) => res.write(chunk)
     );

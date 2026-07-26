@@ -13,6 +13,7 @@
 import { SHAP_SERVICE_URL } from "../prediction/explain";
 import { env } from "../../config/env";
 import { normalizeWhitespace } from "../textNormalize";
+import type { LearnerProfile } from "./learnerProfile";
 
 export type StudentChatTurn = { role: "user" | "assistant"; content: string };
 
@@ -66,6 +67,7 @@ export async function answerViaPython(params: {
   filterToSubAcquisId?: string;
   history: StudentChatTurn[];
   lang: "fr" | "en";
+  learnerProfile?: LearnerProfile;
 }): Promise<RagAnswerResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), RAG_ANSWER_TIMEOUT_MS);
@@ -105,6 +107,7 @@ export async function streamViaPython(
     filterToSubAcquisId?: string;
     history: StudentChatTurn[];
     lang: "fr" | "en";
+    learnerProfile?: LearnerProfile;
   },
   onChunk: (text: string) => void
 ): Promise<void> {
