@@ -289,7 +289,6 @@ predictionRouter.post("/api/ml/predict", async (req, res) => {
     const body = req.body ?? {};
     const parsed = {
       delayWeeks:     Number(body.delayWeeks),
-      completionPace: Number(body.completionPace),
       averageScore:   Number(body.averageScore),
       loginFrequency: Number(body.loginFrequency),
       gapDepth:       Number(body.gapDepth),
@@ -302,7 +301,7 @@ predictionRouter.post("/api/ml/predict", async (req, res) => {
       hasAttentionData: Number.isFinite(Number(body.avgFocusScore)) ? 1 : 0,
     };
 
-    for (const key of ["delayWeeks", "completionPace", "averageScore", "loginFrequency", "gapDepth"] as const) {
+    for (const key of ["delayWeeks", "averageScore", "loginFrequency", "gapDepth"] as const) {
       if (!Number.isFinite(parsed[key])) {
         return res.status(400).json({ message: `Invalid value for "${key}": must be a number.` });
       }
@@ -575,15 +574,33 @@ predictionRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
       bestModule: bestModule ? { id: bestModule.id, name: bestModule.name, progressPct: bestModule.progressPct } : null,
       worstModule: worstModule ? { id: worstModule.id, name: worstModule.name, progressPct: worstModule.progressPct } : null,
       loginFrequency: globalFeatures.loginFrequency,
-      completionPace: globalFeatures.completionPace,
       xp: Number(progress.xp || 0),
       streak: Math.min(Number(profile?.loginCount || 0), 30),
       totalLessons: stats.lessonsCompleted,
       totalQuizzes: stats.quizzesPassed
     };
 
+    // Content type the student is most attentive at (video / reading / quiz),
+    // aggregated from attention sessions' per-content focus.
+    const attnSessions: any[] = Array.isArray(progress.attentionSessions) ? progress.attentionSessions : [];
+    const contentBuckets: Record<string, number[]> = { video: [], reading: [], quiz: [] };
+    for (const s of attnSessions) {
+      const fbc = (s && s.focusByContent) || {};
+      if (Number.isFinite(Number(fbc.video))) contentBuckets.video.push(Number(fbc.video));
+      if (Number.isFinite(Number(fbc.support))) contentBuckets.reading.push(Number(fbc.support));
+      if (Number.isFinite(Number(fbc.quiz))) contentBuckets.quiz.push(Number(fbc.quiz));
+      else if (s && s.context === "quiz" && Number.isFinite(Number(s.avgFocusScore))) contentBuckets.quiz.push(Number(s.avgFocusScore));
+    }
+    const contentAverages = Object.entries(contentBuckets)
+      .filter(([, arr]) => arr.length > 0)
+      .map(([type, arr]) => ({ type, score: Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) }));
+    const mostAttentiveContent = contentAverages.length
+      ? contentAverages.sort((a, b) => b.score - a.score)[0]
+      : null;
+
     res.status(200).json({
       identifier,
+      mostAttentiveContent,
       profile: profile ? {
         fullName: (profile as any).fullName,
         email: (profile as any).email,

@@ -87,6 +87,14 @@ attentionSessionRouter.post("/api/student/attention-session", async (req: Reques
     const completedAtRaw = body.completedAt ? new Date(String(body.completedAt)) : new Date();
     const completedAt = Number.isNaN(completedAtRaw.getTime()) ? new Date() : completedAtRaw;
 
+    // Average focus per content type (video / support / quiz), if the client sent it.
+    const rawFbc = body.focusByContent && typeof body.focusByContent === "object" ? body.focusByContent : {};
+    const focusByContent: Record<string, number> = {};
+    for (const key of ["video", "support", "quiz"]) {
+      const v = Number((rawFbc as any)[key]);
+      if (Number.isFinite(v) && v >= 0 && v <= 100) focusByContent[key] = Math.round(v);
+    }
+
     const user = await User.findOne({ identifier });
     if (!user) {
       return res.status(404).json({ message: "Étudiant introuvable" });
@@ -103,6 +111,7 @@ attentionSessionRouter.post("/api/student/attention-session", async (req: Reques
       duration: Math.round(duration),
       avgFocusScore: Math.round(avgFocusScore),
       minFocusScore,
+      focusByContent,
       distractionEvents: sanitizeDistractionEvents(body.distractionEvents),
       focusTimeline: sanitizeTimeline(body.focusTimeline),
       completedAt

@@ -57,6 +57,8 @@ type UserData = {
       duration: number;
       avgFocusScore: number;
       minFocusScore?: number;
+      /** Average focus per content type viewed during the session (0-100). */
+      focusByContent?: { video?: number; support?: number; quiz?: number };
       distractionEvents?: Array<{ t: number; reason: string; duration: number }>;
       focusTimeline?: Array<{ t: number; score: number }>;
       completedAt?: Date;
@@ -185,6 +187,7 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
             duration: Number,
             avgFocusScore: Number,
             minFocusScore: Number,
+            focusByContent: { video: Number, support: Number, quiz: Number },
             distractionEvents: [{ t: Number, reason: String, duration: Number }],
             focusTimeline: [{ t: Number, score: Number }],
             completedAt: Date

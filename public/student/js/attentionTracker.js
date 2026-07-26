@@ -427,7 +427,7 @@
     }
     var score = Math.round((focusedCount / state.window.length) * 100);
     state.currentScore = score;
-    state.session.samples.push({ t: Math.round(activeMs() / 1000), score: score });
+    state.session.samples.push({ t: Math.round(activeMs() / 1000), score: score, c: state.session.contentType });
 
     updateWidget(score);
 
@@ -473,7 +473,13 @@
 
   function updateWidget(score) {
     if (!state.widget) return;
-    var color = score > 70 ? "#1d9e75" : score >= 40 ? "#f59e0b" : "#c41d38";
+    // 0 means "no focus signal yet" (window just started) far more often than a
+    // genuine crash, so show it neutral instead of alarm-red; reserve red for a
+    // real, non-zero low reading.
+    var color = score === 0 ? "#9ca3af"
+      : score > 70 ? "#1d9e75"
+      : score >= 40 ? "#f59e0b"
+      : "#c41d38";
     var ring = state.widget.querySelector(".att-ring");
     ring.setAttribute("stroke", color);
     ring.setAttribute("stroke-dashoffset", String(RING_CIRC * (1 - score / 100)));
@@ -610,6 +616,19 @@
     var min = samples.length
       ? samples.reduce(function (m, x) { return Math.min(m, x.score); }, 100)
       : 0;
+    // Average focus per content type the student viewed (video vs support/reading),
+    // from the per-sample tags — lets the dashboard show which content holds their
+    // attention best.
+    var buckets = {};
+    for (var k = 0; k < samples.length; k++) {
+      var c = samples[k].c || s.contentType || "support";
+      (buckets[c] = buckets[c] || []).push(samples[k].score);
+    }
+    var focusByContent = {};
+    Object.keys(buckets).forEach(function (c) {
+      var arr = buckets[c];
+      focusByContent[c] = Math.round(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length);
+    });
     return {
       identifier: getIdentifier(),
       sessionId: s.sessionId,
@@ -619,6 +638,7 @@
       duration: Math.round(activeMs() / 1000),
       avgFocusScore: avg,
       minFocusScore: min,
+      focusByContent: focusByContent,
       distractionEvents: s.distractionEvents,
       focusTimeline: samples,
       completedAt: new Date().toISOString()
@@ -694,6 +714,9 @@
             context: context === "quiz" ? "quiz" : "lesson",
             moduleId: moduleId || "",
             subAcquisId: subAcquisId || "",
+            // Which content the student is currently viewing, so focus can be
+            // attributed to a content type. Updated via setContentType().
+            contentType: context === "quiz" ? "quiz" : "support",
             samples: [],
             distractionEvents: [],
             accumulatedMs: 0,
@@ -790,10 +813,22 @@
     });
   }
 
+  /**
+   * Tags subsequent focus samples with the content the student is viewing
+   * ("video" | "support"), so the server can learn which content type holds
+   * their attention best. No-op when not tracking.
+   */
+  function setContentType(type) {
+    if (state.session && (type === "video" || type === "support")) {
+      state.session.contentType = type;
+    }
+  }
+
   return {
     init: init,
     start: start,
     stop: stop,
+    setContentType: setContentType,
     getScore: getScore,
     destroy: destroy
   };

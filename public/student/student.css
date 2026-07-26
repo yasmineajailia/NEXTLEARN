@@ -2132,8 +2132,9 @@ body.chatbot-open {
 .card-vark { grid-column: 1 / -1; grid-row: 5; }
 
 /* ── Learning profile (VARK) badge — small pill above the dashboard grid ── */
-.card-learning-profile { margin-bottom: 0.85rem; }
+.card-learning-profile { margin-bottom: 0.85rem; display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center; }
 .card-learning-profile[hidden] { display: none; }
+.card-learning-profile .lp-attention-badge { cursor: default; }
 .card-learning-profile .lp-badge {
   display: inline-flex; align-items: center; gap: 0.6rem;
   padding: 0.5rem 0.9rem 0.5rem 0.6rem; border-radius: 999px;
@@ -2419,6 +2420,16 @@ body.chatbot-open {
   color: var(--dash-muted);
   line-height: 1.45;
   text-align: center;
+}
+.pred-disclaimer {
+  margin: 0.7rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--dash-line);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--dash-muted);
+  text-align: center;
+  font-style: italic;
 }
 .pred-features {
   display: grid;

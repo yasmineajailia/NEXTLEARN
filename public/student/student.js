@@ -1723,7 +1723,8 @@ function destroyDashCharts() {
 function renderNewDashboard(data) {
   if (!data) return;
   dashData = data;
-  const { profile, progress, overview, prediction, nextStep, weakestModules, quizTrend, weeklyActivity, achievements, insights, calendarEntries } = data;
+  const { profile, progress, overview, prediction, nextStep, weakestModules, quizTrend, weeklyActivity, achievements, insights, calendarEntries, mostAttentiveContent } = data;
+  renderMostAttentive(mostAttentiveContent);
 
   // ── Hero ──
   if (dom.dashHeroName) {
@@ -1891,7 +1892,7 @@ function renderPredictionCard(prediction) {
     } else if (prediction?.features) {
       const f = prediction.features;
       dom.dashPredFeatures.innerHTML = `
-        <div class="pred-feat">Rythme<strong>${f.completionPace?.toFixed(1) || "0"}/sem</strong></div>
+        <div class="pred-feat">Complétion<strong>${Math.round((1 - (f.gapDepth || 0)) * 100)}%</strong></div>
         <div class="pred-feat">Moyenne<strong>${Math.round(f.averageScore || 0)}%</strong></div>
         <div class="pred-feat">Connexions<strong>${f.loginFrequency?.toFixed(1) || "0"}/sem</strong></div>
         <div class="pred-feat">Retard<strong>${Math.round(f.delayWeeks || 0)} sem</strong></div>
@@ -2257,7 +2258,6 @@ function renderDashInsights(insights) {
   const items = [
     { label: tr("ins.quizAttempts", "Quiz tentés"), value: insights.totalQuizAttempts || 0, cls: "" },
     { label: tr("ins.avgScore", "Score moyen"), value: `${Math.round(insights.averageQuizScore || 0)}%`, cls: "" },
-    { label: tr("ins.pace", "Rythme"), value: `${insights.completionPace?.toFixed(1) || "0"}/${week}`, cls: "" },
     { label: tr("ins.logins", "Connexions"), value: `${insights.loginFrequency?.toFixed(1) || "0"}/${week}`, cls: insights.loginFrequency >= 3 ? "highlight" : "" }
   ];
 
@@ -2395,6 +2395,30 @@ function renderLearningProfile() {
       <span class="lp-badge-emoji">${dom.emoji}</span>
       <span class="lp-badge-text"><span class="lp-badge-eyebrow">${tr("dash.learningProfile", "Ton profil d'apprentissage")}</span>${dom.pname()}</span>
     </a>`;
+  card.hidden = false;
+}
+
+// Behavioural complement to VARK: the content type the student's attention data
+// says they focus best on (video / reading / quiz). Appended next to the VARK
+// badge; hidden until enough attention data has been captured.
+const ATTENTIVE_CONTENT = {
+  video:   { emoji: "🎬", color: "#c41d38", label: () => tr("dash.contentVideo", "Vidéo") },
+  reading: { emoji: "📖", color: "#1d9e75", label: () => tr("dash.contentReading", "Lecture") },
+  quiz:    { emoji: "✍️", color: "#f59e0b", label: () => tr("dash.contentQuiz", "Quiz") }
+};
+function renderMostAttentive(mac) {
+  const card = document.getElementById("dash-learning-profile");
+  if (!card) return;
+  const existing = card.querySelector(".lp-attention-badge");
+  if (existing) existing.remove();
+  const meta = mac && mac.type ? ATTENTIVE_CONTENT[mac.type] : null;
+  if (!meta) return;
+  const eyebrow = tr("dash.mostAttentive", "Plus attentif·ve en");
+  card.insertAdjacentHTML("beforeend", `
+    <div class="lp-badge lp-attention-badge" style="--lp-color:${meta.color}" title="${eyebrow} ${meta.label()}">
+      <span class="lp-badge-emoji">${meta.emoji}</span>
+      <span class="lp-badge-text"><span class="lp-badge-eyebrow">${eyebrow}</span>${meta.label()}</span>
+    </div>`);
   card.hidden = false;
 }
 
