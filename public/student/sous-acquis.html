@@ -28,7 +28,11 @@
       }
 
       .page {
-        width: min(1100px, calc(100% - 2rem));
+        /* Fill the available width (minus comfortable gutters) so the docked
+           chat reaches the right edge instead of floating in a centered 1100px
+           column with dead space around it. The cap only kicks in on very wide
+           monitors. */
+        width: min(1600px, calc(100% - 2.5rem));
         margin: 1.5rem auto 2.25rem;
         padding-top: 0.5rem;
       }
@@ -122,17 +126,19 @@
       /* ── Lesson header ── */
       .lesson-header { margin-bottom: 1.25rem; }
 
-      /* Breadcrumb: Cours › <module> › Sous-acquis */
+      /* Breadcrumb: Cours › <module> › <skill> › <sous-acquis> */
+      /* Inline flow (not flex) so a long final crumb wraps to fill the line's
+         remaining width instead of jumping whole to the next line. */
       .crumbs {
-        display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
         margin-bottom: 0.55rem;
         font-family: "Space Grotesk", sans-serif;
         font-size: 0.74rem; font-weight: 700;
+        line-height: 1.55;
         letter-spacing: 0.04em; text-transform: uppercase;
       }
       .crumbs a { color: #9aa2b1; text-decoration: none; transition: color 150ms ease; }
       .crumbs a:hover { color: #b21f2d; }
-      .crumbs .crumb-sep { color: #cbd0da; font-weight: 600; }
+      .crumbs .crumb-sep { color: #cbd0da; font-weight: 600; margin: 0 0.3rem; }
       .crumbs .crumb-current { color: #b21f2d; }
 
       .title-line {
@@ -143,7 +149,10 @@
         color: #111827;
         letter-spacing: -0.015em;
         line-height: 1.18;
-        text-wrap: balance;
+        /* "pretty", not "balance": balance equalizes line lengths, which breaks
+           a barely-two-line title early and leaves dead space on the right.
+           pretty fills the first line and only avoids a lone orphan word. */
+        text-wrap: pretty;
       }
 
       /* ── Meta row (inline, with icons) ── */
@@ -585,6 +594,168 @@
         background: rgba(255,255,255,.28);
       }
 
+      /* ── "Explain it in your own words" card (NLP formative check) ── */
+      .explain-card {
+        position: relative;
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid #e7e9f2;
+        padding: 1.35rem 1.5rem 1.4rem;
+        box-shadow: 0 6px 18px rgba(19, 24, 44, .06);
+        display: grid;
+        gap: .95rem;
+        overflow: hidden;
+        transition: box-shadow 220ms ease, transform 220ms ease;
+      }
+      .explain-card:hover { box-shadow: 0 16px 34px rgba(19, 24, 44, .10); transform: translateY(-2px); }
+      .explain-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0;
+        width: 4px; height: 100%;
+        background: linear-gradient(180deg, #b21f2d, #e5484d);
+      }
+      .explain-head { display: flex; align-items: flex-start; gap: .9rem; }
+      .explain-icon {
+        flex-shrink: 0;
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        background: #fdeef0;
+        color: #b21f2d;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .explain-head-text { flex: 1; min-width: 0; display: grid; gap: .3rem; }
+      .explain-head-text h2 {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.05rem;
+        color: #111827;
+      }
+      .pill-explain {
+        align-self: flex-start;
+        flex-shrink: 0;
+        background: #fdeef0; color: #b21f2d;
+        font-size: .72rem; font-weight: 700;
+        padding: .28rem .7rem; border-radius: 999px;
+        letter-spacing: .02em;
+        white-space: nowrap;
+      }
+      .explain-hint { margin: 0; font-size: .85rem; line-height: 1.55; color: #6b7280; }
+      .explain-toggle {
+        flex-shrink: 0;
+        width: 32px; height: 32px;
+        border: 1px solid #e5e7eb;
+        border-radius: 50%;
+        background: #fff;
+        color: #6b7280;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        padding: 0;
+        transition: background .15s ease, color .15s ease;
+      }
+      .explain-toggle:hover { background: #f4f6fa; color: #b21f2d; }
+      /* Chevron: up while open ("close me"), down while collapsed ("open me"). */
+      .explain-toggle svg { transition: transform 220ms ease; transform: rotate(180deg); }
+      .explain-card.is-collapsed .explain-toggle svg { transform: rotate(0deg); }
+      /* Collapsible body: 1fr -> 0fr grid row animates the height smoothly. */
+      .explain-body {
+        display: grid;
+        grid-template-rows: 1fr;
+        transition: grid-template-rows 260ms ease;
+        overflow: hidden; /* clips the inner padding sliver when collapsed */
+      }
+      /* padding/margin pair gives the textarea focus ring room inside overflow:hidden */
+      .explain-body-inner { overflow: hidden; min-height: 0; display: grid; gap: .95rem; padding: 4px; margin: -4px; }
+      .explain-card.is-collapsed .explain-body { grid-template-rows: 0fr; }
+      /* Collapsed = a compact header bar: centered row, no hint, tighter padding. */
+      .explain-card.is-collapsed { gap: 0; padding: .9rem 1.5rem; }
+      .explain-card.is-collapsed .explain-head { align-items: center; }
+      .explain-card.is-collapsed .explain-hint { display: none; }
+      .explain-card.is-collapsed .explain-icon { width: 38px; height: 38px; }
+      .explain-head { cursor: pointer; }
+      .explain-card.is-collapsed .pill-explain { align-self: center; }
+      @media (prefers-reduced-motion: reduce) {
+        .explain-body, .explain-toggle svg { transition: none; }
+      }
+      .explain-textarea {
+        width: 100%;
+        resize: vertical;
+        min-height: 96px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 14px;
+        padding: .8rem .95rem;
+        font: inherit;
+        font-size: .92rem;
+        line-height: 1.55;
+        color: #182235;
+        background: #fafbfc;
+        transition: border-color .15s ease, box-shadow .15s ease;
+      }
+      .explain-textarea:focus {
+        outline: none;
+        border-color: #b21f2d;
+        box-shadow: 0 0 0 3px rgba(178, 31, 45, .12);
+        background: #fff;
+      }
+      .explain-actions { display: flex; align-items: center; justify-content: flex-end; gap: .9rem; }
+      .explain-count { font-size: .76rem; color: #9ca3af; }
+      .explain-btn {
+        border: 0;
+        border-radius: 999px;
+        padding: .68rem 1.4rem;
+        font: inherit; font-weight: 700; font-size: .88rem;
+        font-family: "Space Grotesk", sans-serif;
+        background: #b21f2d; color: #fff;
+        cursor: pointer;
+        box-shadow: 0 6px 16px rgba(178, 31, 45, .25);
+        transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+      }
+      .explain-btn:hover:not(:disabled) {
+        background: #a3172b;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(178, 31, 45, .32);
+      }
+      .explain-btn:disabled { opacity: .55; cursor: default; box-shadow: none; }
+      .explain-result { display: grid; gap: 1rem; border-top: 1px dashed #e5e7eb; padding-top: 1.05rem; }
+      .explain-score-row { display: flex; align-items: center; gap: 1.1rem; }
+      .explain-ring { position: relative; width: 74px; height: 74px; flex-shrink: 0; }
+      .explain-ring svg { display: block; transform: rotate(-90deg); }
+      .explain-ring-fg { transition: stroke-dashoffset 700ms cubic-bezier(.22,.8,.36,1); }
+      @media (prefers-reduced-motion: reduce) { .explain-ring-fg { transition: none; } }
+      .explain-ring-value {
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700; font-size: 1rem;
+      }
+      .explain-verdict { display: grid; gap: .22rem; min-width: 0; }
+      .explain-band {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: .95rem; font-weight: 700;
+      }
+      .explain-band-acquired .explain-band { color: #1d9e75; }
+      .explain-band-partial .explain-band { color: #b45309; }
+      .explain-band-gap .explain-band { color: #b21f2d; }
+      .explain-group-title {
+        margin: 0 0 .5rem;
+        font-size: .74rem; font-weight: 700;
+        letter-spacing: .05em; text-transform: uppercase;
+        color: #6b7280;
+      }
+      .explain-chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+      .explain-chip {
+        display: inline-flex; align-items: center; gap: .45rem;
+        max-width: 100%;
+        padding: .34rem .8rem;
+        border-radius: 999px;
+        font-size: .8rem; font-weight: 600; line-height: 1.35;
+      }
+      .explain-chip-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .65; flex-shrink: 0; }
+      .explain-chip-ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+      .explain-chip-todo { background: #fff7ed; color: #b45309; border: 1px solid #fed7aa; }
+      .explain-note { margin: 0; font-size: .78rem; color: #9ca3af; }
+      .explain-error { font-size: .85rem; color: #b21f2d; font-weight: 600; }
+
       /* ── Next sous-acquis (secondary) ── */
       .sub-next-cta {
         flex: 0 1 auto;
@@ -644,6 +815,11 @@
          course content takes the full width the chat left behind. */
       body.chat-floating .lesson-layout { grid-template-columns: 1fr; }
       body.chat-floating .lesson-chat { display: none; }
+
+      /* Chat closed: the column shrinks to the "reopen" button's width so the
+         course content stretches across the freed space. */
+      body.chat-closed .lesson-layout { grid-template-columns: minmax(0, 1fr) auto; }
+      body.chat-closed .chat-resize-gripper { display: none; }
       .chatbot-panel.is-floating {
         position: fixed;
         left: var(--chat-fx, auto);
@@ -1009,8 +1185,10 @@
               <a href="/student/?view=cours" data-i18n="sidebar.courses">Cours</a>
               <span class="crumb-sep" aria-hidden="true">›</span>
               <span id="crumb-module">Programmation en C</span>
+              <span class="crumb-sep crumb-skill-sep" aria-hidden="true" hidden>›</span>
+              <span id="crumb-skill" hidden></span>
               <span class="crumb-sep" aria-hidden="true">›</span>
-              <span class="crumb-current" data-i18n="lesson.subAcquis">Sous-acquis</span>
+              <span class="crumb-current" id="crumb-current" data-i18n="lesson.subAcquis">Sous-acquis</span>
             </nav>
             <h1 class="title-line" id="title">Sous-acquis</h1>
             <div id="meta" class="meta"></div>
@@ -1070,20 +1248,50 @@
             </section>
           </section>
 
-          <!-- Objectives card -->
-          <section class="objectives-card">
+          <!-- Lesson resources (card hidden while empty) -->
+          <section class="objectives-card" id="resources-card" hidden>
             <div class="objectives-head">
-              <h2 data-i18n="lesson.objectives">Objectifs de la session</h2>
-              <div class="pill-row">
-                <span class="pill pill-video"><span class="pill-dot"></span>Video</span>
-                <span class="pill pill-resources"><span class="pill-dot"></span>Resources</span>
+              <h2 data-i18n="lesson.resources">Ressources de la leçon</h2>
+            </div>
+            <div id="resource-links" class="resource-grid"></div>
+          </section>
+
+          <!-- "Explain it in your own words" — NLP formative check -->
+          <section class="explain-card" id="explain-card" aria-label="Explique avec tes mots">
+            <div class="explain-head">
+              <span class="explain-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+              </span>
+              <div class="explain-head-text">
+                <h2 data-i18n="explain.title">Explique avec tes mots</h2>
+                <p class="explain-hint" data-i18n="explain.hint">
+                  Rédigez votre propre explication de cette leçon : l'assistant la compare au contenu du cours
+                  et vous montre les notions bien couvertes et celles à revoir.
+                </p>
+              </div>
+              <span class="pill pill-explain" data-i18n="explain.badge">Auto-évaluation</span>
+              <button type="button" class="explain-toggle" id="explain-toggle" aria-expanded="true" aria-controls="explain-body"
+                title="Réduire / développer" data-i18n-title="explain.toggle">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+            </div>
+            <div class="explain-body" id="explain-body">
+              <div class="explain-body-inner">
+                <textarea id="explain-input" class="explain-textarea" rows="4" maxlength="3000"
+                  data-i18n-placeholder="explain.placeholder"
+                  placeholder="Avec vos propres mots, expliquez ce que vous avez retenu de cette leçon..."></textarea>
+                <div class="explain-actions">
+                  <span class="explain-count" id="explain-count" aria-live="polite"></span>
+                  <button type="button" class="explain-btn" id="explain-submit" data-i18n="explain.submit">Analyser mon explication</button>
+                </div>
+                <div class="explain-result" id="explain-result" hidden aria-live="polite"></div>
               </div>
             </div>
-            <p id="objectives-text" class="objectives-text" data-i18n="lesson.objectivesText">
-              Consultez le support de cours et la vidéo ci-dessus pour assimiler cette notion,
-              puis validez vos acquis en passant le quiz. N'hésitez pas à interroger l'assistant si un point reste flou.
-            </p>
-            <div id="resource-links" class="resource-grid"></div>
           </section>
 
           <div class="sub-nav-row">
@@ -1591,6 +1799,7 @@
         if (!chatbotPanel) return;
         chatbotPanel.hidden = false;
         chatbotReopenBtn.hidden = true;
+        document.body.classList.remove("chat-closed");
         ensureChatbotWelcome();
         window.requestAnimationFrame(() => chatbotInput?.focus());
       }
@@ -1602,6 +1811,8 @@
         if (typeof ChatDock !== "undefined" && ChatDock.isFloating()) ChatDock.setFloating(false);
         chatbotPanel.hidden = true;
         chatbotReopenBtn.hidden = false;
+        // Give the freed column back to the course content.
+        document.body.classList.add("chat-closed");
       }
 
       /* ── Resizable / draggable assistant ──
@@ -1674,7 +1885,7 @@
           }
           store(LS.floating, on ? 1 : 0);
         }
-        const tr = (k, fr) => (window.I18N ? window.I18N.t(k, fr) : fr);
+        const tr = (k, fr, vars) => (window.I18N ? window.I18N.t(k, fr, vars) : fr);
 
         // Generic pointer-drag helper: onMove receives total dx/dy from the start.
         // canStart (optional) can veto a drag before it begins.
@@ -2132,6 +2343,10 @@
           if (evName === "delta" && typeof data.text === "string") {
             acc += data.text;
             ensureBot().update(acc);
+          } else if (evName === "reset") {
+            // Server detected a degenerate model loop — discard streamed garbage.
+            acc = "";
+            ensureBot().update(acc);
           } else if (evName === "sources") {
             sources = Array.isArray(data.sources) ? data.sources : [];
           } else if (evName === "error") {
@@ -2409,6 +2624,153 @@
         refreshFocusTarget();
       }
 
+      /* ── "Explain it in your own words" (NLP semantic gap analysis) ── */
+      (function initExplainCheck() {
+        const card   = document.getElementById("explain-card");
+        const input  = document.getElementById("explain-input");
+        const btn    = document.getElementById("explain-submit");
+        const result = document.getElementById("explain-result");
+        const count  = document.getElementById("explain-count");
+        if (!card || !input || !btn || !result) return;
+        if (!moduleId || !subAcquisId) { card.hidden = true; return; }
+
+        const tr = (k, fr, vars) => (window.I18N ? window.I18N.t(k, fr, vars) : fr);
+        const MIN_CHARS = 20;
+
+        // Collapse/expand, remembered across visits.
+        const toggleBtn = document.getElementById("explain-toggle");
+        const COLLAPSE_KEY = "nextlearn_explain_collapsed";
+        const setCollapsed = (collapsed) => {
+          card.classList.toggle("is-collapsed", collapsed);
+          if (toggleBtn) toggleBtn.setAttribute("aria-expanded", String(!collapsed));
+          try { localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0"); } catch (_e) { /* ignore */ }
+        };
+        try { if (localStorage.getItem(COLLAPSE_KEY) === "1") setCollapsed(true); } catch (_e) { /* ignore */ }
+        const toggle = () => setCollapsed(!card.classList.contains("is-collapsed"));
+        if (toggleBtn) toggleBtn.addEventListener("click", toggle);
+        // The whole header is a toggle target (the button already handles itself).
+        const head = card.querySelector(".explain-head");
+        if (head) head.addEventListener("click", (e) => {
+          if (e.target.closest(".explain-toggle")) return;
+          toggle();
+        });
+        input.addEventListener("input", () => {
+          const len = input.value.trim().length;
+          if (count) count.textContent = len ? `${len} / 3000` : "";
+        });
+
+        function esc(s) {
+          const d = document.createElement("div");
+          d.textContent = String(s == null ? "" : s);
+          return d.innerHTML;
+        }
+
+        function showError(message) {
+          result.hidden = false;
+          result.className = "explain-result";
+          result.innerHTML = `<p class="explain-error">${esc(message)}</p>`;
+        }
+
+        function renderResult(data) {
+          if (!data || !data.available) {
+            showError(data && data.reason === "too-short"
+              ? tr("explain.tooShort", "Écrivez au moins quelques phrases pour que l'analyse soit utile.")
+              : tr("explain.unavailable", "L'analyse n'est pas encore disponible pour cette leçon."));
+            return;
+          }
+          const bandLabel = data.band === "acquired"
+            ? tr("explain.bandAcquired", "Très bonne couverture des notions de la leçon")
+            : data.band === "partial"
+              ? tr("explain.bandPartial", "Couverture partielle — quelques notions restent à revoir")
+              : tr("explain.bandGap", "Plusieurs notions clés manquent encore dans votre explication");
+          const score = Math.max(0, Math.min(100, Number(data.score) || 0));
+          const color = data.band === "acquired" ? "#1d9e75" : data.band === "partial" ? "#d97706" : "#c41d38";
+          const RADIUS = 30;
+          const CIRC = 2 * Math.PI * RADIUS;
+          const covered = Array.isArray(data.covered) ? data.covered : [];
+          const missing = Array.isArray(data.missing) ? data.missing : [];
+          const coveredCount = (data.conceptCount || 0) - missing.length;
+
+          const parts = [
+            '<div class="explain-score-row">',
+            '<div class="explain-ring" role="img" aria-label="' + esc(score) + '%">',
+            '<svg width="74" height="74" viewBox="0 0 74 74">',
+            '<circle cx="37" cy="37" r="' + RADIUS + '" fill="none" stroke="#eef0f4" stroke-width="7"/>',
+            '<circle class="explain-ring-fg" cx="37" cy="37" r="' + RADIUS + '" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"/>',
+            "</svg>",
+            '<span class="explain-ring-value" style="color:' + color + '">' + esc(score) + "%</span>",
+            "</div>",
+            '<div class="explain-verdict">',
+            `<span class="explain-band">${esc(bandLabel)}</span>`,
+            `<span class="explain-count">${esc(tr("explain.coveredCount", "{n} notion(s) sur {total} couvertes", { n: coveredCount, total: data.conceptCount || 0 }))}</span>`,
+            "</div>",
+            "</div>"
+          ];
+          if (covered.length) {
+            parts.push("<div>");
+            parts.push(`<p class="explain-group-title">${esc(tr("explain.coveredIntro", "Notions bien couvertes"))}</p>`);
+            parts.push('<div class="explain-chips">');
+            for (const concept of covered.slice(0, 6)) {
+              parts.push(`<span class="explain-chip explain-chip-ok"><span class="explain-chip-dot"></span>${esc(concept)}</span>`);
+            }
+            parts.push("</div></div>");
+          }
+          if (missing.length) {
+            parts.push("<div>");
+            parts.push(`<p class="explain-group-title">${esc(tr("explain.missingIntro", "Notions à revoir"))}</p>`);
+            parts.push('<div class="explain-chips">');
+            for (const concept of missing.slice(0, 6)) {
+              parts.push(`<span class="explain-chip explain-chip-todo"><span class="explain-chip-dot"></span>${esc(concept)}</span>`);
+            }
+            parts.push("</div></div>");
+          }
+          if (typeof data.method === "string" && data.method.startsWith("lexical")) {
+            parts.push(`<p class="explain-note">${esc(tr("explain.degraded", "Analyse approximative (comparaison de mots) — le score peut sous-estimer votre explication."))}</p>`);
+          }
+          result.hidden = false;
+          result.className = `explain-result explain-band-${esc(data.band)}`;
+          result.innerHTML = parts.join("");
+          // Animate the ring from empty to the score (CSS transition on dashoffset).
+          const ringFg = result.querySelector(".explain-ring-fg");
+          if (ringFg) {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+              ringFg.setAttribute("stroke-dashoffset", String(CIRC * (1 - score / 100)));
+            }));
+          }
+        }
+
+        btn.addEventListener("click", async () => {
+          const text = input.value.trim();
+          if (text.length < MIN_CHARS) {
+            showError(tr("explain.tooShort", "Écrivez au moins quelques phrases pour que l'analyse soit utile."));
+            return;
+          }
+          btn.disabled = true;
+          const prevLabel = btn.textContent;
+          btn.textContent = tr("explain.checking", "Analyse en cours...");
+          try {
+            const res = await fetch("/api/student/explain-check", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                moduleId,
+                subAcquisId,
+                text,
+                lang: window.I18N ? window.I18N.lang : "fr"
+              })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error((data && data.message) || "explain-check failed");
+            renderResult(data);
+          } catch (_e) {
+            showError(tr("explain.error", "Analyse impossible pour le moment. Réessayez dans un instant."));
+          } finally {
+            btn.disabled = false;
+            btn.textContent = prevLabel;
+          }
+        });
+      })();
+
       /* ── Load data ── */
       async function loadData() {
         if (!moduleId || !subAcquisId) {
@@ -2434,13 +2796,29 @@
           const videoFiles = Array.isArray(data.videoFiles)    ? data.videoFiles    : [];
           const questions  = Array.isArray(data.quizQuestions) ? data.quizQuestions : [];
           const modName    = String(data.moduleName   || `Module ${moduleId}`);
+          const acquisName = String(data.acquisName    || "");
           const subName    = String(data.subAcquisName || `Sous-acquis ${subAcquisId}`);
           const duration   = data.duration ? String(data.duration) : null;
           const progress   = data.progress != null ? `${Math.round(data.progress)}%` : null;
 
           title.textContent = `${subName}`;
+          // Breadcrumb: module -> skill (acquis) -> sous-acquis. The skill crumb
+          // is shown only when the curriculum provides an acquis name.
           const crumbModule = document.getElementById("crumb-module");
           if (crumbModule) crumbModule.textContent = modName;
+          const crumbSkill = document.getElementById("crumb-skill");
+          const crumbSkillSep = document.querySelector(".crumb-skill-sep");
+          if (crumbSkill && crumbSkillSep) {
+            const hasSkill = acquisName.length > 0;
+            crumbSkill.textContent = acquisName;
+            crumbSkill.hidden = !hasSkill;
+            crumbSkillSep.hidden = !hasSkill;
+          }
+          const crumbCurrent = document.getElementById("crumb-current");
+          if (crumbCurrent) {
+            crumbCurrent.textContent = subName;
+            crumbCurrent.removeAttribute("data-i18n"); // now dynamic, don't let i18n overwrite
+          }
 
           // Module now lives in the breadcrumb, so keep the meta row to duration + completion.
           const metaItems = [];
@@ -2505,6 +2883,9 @@
               resourceLinks.appendChild(buildResourceCard(fp, fileSizes[i] || null));
             });
           }
+          // The resources card only exists when it has something to show.
+          const resourcesCard = document.getElementById("resources-card");
+          if (resourcesCard) resourcesCard.hidden = visibleResourceFiles.length === 0;
 
           // Learning-style recommendation — banner + which content to open first.
           const varkAvail = { video: videoFiles.length > 0, support: files.length > 0, quiz: questions.length > 0 };

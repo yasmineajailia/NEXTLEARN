@@ -13,6 +13,7 @@ ml/__pycache__/
 ml/rag/__pycache__/
 __pycache__/
 ml/rag/chroma_store/
+ml/rag/concept_cache.json
 
 # OULAD raw CSVs (large, free download — see ml/oulad/README.md)
 ml/oulad/raw/

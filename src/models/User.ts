@@ -49,6 +49,21 @@ type UserData = {
       xpEarned?: number;
       submittedAt?: Date;
     }>;
+    /**
+     * NLP-derived signals from the "explain it in your own words" box: for each
+     * submission, the concept-coverage score of the student's free-text
+     * explanation vs the lesson's own content (semantic gap analysis). A low
+     * score is a text-derived weak signal that quiz scores may miss; it feeds
+     * the learner profile / recommendations. Capped to the most recent 50.
+     */
+    textSignals?: Array<{
+      moduleId: string;
+      subAcquisId: string;
+      score: number;
+      band: "acquired" | "partial" | "gap";
+      missingConcepts?: string[];
+      submittedAt?: Date;
+    }>;
     attentionSessions?: Array<{
       sessionId: string;
       context: "lesson" | "quiz";
@@ -172,6 +187,19 @@ const userSchema = new mongoose.Schema<UserData, UserModel, UserMethods>(
             passed: { type: Boolean, required: true },
             timeSpent: { type: Number, default: 0 },
             xpEarned: { type: Number, default: 0 },
+            submittedAt: { type: Date, default: Date.now }
+          }
+        ],
+        default: []
+      },
+      textSignals: {
+        type: [
+          {
+            moduleId: { type: String, required: true },
+            subAcquisId: { type: String, required: true },
+            score: { type: Number, required: true },
+            band: { type: String, enum: ["acquired", "partial", "gap"], required: true },
+            missingConcepts: { type: [String], default: [] },
             submittedAt: { type: Date, default: Date.now }
           }
         ],

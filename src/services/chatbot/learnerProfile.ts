@@ -33,6 +33,11 @@ type UserLike = {
       score?: number;
       submittedAt?: Date | string;
     }>;
+    textSignals?: Array<{
+      subAcquisId?: string;
+      score?: number;
+      submittedAt?: Date | string;
+    }>;
   } | null;
 };
 
@@ -52,20 +57,39 @@ function toVark(dominant?: string): VarkStyle | null {
 }
 
 /**
- * The student's weakest recently-attempted sous-acquis: for each sous-acquis we
- * take the most recent attempt and keep those below the pass score, named and
- * ordered weakest-first, capped so the prompt stays short.
+ * The student's weakest recently-attempted sous-acquis, from BOTH evidence
+ * sources: quiz attempts (latest score per sous-acquis) and text signals from
+ * the "explain in your own words" analysis (latest concept-coverage score per
+ * sous-acquis). When both exist for a sous-acquis the weaker one wins — a
+ * student can pass the MCQ yet fail to explain the concept, and that gap is
+ * exactly what the chatbot should reinforce. Named, ordered weakest-first,
+ * capped so the prompt stays short.
  */
 function deriveWeakAreas(user: UserLike, nameById: Map<string, string>): string[] {
-  const attempts = user?.progress?.skillAttempts ?? [];
-  const latestBySub = new Map<string, { at: number; score: number }>();
-  for (const attempt of attempts) {
-    const subId = String(attempt?.subAcquisId || "");
-    if (!subId) continue;
-    const at = attempt?.submittedAt ? new Date(attempt.submittedAt).getTime() : 0;
-    const score = typeof attempt?.score === "number" ? attempt.score : 0;
+  // Latest score per sous-acquis, per evidence source.
+  const latestOf = (
+    entries: Array<{ subAcquisId?: string; score?: number; submittedAt?: Date | string }>
+  ): Map<string, number> => {
+    const latest = new Map<string, { at: number; score: number }>();
+    for (const entry of entries) {
+      const subId = String(entry?.subAcquisId || "");
+      if (!subId) continue;
+      const at = entry?.submittedAt ? new Date(entry.submittedAt).getTime() : 0;
+      const score = typeof entry?.score === "number" ? entry.score : 0;
+      const prev = latest.get(subId);
+      if (!prev || at >= prev.at) latest.set(subId, { at, score });
+    }
+    return new Map([...latest.entries()].map(([subId, e]) => [subId, e.score]));
+  };
+  const quizScores = latestOf(user?.progress?.skillAttempts ?? []);
+  const textScores = latestOf(user?.progress?.textSignals ?? []);
+
+  // Merge: the weaker of the two latest signals defines the sous-acquis.
+  const latestBySub = new Map<string, { score: number }>();
+  for (const [subId, score] of quizScores) latestBySub.set(subId, { score });
+  for (const [subId, score] of textScores) {
     const prev = latestBySub.get(subId);
-    if (!prev || at >= prev.at) latestBySub.set(subId, { at, score });
+    latestBySub.set(subId, { score: prev ? Math.min(prev.score, score) : score });
   }
   return [...latestBySub.entries()]
     .filter(([, entry]) => entry.score < PASS_SCORE)

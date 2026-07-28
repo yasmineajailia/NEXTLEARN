@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import { env } from "./config/env";
 import { webRouter } from "./routes/web";
 import { chatbotRouter } from "./routes/student/chatbot";
+import { masteryRouter } from "./routes/student/mastery";
+import { explainCheckRouter } from "./routes/student/explainCheck";
 import { organizationRouter } from "./routes/backoffice/organization";
 import { pagesRouter } from "./routes/pages";
 import { clusteringRouter } from "./routes/backoffice/clustering";
@@ -40,6 +42,8 @@ app.use(
 // App routes.
 app.use(webRouter);
 app.use(chatbotRouter);
+app.use(masteryRouter);
+app.use(explainCheckRouter);
 app.use(pagesRouter);
 // Every backoffice endpoint requires a verified teacher/admin session. One guard
 // covers all three routers because they all live under /api/backoffice. This is

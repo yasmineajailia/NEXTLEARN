@@ -157,6 +157,7 @@ function buildDom() {
     dashInsightsBody: document.getElementById("dash-insights-body"),
     dashWeakestBody: document.getElementById("dash-weakest-body"),
   dashModuleProgressBody: document.getElementById("dash-module-progress-body"),
+  dashRevisionBody: document.getElementById("dash-revision-body"),
 
     chatbotLauncher: document.getElementById("chatbot-launcher"),
     chatbotSidebarBtn: document.getElementById("chatbot-sidebar-btn"),
@@ -2379,22 +2380,28 @@ function renderLearningProfile() {
   const result = readVarkResult();
 
   if (!result) {
-    // Not taken yet — small prompt to play the Mission Apprenant game.
+    // Not taken yet — prompt to play the Mission Apprenant game + why it helps.
     card.innerHTML = `
-      <a class="lp-badge lp-badge-cta" href="/student/mission-apprenant" style="--lp-color:#c41d38">
-        <span class="lp-badge-emoji">🎓</span>
-        <span class="lp-badge-text">${tr("dash.discoverProfile", "Découvre ton profil d'apprentissage")}</span>
-      </a>`;
+      <div class="lp-badges">
+        <a class="lp-badge lp-badge-cta" href="/student/mission-apprenant" style="--lp-color:#c41d38">
+          <span class="lp-badge-emoji">🎓</span>
+          <span class="lp-badge-text">${tr("dash.discoverProfile", "Découvre ton profil d'apprentissage")}</span>
+        </a>
+      </div>
+      <p class="lp-tip">${tr("dash.discoverProfileTip", "Réponds à quelques questions pour identifier <b>comment tu apprends le mieux</b> — NextLearn adaptera ensuite ses conseils à ton style.")}</p>`;
     card.hidden = false;
     return;
   }
 
   const dom = VARK_DIMS[result.dominant];
   card.innerHTML = `
-    <a class="lp-badge" href="/student/mission-apprenant" title="${tr("dash.retakeVark", "Refaire le test")}" style="--lp-color:${dom.color}">
-      <span class="lp-badge-emoji">${dom.emoji}</span>
-      <span class="lp-badge-text"><span class="lp-badge-eyebrow">${tr("dash.learningProfile", "Ton profil d'apprentissage")}</span>${dom.pname()}</span>
-    </a>`;
+    <div class="lp-badges">
+      <a class="lp-badge" href="/student/mission-apprenant" title="${tr("dash.retakeVark", "Refaire le test")}" style="--lp-color:${dom.color}">
+        <span class="lp-badge-emoji">${dom.emoji}</span>
+        <span class="lp-badge-text"><span class="lp-badge-eyebrow">${tr("dash.learningProfile", "Ton profil d'apprentissage")}</span>${dom.pname()}</span>
+      </a>
+    </div>
+    <p class="lp-tip"><span class="lp-tip-label">${tr("dash.studyTip", "Conseil d'étude")}</span>${dom.rec()}</p>`;
   card.hidden = false;
 }
 
@@ -2409,12 +2416,13 @@ const ATTENTIVE_CONTENT = {
 function renderMostAttentive(mac) {
   const card = document.getElementById("dash-learning-profile");
   if (!card) return;
-  const existing = card.querySelector(".lp-attention-badge");
+  const group = card.querySelector(".lp-badges") || card;
+  const existing = group.querySelector(".lp-attention-badge");
   if (existing) existing.remove();
   const meta = mac && mac.type ? ATTENTIVE_CONTENT[mac.type] : null;
   if (!meta) return;
   const eyebrow = tr("dash.mostAttentive", "Plus attentif·ve en");
-  card.insertAdjacentHTML("beforeend", `
+  group.insertAdjacentHTML("beforeend", `
     <div class="lp-badge lp-attention-badge" style="--lp-color:${meta.color}" title="${eyebrow} ${meta.label()}">
       <span class="lp-badge-emoji">${meta.emoji}</span>
       <span class="lp-badge-text"><span class="lp-badge-eyebrow">${eyebrow}</span>${meta.label()}</span>
@@ -2462,6 +2470,55 @@ async function loadDashboardData() {
   } catch (_e) {
     // silently fail
   }
+
+  // Targeted revision — KT mastery fed into the recommender. Independent of the
+  // dashboard payload and non-blocking: a slow/unavailable ML service just hides
+  // the panel rather than holding up the rest of the dashboard.
+  loadRevision();
+}
+
+async function loadRevision() {
+  if (!dom.dashRevisionBody) return;
+  try {
+    const resp = await fetch("/api/student/mastery");
+    if (!resp.ok) return;
+    renderRevision(await resp.json());
+  } catch (_e) {
+    // silently fail — the panel stays hidden
+  }
+}
+
+function renderRevision(payload) {
+  const card = document.getElementById("dash-revision");
+  const body = dom.dashRevisionBody;
+  if (!card || !body) return;
+  const items = Array.isArray(payload?.revise) ? payload.revise : [];
+  if (!items.length) {
+    // Nothing weak (or no attempts yet) — keep the dashboard uncluttered.
+    card.hidden = true;
+    return;
+  }
+  body.innerHTML = items.map((it) => {
+    const pct = Math.max(0, Math.min(100, Math.round(Number(it.masteryPct) || 0)));
+    const barColor = pct >= 40 ? "#d93a4f" : "#8f1220";
+    const blocked = Array.isArray(it.blockedBy) && it.blockedBy.length
+      ? `<span class="revision-blocked">${tr("dash.revisionBlocked", "À revoir d'abord")} : ${it.blockedBy.map((b) => htmlEscape(b.title)).join(", ")}</span>`
+      : "";
+    const href = it.moduleId
+      ? `/student/sous-acquis.html?moduleId=${encodeURIComponent(it.moduleId)}&subAcquisId=${encodeURIComponent(it.id)}`
+      : null;
+    const inner = `
+      <div class="revision-head">
+        <span class="revision-name">${htmlEscape(it.title || it.id)}</span>
+        <span class="revision-pct">${pct}%</span>
+      </div>
+      <div class="revision-bar"><div class="revision-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+      ${blocked}`;
+    return href
+      ? `<a class="revision-item" href="${href}">${inner}</a>`
+      : `<div class="revision-item is-static">${inner}</div>`;
+  }).join("");
+  card.hidden = false;
 }
 
 function initWhenSidebarReady() {

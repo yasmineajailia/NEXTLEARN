@@ -51,6 +51,9 @@ from rag import retrieve as rag_retrieve
 from rag import store as rag_store
 from rag import guards as rag_guards
 from rag import generate as rag_generate
+from rag import answer_gap as rag_answer_gap
+from kt import infer as kt_infer
+from kt import skill_graph as kt_graph
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -110,6 +113,10 @@ if os.path.exists(GRADE_MODEL_PATH):
         data=BACKGROUND,
         feature_perturbation="interventional",
     )
+
+# SAKT knowledge-tracing model (per-skill mastery). Loads once; when the weights
+# are absent it stays unavailable and /mastery serves the recency fallback only.
+KT_MODEL = kt_infer.KTModel()
 
 
 def _class1_index() -> int:
@@ -291,6 +298,30 @@ class RagAnswerBody(BaseModel):
     learnerProfile: LearnerProfile | None = None
 
 
+class KTInteraction(BaseModel):
+    skillId: str
+    correct: bool
+
+
+class MasteryBody(BaseModel):
+    """A student's ordered attempt history + the skills to score.
+
+    history is oldest->newest; each skillId is a curriculum skill (a sous-acquis
+    id for the app, an OULAD assessment id for the shipped demo model)."""
+    history: list[KTInteraction] = []
+    targetSkillIds: list[str] = []
+    applyGraph: bool = True  # refine mastery over the prerequisite graph
+
+
+class AnswerGapBody(BaseModel):
+    """A student's free-text explanation of a lesson, to compare against the
+    lesson's own indexed content (semantic gap analysis)."""
+    moduleId: str = ""
+    subAcquisId: str = ""
+    text: str = ""
+    lang: str = "fr"
+
+
 class ItemAnalysisBody(BaseModel):
     """Per-question responses for one quiz. Each attempt carries the gradable
     responses captured in User.progress.skillAttempts."""
@@ -467,6 +498,42 @@ def rag_stream_endpoint(body: RagAnswerBody):
         learner_profile=body.learnerProfile.model_dump() if body.learnerProfile else None,
     )
     return StreamingResponse(gen, media_type="text/event-stream; charset=utf-8")
+
+
+@app.post("/mastery")
+def mastery_endpoint(body: MasteryBody):
+    """Per-skill mastery from the SAKT knowledge-tracing model.
+
+    Returns P(correct-next) for each requested skill, given the student's attempt
+    history. `source` per skill is "sakt" (neural estimate), "history" (recency
+    fallback for a skill outside the model's vocabulary) or "prior" (no attempts)."""
+    history = [(it.skillId, it.correct) for it in body.history]
+    scores = KT_MODEL.mastery(history, body.targetSkillIds)
+    resp = {
+        "available": KT_MODEL.available,
+        "testAuc": round(getattr(KT_MODEL, "test_auc", 0.0), 4),
+        "mastery": scores,
+        "graphApplied": False,
+    }
+    if body.applyGraph:
+        graph = kt_graph.get_graph()
+        if graph is not None:
+            smoothed = graph.smooth(scores)
+            resp["mastery"] = smoothed
+            resp["revisionOrder"] = graph.revision_order(smoothed)
+            resp["graphApplied"] = True
+    return resp
+
+
+@app.post("/nlp/answer-gap")
+def answer_gap_endpoint(body: AnswerGapBody):
+    """Semantic gap analysis: which key concepts of the lesson does the
+    student's own-words explanation cover / miss. Reference = the lesson's
+    indexed chunks; embeddings with a lexical fallback."""
+    return rag_answer_gap.analyze(
+        body.moduleId, body.subAcquisId, body.text,
+        lang="en" if body.lang == "en" else "fr",
+    )
 
 
 @app.post("/generate-quiz")

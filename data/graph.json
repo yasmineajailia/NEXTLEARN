@@ -171,9 +171,9 @@
     "5.1": {
       "id": "5.1",
       "title": "Définir une chaîne de caractères",
-      "related_to": ["4.1", "5.2", "5.3", "6.1"],
+      "related_to": ["4.1", "5.2", "5.3", "5.5", "6.1"],
       "depends_on": ["4.1"],
-      "unlocks": ["5.2", "5.3", "6.1"]
+      "unlocks": ["5.2", "5.3", "5.5", "6.1"]
     },
     "5.2": {
       "id": "5.2",
@@ -194,6 +194,27 @@
       "title": "Pratiquer les tableaux de chaîne de caractères",
       "related_to": ["5.3"],
       "depends_on": ["5.3"],
+      "unlocks": []
+    },
+    "5.5": {
+      "id": "5.5",
+      "title": "Saisie d'une chaîne de caractères",
+      "related_to": ["5.1", "5.6"],
+      "depends_on": ["5.1"],
+      "unlocks": ["5.6"]
+    },
+    "5.6": {
+      "id": "5.6",
+      "title": "Fonction de manipulation de chaînes",
+      "related_to": ["5.5", "5.7"],
+      "depends_on": ["5.5"],
+      "unlocks": ["5.7"]
+    },
+    "5.7": {
+      "id": "5.7",
+      "title": "Tableau de chaînes",
+      "related_to": ["5.6"],
+      "depends_on": ["5.6"],
       "unlocks": []
     },
     "6.1": {

@@ -1579,6 +1579,7 @@ export async function readClassAccessByStudentIdentifier(identifier: string): Pr
 
 async function readPersistedSubAcquisResources(moduleId: string, subAcquisId: string): Promise<{
   moduleName: string;
+  acquisName: string;
   subAcquisName: string;
   pptFiles: string[];
   videoFiles: string[];
@@ -1590,6 +1591,7 @@ async function readPersistedSubAcquisResources(moduleId: string, subAcquisId: st
   if (!module) {
     return {
       moduleName: moduleId,
+      acquisName: "",
       subAcquisName: subAcquisId,
       pptFiles: [],
       videoFiles: [],
@@ -1598,10 +1600,22 @@ async function readPersistedSubAcquisResources(moduleId: string, subAcquisId: st
     };
   }
 
-  const subAcquis = module.acquis.flatMap((acquis) => acquis.sousAcquis).find((entry) => entry.id === subAcquisId);
+  // Locate the sous-acquis AND its parent acquis (the "skill" level) so the
+  // lesson breadcrumb can show module -> skill -> sous-acquis.
+  let subAcquis: (typeof module.acquis)[number]["sousAcquis"][number] | undefined;
+  let acquisName = "";
+  for (const acquis of module.acquis) {
+    const found = acquis.sousAcquis.find((entry) => entry.id === subAcquisId);
+    if (found) {
+      subAcquis = found;
+      acquisName = acquis.name || acquis.id;
+      break;
+    }
+  }
   if (!subAcquis) {
     return {
       moduleName: module.name || module.id,
+      acquisName: "",
       subAcquisName: subAcquisId,
       pptFiles: [],
       videoFiles: [],
@@ -1662,6 +1676,7 @@ async function readPersistedSubAcquisResources(moduleId: string, subAcquisId: st
 
   return {
     moduleName: module.name || module.id,
+    acquisName,
     subAcquisName: subAcquis.name || subAcquis.id,
     pptFiles,
     videoFiles,

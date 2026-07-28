@@ -228,6 +228,7 @@ learningRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", asy
       moduleId,
       subAcquisId,
       moduleName: resources.moduleName,
+      acquisName: resources.acquisName,
       subAcquisName: resources.subAcquisName,
       courseFiles: resources.pptFiles,
       videoFiles: resources.videoFiles,
