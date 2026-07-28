@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Face-landmark engines — Head-to-head benchmark</title>
+    <link rel="icon" type="image/png" href="/images/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg:#0b0f1a; --card:#151d2e; --card2:#1a2235; --border:rgba(255,255,255,0.08);
+        --text:#f1f5f9; --muted:#64748b; --muted2:#94a3b8; --accent:#6366f1;
+        --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --radius:14px;
+      }
+      body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:1.5rem; line-height:1.5; }
+      .wrap { max-width:1240px; margin:0 auto; display:grid; gap:1.25rem; }
+      h1 { font-size:1.5rem; font-weight:800; letter-spacing:-.02em; }
+      h2 { font-size:1.05rem; font-weight:700; margin-bottom:.85rem; }
+      .sub { color:var(--muted2); font-size:.9rem; margin-top:.3rem; }
+      .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem 1.35rem; }
+      .privacy { border-left:3px solid var(--green); background:rgba(34,197,94,.07); font-size:.87rem; color:#bbf7d0; }
+      .caveat { border-left:3px solid var(--amber); background:rgba(245,158,11,.07); font-size:.87rem; color:#fde68a; }
+      .controls { display:flex; flex-wrap:wrap; gap:.9rem; align-items:end; }
+      label.fld { display:grid; gap:.3rem; font-size:.78rem; color:var(--muted2); font-weight:600; }
+      input[type="number"], select {
+        background:var(--card2); border:1px solid var(--border); color:var(--text);
+        border-radius:9px; padding:.5rem .65rem; font:inherit; font-size:.88rem; min-width:120px;
+      }
+      button { background:var(--accent); color:#fff; border:0; border-radius:9px; padding:.62rem 1.3rem; font:inherit; font-weight:700; font-size:.88rem; cursor:pointer; }
+      button:hover:not(:disabled) { filter:brightness(1.12); }
+      button:disabled { opacity:.5; cursor:default; }
+      button.ghost { background:var(--card2); border:1px solid var(--border); }
+      .engines { display:grid; gap:.55rem; margin-bottom:1rem; }
+      .eng { display:flex; align-items:flex-start; gap:.6rem; background:var(--card2); border-radius:10px; padding:.65rem .8rem; }
+      .eng input { margin-top:.28rem; accent-color:var(--accent); }
+      .eng-name { font-weight:700; font-size:.9rem; }
+      .eng-desc { font-size:.78rem; color:var(--muted2); }
+      .status { font-family:'JetBrains Mono',monospace; font-size:.82rem; color:var(--muted2); min-height:1.3em; }
+      .bar { height:6px; border-radius:99px; background:var(--card2); overflow:hidden; margin-top:.6rem; }
+      .bar > i { display:block; height:100%; width:0; background:var(--accent); transition:width .2s ease; }
+      video { width:200px; border-radius:10px; background:#000; transform:scaleX(-1); }
+      table { width:100%; border-collapse:collapse; font-size:.86rem; }
+      th, td { text-align:left; padding:.55rem .6rem; border-bottom:1px solid var(--border); vertical-align:top; }
+      th { color:var(--muted2); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; font-weight:700; }
+      td.num { font-family:'JetBrains Mono',monospace; text-align:right; }
+      tbody tr:last-child td { border-bottom:0; }
+      tr.winner { background:rgba(99,102,241,.10); }
+      .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)} .dim{color:var(--muted)}
+      .yes{color:var(--green);font-weight:700} .no{color:var(--red);font-weight:700}
+      .verdict { font-size:.9rem; padding:.85rem .95rem; border-radius:10px; background:var(--card2); display:grid; gap:.65rem; }
+      .note { font-size:.78rem; color:var(--muted); margin-top:.7rem; }
+      pre { background:#0a0e17; border:1px solid var(--border); border-radius:10px; padding:.9rem; font-family:'JetBrains Mono',monospace; font-size:.75rem; overflow-x:auto; color:#cbd5e1; }
+      .hidden { display:none; }
+      code { font-family:'JetBrains Mono',monospace; font-size:.85em; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div>
+        <h1>Face-landmark engines — head-to-head benchmark</h1>
+        <p class="sub">
+          Runs every realistic in-browser alternative against the <strong>same camera frames on the same
+          hardware</strong>, then checks which ones can actually produce the three signals NextLearn's
+          attention score needs: eye openness (EAR), head pose (yaw) and gaze direction.
+        </p>
+      </div>
+
+      <div class="card privacy">
+        <strong>Privacy:</strong> every engine runs locally in this browser. No frame, image or landmark is
+        uploaded or stored. The only network traffic is fetching the model weights from their CDNs.
+      </div>
+
+      <div class="card caveat">
+        <strong>What this measures and what it does not.</strong> It measures <em>speed</em> (latency, FPS),
+        <em>capability</em> (landmark count → which signals are derivable) and <em>detection rate</em> on your
+        frames. It does <strong>not</strong> measure landmark <em>accuracy</em> — that needs a hand-annotated
+        ground-truth set, which this project does not have. Any accuracy claim would be unfounded, so none is made.
+      </div>
+
+      <div class="card">
+        <h2>Engines</h2>
+        <div class="engines" id="engines"></div>
+        <div class="controls">
+          <label class="fld">Frames measured / engine
+            <input type="number" id="frames" value="100" min="20" max="600" step="10" />
+          </label>
+          <label class="fld">Warm-up frames (discarded)
+            <input type="number" id="warmup" value="15" min="0" max="100" step="5" />
+          </label>
+          <label class="fld">Resolution
+            <select id="res">
+              <option value="640x480" selected>640 × 480 (app default)</option>
+              <option value="320x240">320 × 240</option>
+              <option value="1280x720">1280 × 720</option>
+            </select>
+          </label>
+          <button id="run">Run comparison</button>
+          <button id="stop" class="ghost" disabled>Stop</button>
+        </div>
+        <div class="bar"><i id="prog"></i></div>
+        <p class="status" id="status">Idle. Grants camera access on run; keep your face in frame throughout.</p>
+        <div style="margin-top:.9rem"><video id="video" playsinline muted></video></div>
+      </div>
+
+      <div class="card hidden" id="results-card">
+        <h2>Results</h2>
+        <div style="overflow-x:auto"><table id="results"></table></div>
+        <p class="note">
+          Latency is the end-to-end inference call per frame. The app throttles to one frame every
+          <strong>125 ms</strong> (8 fps); "budget" is the share of that consumed at p95. Signals are derived
+          from the measured landmark count, not assumed.
+        </p>
+      </div>
+
+      <div class="card hidden" id="verdict-card">
+        <h2>Verdict</h2>
+        <div id="verdict"></div>
+      </div>
+
+      <div class="card hidden" id="json-card">
+        <h2>Raw results (JSON)</h2>
+        <pre id="json"></pre>
+        <button class="ghost" id="copy">Copy JSON</button>
+      </div>
+    </div>
+
+    <script>
+      const FRAME_BUDGET_MS = 125;
+      const $ = (id) => document.getElementById(id);
+      const statusEl = $("status"), progEl = $("prog"), video = $("video");
+      let stopped = false, payload = null;
+
+      const setStatus = (t) => { statusEl.textContent = t; };
+      const setProg = (p) => { progEl.style.width = Math.round(p * 100) + "%"; };
+      const yieldUI = () => new Promise((r) => setTimeout(r, 0));
+
+      function loadScript(src) {
+        return new Promise((res, rej) => {
+          const el = document.createElement("script");
+          el.src = src; el.crossOrigin = "anonymous";
+          el.onload = res; el.onerror = () => rej(new Error("CDN load failed: " + src));
+          document.head.appendChild(el);
+        });
+      }
+
+      /* ── Engine adapters ──────────────────────────────────────────────────
+         Each exposes: setup() -> detect() -> {landmarks:<count>|null}, and
+         teardown(). Every engine is optional: a CDN/API failure is reported
+         per-engine instead of breaking the run. */
+      const ENGINES = [
+        {
+          id: "mp-iris",
+          name: "MediaPipe FaceMesh — refineLandmarks ON",
+          desc: "The engine NextLearn ships. 468 mesh points + 10 iris points, WASM.",
+          checked: true,
+          async setup() {
+            if (typeof window.FaceMesh === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js");
+            }
+            this._last = null;
+            this._fm = new window.FaceMesh({ locateFile: (f) => "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/" + f });
+            this._fm.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: .5, minTrackingConfidence: .5 });
+            this._fm.onResults((r) => {
+              const lm = r.multiFaceLandmarks && r.multiFaceLandmarks[0];
+              this._last = lm ? lm.length : null;
+            });
+          },
+          async detect() { await this._fm.send({ image: video }); return { landmarks: this._last }; },
+          teardown() { try { this._fm && this._fm.close(); } catch (_e) {} }
+        },
+        {
+          id: "mp-noiris",
+          name: "MediaPipe FaceMesh — refineLandmarks OFF",
+          desc: "Same model without the iris refinement. Isolates the cost of the gaze capability.",
+          checked: true,
+          async setup() {
+            if (typeof window.FaceMesh === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js");
+            }
+            this._last = null;
+            this._fm = new window.FaceMesh({ locateFile: (f) => "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/" + f });
+            this._fm.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: .5, minTrackingConfidence: .5 });
+            this._fm.onResults((r) => {
+              const lm = r.multiFaceLandmarks && r.multiFaceLandmarks[0];
+              this._last = lm ? lm.length : null;
+            });
+          },
+          async detect() { await this._fm.send({ image: video }); return { landmarks: this._last }; },
+          teardown() { try { this._fm && this._fm.close(); } catch (_e) {} }
+        },
+        {
+          id: "tfjs-mesh",
+          name: "TF.js face-landmarks-detection (WebGL)",
+          desc: "Same FaceMesh weights, TensorFlow.js/WebGL runtime instead of WASM — a runtime comparison.",
+          checked: true,
+          async setup() {
+            if (typeof window.tf === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.22.0/dist/tf-core.min.js");
+              await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.22.0/dist/tf-converter.min.js");
+              await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.22.0/dist/tf-backend-webgl.min.js");
+            }
+            if (typeof window.faceLandmarksDetection === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@1.0.6/dist/face-landmarks-detection.min.js");
+            }
+            await window.tf.setBackend("webgl");
+            await window.tf.ready();
+            this._det = await window.faceLandmarksDetection.createDetector(
+              window.faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
+              { runtime: "tfjs", refineLandmarks: true, maxFaces: 1 }
+            );
+          },
+          async detect() {
+            const faces = await this._det.estimateFaces(video, { flipHorizontal: false });
+            return { landmarks: faces && faces[0] ? faces[0].keypoints.length : null };
+          },
+          teardown() { try { this._det && this._det.dispose(); } catch (_e) {} }
+        },
+        {
+          id: "faceapi",
+          name: "face-api.js — 68 landmarks",
+          desc: "TinyFaceDetector + 68-point landmark net. The common alternative; no iris points.",
+          checked: true,
+          async setup() {
+            if (typeof window.faceapi === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js");
+            }
+            const MODELS = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
+            await window.faceapi.nets.tinyFaceDetector.loadFromUri(MODELS);
+            await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODELS);
+            this._opts = new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: .5 });
+          },
+          async detect() {
+            const r = await window.faceapi.detectSingleFace(video, this._opts).withFaceLandmarks(true);
+            return { landmarks: r ? r.landmarks.positions.length : null };
+          },
+          teardown() {}
+        },
+        {
+          id: "blazeface",
+          name: "BlazeFace (TF.js) — detection only",
+          desc: "Face box + 6 keypoints. The lightest option; cannot produce EAR or gaze.",
+          checked: true,
+          async setup() {
+            if (typeof window.tf === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js");
+            }
+            if (typeof window.blazeface === "undefined") {
+              await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.umd.js");
+            }
+            await window.tf.ready();
+            this._model = await window.blazeface.load();
+          },
+          async detect() {
+            const preds = await this._model.estimateFaces(video, false);
+            return { landmarks: preds && preds[0] ? (preds[0].landmarks ? preds[0].landmarks.length : 0) : null };
+          },
+          teardown() {}
+        }
+      ];
+
+      /* Which of the three required signals a landmark count can support. */
+      function capability(landmarks) {
+        if (!landmarks) return { ear: false, yaw: false, gaze: false, label: "no detection" };
+        if (landmarks >= 478) return { ear: true, yaw: true, gaze: true,  label: "full mesh + iris" };
+        if (landmarks >= 400) return { ear: true, yaw: true, gaze: false, label: "full mesh, no iris" };
+        if (landmarks >= 60)  return { ear: true, yaw: true, gaze: false, label: "68-point contour" };
+        return { ear: false, yaw: true, gaze: false, label: "keypoints only" };
+      }
+
+      function percentile(sorted, p) {
+        if (!sorted.length) return 0;
+        return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))];
+      }
+      function stats(times) {
+        const s = [...times].sort((a, b) => a - b);
+        const mean = s.reduce((a, b) => a + b, 0) / (s.length || 1);
+        return { n: s.length, min: s[0] ?? 0, p50: percentile(s, .5), p95: percentile(s, .95), max: s[s.length - 1] ?? 0, mean };
+      }
+
+      async function benchEngine(engine, frames, warmup) {
+        const out = { id: engine.id, name: engine.name, ok: false };
+        try {
+          setStatus(`${engine.name}: loading model…`);
+          const t0 = performance.now();
+          await engine.setup();
+          await engine.detect();                       // first inference completes the init
+          out.loadMs = performance.now() - t0;
+
+          for (let i = 0; i < warmup && !stopped; i++) await engine.detect();
+
+          const times = []; let detected = 0, landmarks = 0;
+          for (let i = 0; i < frames && !stopped; i++) {
+            const t = performance.now();
+            const r = await engine.detect();
+            times.push(performance.now() - t);
+            if (r && r.landmarks) { detected++; landmarks = r.landmarks; }
+            if (i % 5 === 0) {
+              setStatus(`${engine.name}: frame ${i + 1}/${frames}`);
+              await yieldUI();
+            }
+          }
+          const st = stats(times);
+          Object.assign(out, st, {
+            ok: true,
+            landmarks,
+            detectionRate: times.length ? detected / times.length : 0,
+            maxFps: st.mean > 0 ? 1000 / st.mean : 0,
+            budgetPct: (st.p95 / FRAME_BUDGET_MS) * 100,
+            capability: capability(landmarks)
+          });
+        } catch (err) {
+          out.error = err && err.message ? err.message : String(err);
+        } finally {
+          try { engine.teardown(); } catch (_e) {}
+        }
+        return out;
+      }
+
+      function render(runs, meta) {
+        const usable = runs.filter((r) => r.ok && r.capability && r.capability.gaze);
+        const fastestUsable = usable.slice().sort((a, b) => a.p50 - b.p50)[0];
+
+        const head = `<thead><tr>
+          <th>Engine</th><th>Landmarks</th><th>EAR</th><th>Yaw</th><th>Gaze</th>
+          <th>p50 ms</th><th>p95 ms</th><th>Max FPS</th><th>Budget @p95</th><th>Detect %</th><th>Load ms</th>
+        </tr></thead>`;
+
+        const body = runs.map((r) => {
+          if (!r.ok) {
+            return `<tr><td>${r.name}</td><td colspan="10" class="bad">unavailable — ${r.error || "failed"}</td></tr>`;
+          }
+          const c = r.capability;
+          const isWin = fastestUsable && r.id === fastestUsable.id;
+          return `<tr class="${isWin ? "winner" : ""}">
+            <td>${r.name}${isWin ? ' <span class="dim">← fastest that meets requirements</span>' : ""}</td>
+            <td class="num">${r.landmarks || "—"}</td>
+            <td class="${c.ear ? "yes" : "no"}">${c.ear ? "yes" : "no"}</td>
+            <td class="${c.yaw ? "yes" : "no"}">${c.yaw ? "yes" : "no"}</td>
+            <td class="${c.gaze ? "yes" : "no"}">${c.gaze ? "yes" : "no"}</td>
+            <td class="num">${r.p50.toFixed(1)}</td>
+            <td class="num">${r.p95.toFixed(1)}</td>
+            <td class="num">${r.maxFps.toFixed(1)}</td>
+            <td class="num ${r.budgetPct < 50 ? "ok" : r.budgetPct < 90 ? "warn" : "bad"}">${r.budgetPct.toFixed(0)}%</td>
+            <td class="num">${(r.detectionRate * 100).toFixed(0)}</td>
+            <td class="num">${r.loadMs != null ? r.loadMs.toFixed(0) : "—"}</td>
+          </tr>`;
+        }).join("");
+
+        $("results").innerHTML = head + "<tbody>" + body + "</tbody>";
+        $("results-card").classList.remove("hidden");
+
+        // Verdict, derived only from measured values.
+        const gazeCapable = runs.filter((r) => r.ok && r.capability.gaze);
+        const gazeIncapable = runs.filter((r) => r.ok && !r.capability.gaze);
+        const mpIris = runs.find((r) => r.id === "mp-iris");
+        const mpNo = runs.find((r) => r.id === "mp-noiris");
+        const irisCost = (mpIris && mpIris.ok && mpNo && mpNo.ok) ? mpIris.mean - mpNo.mean : null;
+
+        const bits = [];
+        bits.push(`<div><strong>Requirement filter.</strong> The attention score needs all three signals.
+          <span class="yes">${gazeCapable.length}</span> of the ${runs.filter(r => r.ok).length} engines that ran
+          can produce gaze; <span class="no">${gazeIncapable.length}</span> cannot
+          ${gazeIncapable.length ? "(" + gazeIncapable.map((r) => r.name.split(" —")[0]).join(", ") + ")" : ""}.
+          Speed is only a tie-breaker <em>after</em> this filter.</div>`);
+
+        if (fastestUsable) {
+          bits.push(`<div><strong>Among engines that qualify, ${fastestUsable.name} is fastest here</strong> —
+            p50 <strong>${fastestUsable.p50.toFixed(1)} ms</strong>, p95 <strong>${fastestUsable.p95.toFixed(1)} ms</strong>,
+            using <strong>${fastestUsable.budgetPct.toFixed(0)}%</strong> of the 125 ms frame budget
+            (${(FRAME_BUDGET_MS / fastestUsable.p95).toFixed(1)}× headroom).</div>`);
+        }
+        if (irisCost !== null) {
+          bits.push(`<div><strong>Cost of the gaze capability.</strong> Turning on iris refinement costs
+            <strong>${irisCost >= 0 ? "+" : ""}${irisCost.toFixed(1)} ms</strong> per frame
+            (${mpNo.mean.toFixed(1)} → ${mpIris.mean.toFixed(1)} ms) — the measured price of the third signal.</div>`);
+        }
+        bits.push(`<div><strong>Not measured:</strong> landmark accuracy, which would require annotated
+          ground truth. The choice is argued on capability, latency and the privacy constraint — not on an
+          accuracy claim we cannot support.</div>`);
+
+        $("verdict").innerHTML = `<div class="verdict">${bits.join("")}</div>`;
+        $("verdict-card").classList.remove("hidden");
+
+        payload = { measuredAt: new Date().toISOString(), ...meta, runs };
+        $("json").textContent = JSON.stringify(payload, null, 2);
+        $("json-card").classList.remove("hidden");
+      }
+
+      async function run() {
+        stopped = false;
+        $("run").disabled = true; $("stop").disabled = false;
+        ["results-card", "verdict-card", "json-card"].forEach((id) => $(id).classList.add("hidden"));
+
+        try {
+          const frames = Math.max(20, Number($("frames").value) || 100);
+          const warmup = Math.max(0, Number($("warmup").value) || 0);
+          const [w, h] = $("res").value.split("x").map(Number);
+          const selected = ENGINES.filter((e) => $("chk-" + e.id).checked);
+          if (!selected.length) { setStatus("Select at least one engine."); return; }
+
+          setStatus("Requesting camera…");
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: w }, height: { ideal: h } } });
+          video.srcObject = stream;
+          await video.play();
+
+          const s = stream.getVideoTracks()[0].getSettings ? stream.getVideoTracks()[0].getSettings() : {};
+          const meta = {
+            userAgent: navigator.userAgent,
+            hardwareConcurrency: navigator.hardwareConcurrency || null,
+            requestedResolution: `${w}x${h}`,
+            actualResolution: s.width ? `${s.width}x${s.height}` : "unknown",
+            frameBudgetMs: FRAME_BUDGET_MS, framesPerEngine: frames, warmupFrames: warmup
+          };
+
+          const runs = [];
+          for (let i = 0; i < selected.length; i++) {
+            if (stopped) break;
+            runs.push(await benchEngine(selected[i], frames, warmup));
+            setProg((i + 1) / selected.length);
+          }
+
+          stream.getTracks().forEach((t) => t.stop());
+          video.srcObject = null;
+          setStatus(stopped ? "Stopped early — partial results shown." : "Done.");
+          render(runs, meta);
+        } catch (err) {
+          setStatus("Error: " + (err && err.message ? err.message : String(err)));
+        } finally {
+          $("run").disabled = false; $("stop").disabled = true;
+        }
+      }
+
+      // Build the engine checklist
+      $("engines").innerHTML = ENGINES.map((e) => `
+        <label class="eng">
+          <input type="checkbox" id="chk-${e.id}" ${e.checked ? "checked" : ""} />
+          <span><span class="eng-name">${e.name}</span><br><span class="eng-desc">${e.desc}</span></span>
+        </label>`).join("");
+
+      $("run").addEventListener("click", run);
+      $("stop").addEventListener("click", () => { stopped = true; setStatus("Stopping…"); });
+      $("copy").addEventListener("click", async () => {
+        if (!payload) return;
+        try {
+          await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+          $("copy").textContent = "Copied";
+          setTimeout(() => ($("copy").textContent = "Copy JSON"), 1500);
+        } catch (_e) {}
+      });
+    </script>
+  </body>
+</html>
