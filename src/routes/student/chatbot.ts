@@ -174,8 +174,13 @@ chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) 
   (res as unknown as { flushHeaders?: () => void }).flushHeaders?.();
 
   const send = (event: string, data: unknown) => {
+    if (res.writableEnded) return; // client gone — don't write to a closed socket
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
+
+  // Abort the upstream ML read if the browser disconnects mid-stream.
+  const clientGone = new AbortController();
+  res.on("close", () => clientGone.abort());
 
   if (!identifier || !rawMessage) {
     send("error", { message: !identifier ? "Identifiant requis" : "Question requise" });
@@ -208,12 +213,16 @@ chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) 
         lang,
         learnerProfile
       },
-      (chunk) => res.write(chunk)
+      (chunk) => { if (!res.writableEnded) res.write(chunk); },
+      clientGone.signal
     );
     return res.end();
   } catch (error) {
-    console.error("Failed to stream student chatbot answer:", error);
-    send("error", { message: "Impossible de générer une réponse pour le moment" });
+    // A client disconnect aborts the upstream read; that's expected, not an error.
+    if (!clientGone.signal.aborted) {
+      console.error("Failed to stream student chatbot answer:", error);
+      send("error", { message: "Impossible de générer une réponse pour le moment" });
+    }
     return res.end();
   }
 });

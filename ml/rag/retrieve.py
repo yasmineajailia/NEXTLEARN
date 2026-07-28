@@ -12,7 +12,7 @@ Chunk dicts here carry the same fields as StudentRagChunk plus `tokens`.
 
 from . import embed as embedder
 from . import store
-from .guards import normalize_for_lookup, tokenize
+from .guards import normalize_for_lookup, normalize_whitespace, tokenize
 
 KIND_WEIGHT = {"sub-acquis": 1.6, "course-content": 1.5, "quiz": 1.4, "module": 1.2}
 
@@ -33,7 +33,12 @@ def score_chunk(chunk: dict, query_normalized: str, query_tokens: list) -> float
     exact_boost = 2 if query_normalized in normalize_for_lookup(chunk.get("text") or "") else 0
     kind_weight = KIND_WEIGHT.get(chunk.get("kind"), 1.0)
     coverage = overlap / max(1, len(query_tokens))
-    return coverage * 8 * kind_weight + overlap + exact_boost
+    # Tiny length tiebreak (<= ~1.0, always smaller than one extra token match):
+    # when several chunks tie on relevance — e.g. slide "builds" of the same
+    # content that repeat the intro with one more bullet each — prefer the most
+    # complete one so the model actually receives the full list, not a stub.
+    completeness = min(len(chunk_set), 50) / 50
+    return coverage * 8 * kind_weight + overlap + exact_boost + completeness
 
 
 def refine_chunks(question: str, chunks: list) -> list:
@@ -51,24 +56,40 @@ def refine_chunks(question: str, chunks: list) -> list:
         order = ["course-content", "sub-acquis", "module", "course-file", "video", "quiz"]
     rank = {kind: i for i, kind in enumerate(order)}
 
+    # Stable sort keeps the incoming relevance order (score, incl. the completeness
+    # tiebreak) within a kind, so the fullest chunk leads among ties.
     by_pref = sorted(chunks, key=lambda c: rank.get(c.get("kind"), -1))
 
-    seen, refined = set(), []
+    # De-duplicate by CONTENT, not by sub-acquis id. Course slides are ingested as
+    # progressive "builds" (the same passage with one more bullet each); collapsing
+    # them by sub-acquis would drop everything but one stub. Instead we drop only a
+    # chunk whose text is contained in a chunk we already kept (and let a more
+    # complete chunk supersede a shorter one), so a single sub-acquis can still
+    # contribute several *distinct* passages — the steps list AND their details.
+    refined: list = []
+    refined_norm: list = []
     for chunk in by_pref:
-        key = (
-            f"{chunk.get('moduleId')}::{chunk.get('subAcquisId')}"
-            if chunk.get("subAcquisId")
-            else f"{chunk.get('moduleId')}::module"
-        )
-        if key in seen:
-            continue
         if not asks_quiz and chunk.get("kind") == "quiz":
             continue
+        ntext = normalize_whitespace(normalize_for_lookup(chunk.get("text") or ""))
+        if not ntext:
+            continue
+        superseded = False
+        for i, kept in enumerate(refined_norm):
+            if ntext in kept:            # already covered by a fuller chunk
+                superseded = True
+                break
+            if kept in ntext:            # this chunk is the fuller version
+                refined[i] = chunk
+                refined_norm[i] = ntext
+                superseded = True
+                break
+        if superseded:
+            continue
         refined.append(chunk)
-        seen.add(key)
-        if len(refined) >= 5:
-            break
-    return refined or chunks[:5]
+        refined_norm.append(ntext)
+
+    return refined[:5] or chunks[:5]
 
 
 def _allowed(chunk: dict, allowed_modules: set, allowed_subacquis: set) -> bool:

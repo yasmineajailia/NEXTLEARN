@@ -12,6 +12,7 @@ ids; everything else runs here.
 
 import json
 import os
+import re
 
 import requests
 
@@ -84,10 +85,11 @@ def build_prompts(question: str, top_chunks: list, lang: str = "fr", learner_pro
     language_line = (
         "Langue : l'étudiant utilise l'interface en ANGLAIS. Réponds intégralement en anglais, même si la question ou le contexte sont en français (le code C reste inchangé)."
         if lang == "en"
-        else "Langue : réponds en français."
+        else "Langue : réponds INTÉGRALEMENT en français, même si la question ou le contexte contiennent de l'anglais (le code C reste inchangé). Ne réponds jamais en anglais."
     )
     system = "\n".join([
         "Tu es l'assistant pédagogique NextLearn qui aide des étudiants à comprendre le cours de programmation en C. Ton ton est clair, pédagogique et encourageant.",
+        language_line,
         "",
         "Règles de contenu (strictes) :",
         "- Utilise UNIQUEMENT les informations du contexte fourni. N'invente rien, n'ajoute aucune connaissance externe ni exemple non présent dans le contexte.",
@@ -122,19 +124,31 @@ def _label(c: dict) -> str:
 
 
 # ── deterministic fallback (port of buildStudentRagAnswer) ─────────────────
-def deterministic_answer(question: str, top_chunks: list) -> str:
+def deterministic_answer(question: str, top_chunks: list, lang: str = "fr") -> str:
     clean = (question or "").strip()
     if not top_chunks:
+        if lang == "en":
+            return ("I couldn't find relevant content in your available modules. "
+                    "Try a module id (e.g. 4) or a sub-acquis id (e.g. 4.3).")
         return ("Je n'ai pas trouvé de contexte pertinent dans vos modules disponibles. "
                 "Essayez avec un identifiant de module (ex: 4) ou de sous-acquis (ex: 4.3).")
     primary = top_chunks[0]
-    primary_scope = primary.get("subAcquisName") or primary.get("moduleName") or "le contenu du module"
+    default_scope = "the module content" if lang == "en" else "le contenu du module"
+    primary_scope = primary.get("subAcquisName") or primary.get("moduleName") or default_scope
     evidence = []
     for c in top_chunks[:3]:
         label = f"{c.get('moduleId')}.{c.get('subAcquisId')}" if c.get("subAcquisId") else f"module {c.get('moduleId')}"
         excerpt = normalize_whitespace(str(c.get("text") or ""))[:240]
         tail = "..." if len(excerpt) >= 240 else ""
         evidence.append(f"- {label}: {excerpt}{tail}")
+    if lang == "en":
+        return "\n".join([
+            f"To answer your question: {clean}",
+            f"Main point in the module: {primary_scope}.",
+            "Elements found in the module:",
+            *evidence,
+            "If you'd like, I can go through these step by step — using only these elements.",
+        ])
     return "\n".join([
         f"Pour répondre à votre question: {clean}",
         f"Point principal dans le module: {primary_scope}.",
@@ -142,6 +156,24 @@ def deterministic_answer(question: str, top_chunks: list) -> str:
         *evidence,
         "Si vous voulez, je peux détailler pas à pas à partir de ces éléments uniquement.",
     ])
+
+
+# ── degeneration guard ─────────────────────────────────────────────────────
+# LLMs (notably gpt-4o-mini) occasionally collapse into a repetition loop that
+# floods the answer with a single character (e.g. a wall of "\\\\\\"). The
+# buffered path already discards this via is_answer_grounded, but the streamed
+# path has no re-check, so we detect the loop live and switch to the fallback.
+_RUN_RE = re.compile(r"(\S)\1{39,}")  # same non-space char 40+ times in a row
+
+
+def looks_degenerate(text: str) -> bool:
+    if len(text) < 40:
+        return False
+    tail = text[-200:]
+    if _RUN_RE.search(tail):
+        return True
+    stripped = re.sub(r"\s+", "", tail)
+    return len(stripped) >= 60 and len(set(stripped)) <= 3
 
 
 # ── grounding + refusal checks ─────────────────────────────────────────────
@@ -234,7 +266,7 @@ def _openai(system: str, user: str, history: list) -> str:
     r = requests.post(
         f"{base}/chat/completions",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": model, "temperature": 0.2, "messages": messages},
+        json={"model": model, "temperature": 0.2, "frequency_penalty": 0.3, "messages": messages},
         timeout=LLM_TIMEOUT_S,
     )
     if not r.ok:
@@ -262,6 +294,14 @@ SCOPE_GUARD_ANSWER = (
     "Je peux vous aider uniquement sur le module en cours et en langage C. "
     "Reformulez votre question sans mentionner un autre langage."
 )
+SCOPE_GUARD_ANSWER_EN = (
+    "I can only help with the current module and the C language. "
+    "Please rephrase your question without mentioning another language."
+)
+
+
+def scope_guard_answer(lang: str) -> str:
+    return SCOPE_GUARD_ANSWER_EN if lang == "en" else SCOPE_GUARD_ANSWER
 
 
 # ── streaming generation (port of streamStudentChatAnswer) ─────────────────
@@ -284,7 +324,7 @@ def stream_generate(question: str, top_chunks: list, history: list, lang: str = 
     with requests.post(
         f"{base}/chat/completions",
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": model, "temperature": 0.2, "stream": True, "messages": messages},
+        json={"model": model, "temperature": 0.2, "frequency_penalty": 0.3, "stream": True, "messages": messages},
         timeout=LLM_TIMEOUT_S,
         stream=True,
     ) as r:
@@ -326,7 +366,7 @@ def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
 
     if (filter_module or filter_sub) and is_outside_langage_c(question):
         yield _sse("meta", {"mode": "scope-guard"})
-        yield _sse("delta", {"text": SCOPE_GUARD_ANSWER})
+        yield _sse("delta", {"text": scope_guard_answer(lang)})
         yield _sse("sources", {"sources": []})
         yield _sse("done", {})
         return
@@ -344,15 +384,23 @@ def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
     yield _sse("meta", {"mode": f"{mode}+stream"})
 
     streamed = ""
+    degenerate = False
     try:
         for delta in stream_generate(question, refined, history or [], lang, learner_profile):
             streamed += delta
             yield _sse("delta", {"text": delta})
+            if looks_degenerate(streamed):
+                degenerate = True
+                break  # closes the upstream stream; drop the garbage below
     except Exception:  # noqa: BLE001 — stream failure -> deterministic fallback
         pass
 
-    if not streamed:
-        yield _sse("delta", {"text": deterministic_answer(question, refined)})
+    if degenerate:
+        # Wipe whatever garbage already reached the client, then send a clean answer.
+        yield _sse("reset", {})
+        yield _sse("delta", {"text": deterministic_answer(question, refined, lang)})
+    elif not streamed:
+        yield _sse("delta", {"text": deterministic_answer(question, refined, lang)})
 
     yield _sse("sources", {"sources": sources})
     yield _sse("done", {})
@@ -365,7 +413,7 @@ def answer(question, allowed_module_ids, allowed_subacquis_ids,
     refined = retrieve.refine_chunks(question, ranked)
 
     if (filter_module or filter_sub) and is_outside_langage_c(question):
-        return {"answer": SCOPE_GUARD_ANSWER, "mode": "scope-guard", "retrieved": 0, "sources": []}
+        return {"answer": scope_guard_answer(lang), "mode": "scope-guard", "retrieved": 0, "sources": []}
 
     sources = [{
         "moduleId": c.get("moduleId"),
@@ -376,7 +424,7 @@ def answer(question, allowed_module_ids, allowed_subacquis_ids,
         "excerpt": normalize_whitespace(str(c.get("text") or ""))[:300],
     } for c in refined]
 
-    ans = deterministic_answer(question, refined)
+    ans = deterministic_answer(question, refined, lang)
     mode = "vector" if embedder.has_provider() else "rag"
     try:
         gen = generate(question, refined, history or [], lang, learner_profile)

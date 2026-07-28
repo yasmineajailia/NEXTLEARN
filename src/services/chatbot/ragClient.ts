@@ -54,6 +54,9 @@ export type RagAnswerResult = {
 };
 
 const RAG_ANSWER_TIMEOUT_MS = 60_000;
+// Streaming has no single deadline (a long answer is legitimate), but a stalled
+// upstream must not hang the SSE forever — abort if no chunk arrives for this long.
+const RAG_STREAM_IDLE_TIMEOUT_MS = 45_000;
 
 function serviceUrl(path: string): string {
   return `${SHAP_SERVICE_URL.replace(/\/$/, "")}${path}`;
@@ -97,6 +100,10 @@ export async function answerViaPython(params: {
  * `event:/data:` frames (meta/delta/sources/done), so Node forwards them as-is;
  * the browser contract is unchanged. Throws before the first byte if the upstream
  * request fails, so the caller can surface an error frame.
+ *
+ * `externalSignal` (e.g. wired to the client connection) aborts the upstream read
+ * when the browser disconnects, so an abandoned request doesn't keep draining the
+ * ML service. An idle watchdog also aborts if the upstream stalls mid-answer.
  */
 export async function streamViaPython(
   params: {
@@ -109,23 +116,44 @@ export async function streamViaPython(
     lang: "fr" | "en";
     learnerProfile?: LearnerProfile;
   },
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  externalSignal?: AbortSignal
 ): Promise<void> {
-  const res = await fetch(serviceUrl("/rag/stream"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(params)
-  });
-  if (!res.ok || !res.body) {
-    throw new Error(`ML service /rag/stream -> ${res.status}`);
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener("abort", onExternalAbort, { once: true });
   }
-  const reader = (res.body as unknown as ReadableStream<Uint8Array>).getReader();
-  const decoder = new TextDecoder();
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    onChunk(decoder.decode(value, { stream: true }));
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
+  const armIdleTimer = () => {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => controller.abort(), RAG_STREAM_IDLE_TIMEOUT_MS);
+  };
+
+  try {
+    armIdleTimer();
+    const res = await fetch(serviceUrl("/rag/stream"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+      signal: controller.signal
+    });
+    if (!res.ok || !res.body) {
+      throw new Error(`ML service /rag/stream -> ${res.status}`);
+    }
+    const reader = (res.body as unknown as ReadableStream<Uint8Array>).getReader();
+    const decoder = new TextDecoder();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      armIdleTimer(); // fresh chunk -> reset the stall watchdog
+      onChunk(decoder.decode(value, { stream: true }));
+    }
+  } finally {
+    if (idleTimer) clearTimeout(idleTimer);
+    if (externalSignal) externalSignal.removeEventListener("abort", onExternalAbort);
   }
 }
 
