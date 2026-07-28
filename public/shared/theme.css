@@ -426,8 +426,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Balanced headings — nicer line breaks, no layout change. */
-:where(h1, h2, h3) { text-wrap: balance; }
+/* Nicer heading line breaks: "pretty" fills each line and only avoids a lone
+   orphan word. NOT "balance", which equalizes line lengths — a barely-two-line
+   heading breaks early and leaves dead space on the right. */
+:where(h1, h2, h3) { text-wrap: pretty; }
 
 /* Branded form controls (checkbox / radio) across the app. */
 :where(input[type="checkbox"], input[type="radio"]) { accent-color: var(--accent, #cf1f2e); }

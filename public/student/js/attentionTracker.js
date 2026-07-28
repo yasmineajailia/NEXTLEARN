@@ -141,7 +141,7 @@
       ".att-btn-primary:hover{background:#a3172b;}" +
       ".att-btn-secondary{background:#eef1f5;color:#374151;}" +
       ".att-btn-secondary:hover{background:#e2e6ec;}" +
-      ".att-widget{position:fixed;right:1.1rem;bottom:6.2rem;z-index:10500;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 6px 20px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;}" +
+      ".att-widget{position:fixed;right:1.1rem;bottom:1.6rem;z-index:10500;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 6px 20px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;}" +
       ".att-widget svg{position:absolute;inset:0;transform:rotate(-90deg);}" +
       ".att-widget-score{font-size:.95rem;font-weight:700;color:#182235;line-height:1;}" +
       ".att-widget-pct{font-size:.58em;font-weight:700;opacity:.7;margin-left:.5px;}" +

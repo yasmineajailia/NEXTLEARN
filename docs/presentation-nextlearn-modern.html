@@ -273,7 +273,8 @@
         <div class="agenda-row"><span class="agenda-num">02.</span><span class="agenda-label">Design &amp; Technical Foundation</span></div>
         <div class="agenda-row"><span class="agenda-num">03.</span><span class="agenda-label">Methodology</span></div>
         <div class="agenda-row"><span class="agenda-num">04.</span><span class="agenda-label">Platform Preview</span></div>
-        <div class="agenda-row"><span class="agenda-num">05.</span><span class="agenda-label">Conclusion &amp; Outlook</span></div>
+        <div class="agenda-row"><span class="agenda-num">05.</span><span class="agenda-label">Data Science &amp; AI Models</span></div>
+        <div class="agenda-row"><span class="agenda-num">06.</span><span class="agenda-label">Conclusion &amp; Outlook</span></div>
       </div>
     </div>
     <div class="pageno">2</div>
@@ -692,10 +693,167 @@
     <div class="pageno">22</div>
   </section>
 
-  <!-- 23 · DIVIDER 05 -->
+  <!-- 23 · DIVIDER 05 · DATA SCIENCE -->
+  <section class="slide divider" data-t="Data Science">
+    <div class="pad">
+      <div class="divider-title"><span class="accent">05.</span> <span class="ink">Data Science</span> <span class="accent">&amp; AI</span></div>
+      <div class="breadcrumb">
+        <span>Data Foundation</span><span class="arw">&rarr;</span>
+        <span>Models &amp; Benchmarks</span><span class="arw">&rarr;</span>
+        <span>Predictive Models</span><span class="arw">&rarr;</span>
+        <span>Knowledge Tracing</span><span class="arw">&rarr;</span>
+        <span>Recommendation</span><span class="arw">&rarr;</span>
+        <span>Honest Limits</span>
+      </div>
+    </div>
+    <div class="pageno">23</div>
+  </section>
+
+  <!-- 24 · DATA FOUNDATION -->
+  <section class="slide" data-t="Data foundation">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Data</span> <span class="accent">Foundation</span></h2>
+      <div class="cards c3">
+        <div class="card">
+          <span class="tag">Dataset</span>
+          <h3>OULAD + real usage</h3>
+          <p>Trained on the Open University Learning Analytics Dataset — <b style="color:var(--ink)">~25 000 students</b> with real pass/fail outcomes — combined with the platform's own quiz and progress signals.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Features</span>
+          <h3>8 engineered signals</h3>
+          <p>Delay, average score, login frequency, gap depth, recency, weak-skill ratio, focus — computed at an <b style="color:var(--ink)">early-warning day-90 cutoff</b>, before the outcome.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Validation</span>
+          <h3>Leakage-free</h3>
+          <p><b style="color:var(--ink)">Student-grouped cross-validation</b>: no student appears in both train and test, so the metrics reflect real generalization.</p>
+        </div>
+      </div>
+    </div>
+    <div class="pageno">24</div>
+  </section>
+
+  <!-- 25 · MODELS & BENCHMARKS -->
+  <section class="slide" data-t="Models & benchmarks">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Models</span> <span class="accent">&amp; Benchmarks</span></h2>
+      <table class="cmp">
+        <thead><tr><th>Model</th><th>Task</th><th>Why this model</th><th class="col-us">Metric (test)</th></tr></thead>
+        <tbody>
+          <tr><th>Random Forest — Classifier</th><td>Success / catch-up risk</td><td>Non-linear, robust on small tabular data; pairs with SHAP for explanations.</td><td><b class="accent">AUC &#8776; 0.85</b></td></tr>
+          <tr><th>Random Forest — Regressor</th><td>Predicted grade /20</td><td>Same feature space; captures non-linear effects a linear model misses.</td><td><b class="accent">MAE 1.39/20</b></td></tr>
+          <tr><th>SAKT — Deep Learning</th><td>Per-skill mastery (knowledge tracing)</td><td>Attention over the answer sequence — order &amp; recency a static average can't model.</td><td><b class="accent">AUC 0.854</b></td></tr>
+          <tr><th>K-Means — Unsupervised</th><td>Learner-profile segmentation</td><td>Simple, fast, interpretable for teachers; no labels needed.</td><td><span class="small">qualitative</span></td></tr>
+          <tr><th>RAG — Embeddings + LLM</th><td>Course assistant</td><td>Answers grounded only on course content; anti-hallucination guard.</td><td><span class="small">grounded</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pageno">25</div>
+  </section>
+
+  <!-- 26 · PREDICTIVE MODELS -->
+  <section class="slide" data-t="Predictive models">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Predictive Models —</span> <span class="accent">Risk &amp; Grade</span></h2>
+      <div class="split">
+        <div class="block">
+          <h3><span class="badge" style="width:38px;height:38px;border-radius:10px"><svg viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg></span>Random Forest + SHAP</h3>
+          <ul>
+            <li><b style="color:var(--ink)">Why RF over logistic regression:</b> non-linear thresholds &amp; feature interactions, minimal tuning, native feature importance.</li>
+            <li><b style="color:var(--ink)">Risk:</b> P(catch up) — <span class="accent">AUC &#8776; 0.85</span> (student-grouped CV).</li>
+            <li><b style="color:var(--ink)">Grade:</b> note /20 — <span class="accent">MAE 1.39/20</span> (leakage-free CV).</li>
+            <li><b style="color:var(--ink)">Exact-tree SHAP</b> turns each score into readable reasons ("12 weeks behind &#8722;13%").</li>
+          </ul>
+        </div>
+        <div class="block">
+          <h3><span class="badge" style="width:38px;height:38px;border-radius:10px"><svg viewBox="0 0 24 24" style="width:20px;height:20px"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></span>The honest metric</h3>
+          <ul>
+            <li>Accuracy looks like <b style="color:var(--ink)">~96%</b> — but the positive base rate is <b style="color:var(--ink)">95.9%</b>, so "always pass" scores the same.</li>
+            <li><b style="color:var(--ink)">AUC is the metric that proves discrimination</b>, not accuracy.</li>
+            <li>Protected demographics <b style="color:var(--ink)">excluded</b> — including them added only <span class="accent">+0.001</span> AUC (fairness &#8776; free).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="pageno">26</div>
+  </section>
+
+  <!-- 27 · KNOWLEDGE TRACING (SAKT) -->
+  <section class="slide" data-t="Knowledge tracing">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Knowledge Tracing —</span> <span class="accent">SAKT (Deep Learning)</span></h2>
+      <div class="split" style="grid-template-columns:1.35fr 0.65fr">
+        <div class="block">
+          <h3>Per-skill mastery, dynamically</h3>
+          <ul>
+            <li><b style="color:var(--ink)">Self-Attentive Knowledge Tracing</b> reads the ordered sequence of a student's answers and predicts P(correct) on each skill.</li>
+            <li><b style="color:var(--ink)">Why attention over a plain RNN (DKT):</b> it weighs <i>which</i> past answers matter for the current skill — and yields an interpretable attention map.</li>
+            <li><b style="color:var(--ink)">Why deep learning here:</b> a score average is a snapshot; mastery needs order, recency and forgetting.</li>
+            <li>Trained on OULAD sequences with a leakage-free, student-grouped split.</li>
+          </ul>
+        </div>
+        <div class="block" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+          <div style="font-family:var(--sans);font-weight:800;font-size:86px;line-height:1;color:var(--red)">0.854</div>
+          <div style="font-family:var(--sans);font-weight:700;font-size:18px;color:var(--ink);margin-top:10px">Test AUC</div>
+          <div class="small" style="margin-top:4px">held-out students</div>
+        </div>
+      </div>
+    </div>
+    <div class="pageno">27</div>
+  </section>
+
+  <!-- 28 · RECOMMENDATION & PERSONALIZATION -->
+  <section class="slide" data-t="Recommendation">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Recommendation</span> <span class="accent">&amp; Personalization</span></h2>
+      <div class="arch" style="flex:none;margin-top:16px">
+        <div class="arch-row">
+          <div class="node hot"><b>KT Mastery</b><small>SAKT per-skill</small></div>
+          <span class="arw-h">&rarr;</span>
+          <div class="node"><b>Prerequisite Graph</b><small>cold-start + gating</small></div>
+          <span class="arw-h">&rarr;</span>
+          <div class="node"><b>Recommender</b><small>weakest-first</small></div>
+          <span class="arw-h">&rarr;</span>
+          <div class="node hot"><b>Targeted Revision</b><small>student panel</small></div>
+        </div>
+      </div>
+      <p class="small" style="max-width:900px;margin:16px auto 0;text-align:center">Continuous mastery replaces binary pass/fail — the graph adds prerequisite-aware ordering with no training required.</p>
+      <div class="cards c3" style="margin-top:24px;gap:20px">
+        <div class="card mini"><div class="badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg></div><span>K-Means clusters</span></div>
+        <div class="card mini"><div class="badge"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><span>RAG assistant</span></div>
+        <div class="card mini"><div class="badge"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><span>MediaPipe attention</span></div>
+      </div>
+    </div>
+    <div class="pageno">28</div>
+  </section>
+
+  <!-- 29 · HONEST LIMITS -->
+  <section class="slide" data-t="Honest limits">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Honest</span> <span class="accent">Limits &amp; Choices</span></h2>
+      <div class="cards c3">
+        <div class="card">
+          <span class="tag">Metric integrity</span>
+          <p>We report <b style="color:var(--ink)">AUC, not accuracy</b> — a 95.9% base rate makes accuracy misleading. Naming this pre-empts the obvious question.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Fairness</span>
+          <p>Protected demographics are <b style="color:var(--ink)">deliberately excluded</b>; they added only +0.001 AUC — fairness at essentially no cost.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Data &amp; transfer</span>
+          <p>SAKT is validated on OULAD. On the C course, mastery uses a <b style="color:var(--ink)">recency + graph fallback</b> until enough real attempts train a course model.</p>
+        </div>
+      </div>
+    </div>
+    <div class="pageno">29</div>
+  </section>
+
+  <!-- 30 · DIVIDER 06 · CONCLUSION -->
   <section class="slide divider" data-t="Conclusion">
     <div class="pad">
-      <div class="divider-title"><span class="accent">05.</span> <span class="ink">Conclusion &amp;</span> <span class="accent">OUTLOOK</span></div>
+      <div class="divider-title"><span class="accent">06.</span> <span class="ink">Conclusion &amp;</span> <span class="accent">OUTLOOK</span></div>
       <div class="breadcrumb">
         <span>Why It Matters</span><span class="arw">&rarr;</span>
         <span>Conclusion</span><span class="arw">&rarr;</span>
@@ -703,7 +861,7 @@
         <span>Thank You</span>
       </div>
     </div>
-    <div class="pageno">23</div>
+    <div class="pageno">30</div>
   </section>
 
   <!-- 24 · WHY IT MATTERS -->
@@ -717,7 +875,7 @@
         <div class="card mini"><div class="badge"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg></div><span>Personalizes learning</span></div>
       </div>
     </div>
-    <div class="pageno">24</div>
+    <div class="pageno">31</div>
   </section>
 
   <!-- 25 · CONCLUSION & PERSPECTIVES -->
@@ -745,7 +903,7 @@
         </div>
       </div>
     </div>
-    <div class="pageno">25</div>
+    <div class="pageno">32</div>
   </section>
 
   <!-- 26 · THANK YOU -->
@@ -756,7 +914,7 @@
         <p>Happy to answer your questions, thoughts and remarks — and to take NextLearn to the next level.</p>
       </div>
     </div>
-    <div class="pageno">26</div>
+    <div class="pageno">33</div>
   </section>
 
 </div>
