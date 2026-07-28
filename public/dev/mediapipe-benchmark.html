@@ -146,6 +146,18 @@
         });
       }
 
+      /* Some TF.js pipelines are unreliable when handed a <video> element
+         directly; a canvas snapshot is the robust input. Costs ~1 ms, which is
+         disclosed in the results footnote so the comparison stays fair. */
+      let _canvas = null, _ctx = null;
+      function videoFrameCanvas() {
+        const w = video.videoWidth || 640, h = video.videoHeight || 480;
+        if (!_canvas) { _canvas = document.createElement("canvas"); _ctx = _canvas.getContext("2d", { willReadFrequently: true }); }
+        if (_canvas.width !== w || _canvas.height !== h) { _canvas.width = w; _canvas.height = h; }
+        _ctx.drawImage(video, 0, 0, w, h);
+        return _canvas;
+      }
+
       /* ── Engine adapters ──────────────────────────────────────────────────
          Each exposes: setup() -> detect() -> {landmarks:<count>|null}, and
          teardown(). Every engine is optional: a CDN/API failure is reported
@@ -213,8 +225,18 @@
             );
           },
           async detect() {
-            const faces = await this._det.estimateFaces(video, { flipHorizontal: false });
-            return { landmarks: faces && faces[0] ? faces[0].keypoints.length : null };
+            // Canvas input + staticImageMode: run the face detector on every
+            // frame instead of relying on inter-frame tracking, which can never
+            // recover if the first detection misses.
+            const faces = await this._det.estimateFaces(videoFrameCanvas(), {
+              flipHorizontal: false, staticImageMode: true
+            });
+            if (!this._diag) {
+              this._diag = "raw: " + JSON.stringify(faces && faces[0]
+                ? { keys: Object.keys(faces[0]), keypoints: (faces[0].keypoints || []).length }
+                : { faces: Array.isArray(faces) ? faces.length : typeof faces });
+            }
+            return { landmarks: faces && faces[0] && faces[0].keypoints ? faces[0].keypoints.length : null };
           },
           teardown() { try { this._det && this._det.dispose(); } catch (_e) {} }
         },
@@ -230,11 +252,24 @@
             const MODELS = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
             await window.faceapi.nets.tinyFaceDetector.loadFromUri(MODELS);
             await window.faceapi.nets.faceLandmark68Net.loadFromUri(MODELS);
-            this._opts = new window.faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: .5 });
+            // 0.3 rather than 0.5: the tiny detector scores conservatively on
+            // webcam frames, and a missed detection costs the whole landmark stage.
+            this._opts = new window.faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: .3 });
           },
           async detect() {
-            const r = await window.faceapi.detectSingleFace(video, this._opts).withFaceLandmarks(true);
-            return { landmarks: r ? r.landmarks.positions.length : null };
+            const input = videoFrameCanvas();
+            // Split the two stages so a diagnostic can say WHICH one failed.
+            const box = await window.faceapi.detectSingleFace(input, this._opts);
+            if (!box) {
+              if (!this._diag) this._diag = "detector found no face (landmark stage never ran)";
+              return { landmarks: null };
+            }
+            const r = await window.faceapi.detectSingleFace(input, this._opts).withFaceLandmarks(true);
+            if (!this._diag) {
+              this._diag = "detector ok (score " + (box.score || 0).toFixed(2) + "); landmarks " +
+                (r && r.landmarks ? r.landmarks.positions.length : "MISSING");
+            }
+            return { landmarks: r && r.landmarks ? r.landmarks.positions.length : null };
           },
           teardown() {}
         },
@@ -306,6 +341,7 @@
           Object.assign(out, st, {
             ok: true,
             landmarks,
+            diag: engine._diag || null,
             detectionRate: times.length ? detected / times.length : 0,
             maxFps: st.mean > 0 ? 1000 / st.mean : 0,
             budgetPct: (st.p95 / FRAME_BUDGET_MS) * 100,
@@ -331,6 +367,14 @@
         const body = runs.map((r) => {
           if (!r.ok) {
             return `<tr><td>${r.name}</td><td colspan="10" class="bad">unavailable — ${r.error || "failed"}</td></tr>`;
+          }
+          // Detected nothing: the timings measure a no-op, so they are not a
+          // valid comparison and must not be quoted as a result.
+          if (!r.detectionRate) {
+            return `<tr><td>${r.name}</td><td colspan="10" class="bad">
+              detected no face on any frame — <strong>latency not comparable, do not report</strong>
+              ${r.diag ? `<br><span class="dim">diagnostic: ${r.diag}</span>` : ""}
+            </td></tr>`;
           }
           const c = r.capability;
           const isWin = fastestUsable && r.id === fastestUsable.id;
