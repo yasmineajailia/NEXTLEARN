@@ -338,13 +338,19 @@
       }
       /* Interactive HTML lessons are a full page with their own layout, not a
          document snapshot — render edge-to-edge instead of inside a bordered
-         preview card, and give them more vertical room. */
+         preview card. The height starts modest and is set to the content's
+         REAL height (via postMessage, see previewCourseFile) once it reports
+         in — this is just the fallback for the instant before that arrives. */
       .viewer-frame.interactive-frame {
-        min-height: 78vh;
+        min-height: 300px;
         border: 0;
         border-radius: 0;
         background: transparent;
         box-shadow: none;
+        transition: height 160ms ease;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .viewer-frame.interactive-frame { transition: none; }
       }
       .viewer-video { width: 100%; border-radius: 16px; background: #000; --plyr-color-main: #b21f2d; }
       .plyr { border-radius: 16px; }
@@ -2546,10 +2552,12 @@
       function previewCourseFile(filePath) {
         const lower = filePath.toLowerCase();
         setActiveResourceButton(filePath);
-        // Reset any sandbox restriction / frameless styling left over from a
-        // previous interactive HTML preview before this iframe is reused.
+        // Reset any sandbox restriction / frameless styling / auto-fit height
+        // left over from a previous interactive HTML preview before this
+        // iframe is reused for a different resource.
         viewerFrame.removeAttribute("sandbox");
         viewerFrame.classList.remove("interactive-frame");
+        viewerFrame.style.height = "";
 
         if (lower.endsWith(".pdf")) {
           viewerShell.hidden = false;
@@ -2674,6 +2682,26 @@
         viewerNote.textContent = "Aperçu du fichier.";
         refreshFocusTarget();
       }
+
+      /* Interactive HTML lessons report their real content height via
+         postMessage (injected server-side at upload, see courseContent.ts) —
+         required because the iframe is sandboxed WITHOUT allow-same-origin,
+         so this page cannot read contentWindow.document itself. Sizes the
+         iframe to fit exactly, no more, no less. */
+      const MIN_INTERACTIVE_HEIGHT = 300;
+      const MAX_INTERACTIVE_HEIGHT = 3000; // sanity cap against a runaway/misbehaving report
+      window.addEventListener("message", (event) => {
+        // event.source, not event.origin: the sandboxed frame's origin is the
+        // opaque string "null", so source identity is the only reliable check.
+        if (event.source !== viewerFrame.contentWindow) return;
+        if (!viewerFrame.classList.contains("interactive-frame")) return;
+        const height = event.data && typeof event.data.__nextlearnFrameHeight === "number"
+          ? event.data.__nextlearnFrameHeight
+          : null;
+        if (height == null) return;
+        const clamped = Math.min(MAX_INTERACTIVE_HEIGHT, Math.max(MIN_INTERACTIVE_HEIGHT, Math.ceil(height)));
+        viewerFrame.style.height = `${clamped}px`;
+      });
 
       /* ── "Explain it in your own words" (NLP semantic gap analysis) ── */
       (function initExplainCheck() {

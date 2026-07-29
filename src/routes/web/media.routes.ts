@@ -59,6 +59,7 @@ import {
   readBufferFromCourseFileUrl,
   uploadBufferToGridFs,
   inferContentType,
+  injectAutoResizeScript,
   resolveLocalPathFromPublicUrl
 } from "../../services/courseContent";
 import { requestPythonReindex } from "../../services/chatbot/ragClient";
@@ -312,6 +313,9 @@ mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
       finalFilename = `${safeBaseName}.html`;
       finalContentType = "text/html; charset=utf-8";
       outputType = "html";
+      // Injected once here (not per request) so the student-side sandboxed
+      // iframe can size itself to the real content height via postMessage.
+      finalBuffer = Buffer.from(injectAutoResizeScript(finalBuffer.toString("utf-8")), "utf-8");
     } else if (!isPdf) {
       const sourceExt: ".ppt" | ".pptx" = isPptByExt || isPptByMime ? ".ppt" : ".pptx";
       const sourcePath = buildSourceUploadPath(moduleId, subAcquisId, fileName, sourceExt);

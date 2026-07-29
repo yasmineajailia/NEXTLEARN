@@ -220,6 +220,25 @@ export async function extractTextFromPptx(buffer: Buffer): Promise<string> {
  * RAG index. Script/style contents are dropped entirely (not prose, and no
  * reason to index or expose them) before stripping the remaining tags.
  */
+// Posted via postMessage, not read directly from the iframe: the preview is
+// sandboxed WITHOUT allow-same-origin (see sous-acquis.html), so the parent
+// page cannot access contentWindow.document to measure it itself. postMessage
+// works regardless of that sandboxing, which is exactly why it's the right
+// mechanism here. The payload is just a height number, nothing sensitive.
+const AUTO_RESIZE_SCRIPT = `<script>(function(){function postHeight(){try{var h=Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0);parent.postMessage({__nextlearnFrameHeight:h},"*");}catch(e){}}if(window.ResizeObserver){new ResizeObserver(postHeight).observe(document.documentElement);}window.addEventListener("load",postHeight);document.addEventListener("DOMContentLoaded",postHeight);setInterval(postHeight,600);})();</script>`;
+
+/**
+ * Injects the auto-resize reporter into an uploaded interactive HTML lesson
+ * so the student-side iframe can size itself to the actual content instead of
+ * a guessed fixed height. Runs once at upload time (not per request).
+ */
+export function injectAutoResizeScript(html: string): string {
+  if (/<\/body\s*>/i.test(html)) {
+    return html.replace(/<\/body\s*>/i, `${AUTO_RESIZE_SCRIPT}</body>`);
+  }
+  return `${html}\n${AUTO_RESIZE_SCRIPT}`;
+}
+
 export function extractTextFromHtml(buffer: Buffer): string {
   const html = buffer.toString("utf-8");
   const withoutScripts = html
