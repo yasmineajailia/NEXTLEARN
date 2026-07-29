@@ -702,6 +702,7 @@
         <span>Models &amp; Benchmarks</span><span class="arw">&rarr;</span>
         <span>Predictive Models</span><span class="arw">&rarr;</span>
         <span>Knowledge Tracing</span><span class="arw">&rarr;</span>
+        <span>Attention Engine</span><span class="arw">&rarr;</span>
         <span>Recommendation</span><span class="arw">&rarr;</span>
         <span>Honest Limits</span>
       </div>
@@ -803,7 +804,26 @@
     <div class="pageno">27</div>
   </section>
 
-  <!-- 28 · RECOMMENDATION & PERSONALIZATION -->
+  <!-- 28 · ATTENTION ENGINE — BENCHMARKED CHOICE -->
+  <section class="slide" data-t="Attention engine">
+    <div class="pad">
+      <h2 class="h-md"><span class="ink">Attention Engine —</span> <span class="accent">Measured, Not Assumed</span></h2>
+      <p class="small" style="max-width:920px;margin:8px 0 0">The focus score needs three signals — eye openness, head pose, and <b style="color:var(--ink)">gaze</b> (requires iris landmarks). That requirement alone filters candidates; the four that qualify or come close were then benchmarked head-to-head on identical camera frames, same hardware (8-core, Chrome).</p>
+      <table class="cmp" style="margin-top:16px">
+        <thead><tr><th>Engine</th><th class="mid">Landmarks</th><th class="mid">Gaze</th><th class="mid">p50</th><th class="mid">p95</th><th class="mid col-us">Frame budget (125ms)</th></tr></thead>
+        <tbody>
+          <tr><th>MediaPipe FaceMesh — iris ON <span class="small">(ships)</span></th><td class="mid">478</td><td class="mid yes">&#10003;</td><td class="mid"><b class="accent">16.2 ms</b></td><td class="mid"><b class="accent">18.8 ms</b></td><td class="mid col-us"><b class="accent">15%</b></td></tr>
+          <tr><th>MediaPipe FaceMesh — iris OFF</th><td class="mid">468</td><td class="mid no">&#10007;</td><td class="mid">7.0 ms</td><td class="mid">9.4 ms</td><td class="mid col-us">7.5%</td></tr>
+          <tr><th>TF.js face-landmarks-detection <span class="small">(same weights, WebGL)</span></th><td class="mid">478</td><td class="mid yes">&#10003;</td><td class="mid">191.9 ms</td><td class="mid">214.8 ms</td><td class="mid" style="text-align:center;font-weight:800;color:var(--red)">172%</td></tr>
+          <tr><th>BlazeFace <span class="small">(detection only)</span></th><td class="mid">6</td><td class="mid no">&#10007;</td><td class="mid">41.7 ms</td><td class="mid">51.7 ms</td><td class="mid col-us">41%</td></tr>
+        </tbody>
+      </table>
+      <p class="small" style="max-width:920px;margin:16px auto 0;text-align:center">Same landmark output (478 pts) as MediaPipe, but TF.js's WebGL runtime is <b style="color:var(--ink)">11.6&times; slower</b> and misses the real-time budget by 72% — a runtime gap, not a capability gap. Landmark <i>accuracy</i> is not claimed: no annotated ground truth was available to measure it.</p>
+    </div>
+    <div class="pageno">28</div>
+  </section>
+
+  <!-- 29 · RECOMMENDATION & PERSONALIZATION -->
   <section class="slide" data-t="Recommendation">
     <div class="pad">
       <h2 class="h-md"><span class="ink">Recommendation</span> <span class="accent">&amp; Personalization</span></h2>
@@ -825,10 +845,10 @@
         <div class="card mini"><div class="badge"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><span>MediaPipe attention</span></div>
       </div>
     </div>
-    <div class="pageno">28</div>
+    <div class="pageno">29</div>
   </section>
 
-  <!-- 29 · HONEST LIMITS -->
+  <!-- 30 · HONEST LIMITS -->
   <section class="slide" data-t="Honest limits">
     <div class="pad">
       <h2 class="h-md"><span class="ink">Honest</span> <span class="accent">Limits &amp; Choices</span></h2>
@@ -847,10 +867,10 @@
         </div>
       </div>
     </div>
-    <div class="pageno">29</div>
+    <div class="pageno">30</div>
   </section>
 
-  <!-- 30 · DIVIDER 06 · CONCLUSION -->
+  <!-- 31 · DIVIDER 06 · CONCLUSION -->
   <section class="slide divider" data-t="Conclusion">
     <div class="pad">
       <div class="divider-title"><span class="accent">06.</span> <span class="ink">Conclusion &amp;</span> <span class="accent">OUTLOOK</span></div>
@@ -861,10 +881,10 @@
         <span>Thank You</span>
       </div>
     </div>
-    <div class="pageno">30</div>
+    <div class="pageno">31</div>
   </section>
 
-  <!-- 24 · WHY IT MATTERS -->
+  <!-- 32 · WHY IT MATTERS -->
   <section class="slide" data-t="Why it matters">
     <div class="pad">
       <h2 class="h-md"><span class="ink">Why It</span> <span class="accent">Matters</span></h2>
@@ -875,10 +895,10 @@
         <div class="card mini"><div class="badge"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg></div><span>Personalizes learning</span></div>
       </div>
     </div>
-    <div class="pageno">31</div>
+    <div class="pageno">32</div>
   </section>
 
-  <!-- 25 · CONCLUSION & PERSPECTIVES -->
+  <!-- 33 · CONCLUSION & PERSPECTIVES -->
   <section class="slide" data-t="Conclusion & perspectives">
     <div class="pad">
       <h2 class="h-md"><span class="ink">Conclusion &amp;</span> <span class="accent">Perspectives</span></h2>
@@ -903,10 +923,10 @@
         </div>
       </div>
     </div>
-    <div class="pageno">32</div>
+    <div class="pageno">33</div>
   </section>
 
-  <!-- 26 · THANK YOU -->
+  <!-- 34 · THANK YOU -->
   <section class="slide" data-t="Thank you">
     <div class="pad">
       <div class="thanks">
@@ -914,7 +934,7 @@
         <p>Happy to answer your questions, thoughts and remarks — and to take NextLearn to the next level.</p>
       </div>
     </div>
-    <div class="pageno">33</div>
+    <div class="pageno">34</div>
   </section>
 
 </div>
