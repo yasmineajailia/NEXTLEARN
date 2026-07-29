@@ -194,6 +194,7 @@
     "lesson.nextPage": "Next page",
     "lesson.video": "Video",
     "lesson.material": "Materials",
+    "lesson.interactiveCourse": "Interactive course",
     "lesson.noMedia": "No media available",
     "lesson.fullscreen": "PDF fullscreen",
     "lesson.pdfPreview": "Course material preview",

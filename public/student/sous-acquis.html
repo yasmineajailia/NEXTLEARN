@@ -107,6 +107,7 @@
       }
       .video-button::before { content: "▸"; font-size: 1em; line-height: 1; }
       .support-button::before { content: "▤"; font-size: 0.95em; line-height: 1; }
+      .interactive-button::before { content: "✦"; font-size: 0.95em; line-height: 1; }
       .video-button.active, .support-button.active {
         background: linear-gradient(135deg, #b21f2d 0%, #c93040 100%);
         color: #ffffff;
@@ -2894,13 +2895,29 @@
             videoLinks.appendChild(btn);
           });
 
+          // Interactive HTML lessons get their own labeled support button too,
+          // same lane as the static PDF support — not buried as a plain resource
+          // card (which reads as "download this file", not "open this lesson").
+          const switchableInteractive = files.filter(isHtmlFile);
+          switchableInteractive.forEach((fp, i) => {
+            const base = tSwitch("lesson.interactiveCourse", "Cours interactif");
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "support-button interactive-button";
+            btn.dataset.filePath = fp;
+            btn.textContent = switchableInteractive.length === 1 ? base : `${base} ${i + 1}`;
+            btn.addEventListener("click", () => previewCourseFile(fp));
+            videoLinks.appendChild(btn);
+          });
+
           if (!videoLinks.children.length) {
             videoLinks.innerHTML = `<span class="video-links-empty">${tSwitch("lesson.noMedia", "Aucun média disponible")}</span>`;
           }
 
           const visibleResourceFiles = files.filter((filePath) => {
             const lower = String(filePath || "").toLowerCase();
-            return !lower.endsWith(".pdf") && !lower.endsWith(".ppt") && !lower.endsWith(".pptx");
+            return !lower.endsWith(".pdf") && !lower.endsWith(".ppt") && !lower.endsWith(".pptx")
+              && !lower.endsWith(".html") && !lower.endsWith(".htm");
           });
 
           if (visibleResourceFiles.length > 0) {
