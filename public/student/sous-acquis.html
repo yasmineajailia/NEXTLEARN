@@ -336,6 +336,16 @@
         background: #fff; overflow: hidden;
         box-shadow: 0 18px 44px rgba(19, 24, 44, .18);
       }
+      /* Interactive HTML lessons are a full page with their own layout, not a
+         document snapshot — render edge-to-edge instead of inside a bordered
+         preview card, and give them more vertical room. */
+      .viewer-frame.interactive-frame {
+        min-height: 78vh;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+      }
       .viewer-video { width: 100%; border-radius: 16px; background: #000; --plyr-color-main: #b21f2d; }
       .plyr { border-radius: 16px; }
       .video-note, .viewer-note { margin: .65rem 0 0; color: #6b7280; }
@@ -2536,9 +2546,10 @@
       function previewCourseFile(filePath) {
         const lower = filePath.toLowerCase();
         setActiveResourceButton(filePath);
-        // Reset any sandbox restriction left over from a previous interactive
-        // HTML preview before this iframe is reused for a different resource.
+        // Reset any sandbox restriction / frameless styling left over from a
+        // previous interactive HTML preview before this iframe is reused.
         viewerFrame.removeAttribute("sandbox");
+        viewerFrame.classList.remove("interactive-frame");
 
         if (lower.endsWith(".pdf")) {
           viewerShell.hidden = false;
@@ -2573,6 +2584,9 @@
           videoThumb.hidden = true;
           setVideoVisible(false);
           viewerFrame.hidden = false;
+          // Frameless: this is a full interactive page, not a document
+          // snapshot, so it shouldn't sit inside the bordered preview card.
+          viewerFrame.classList.add("interactive-frame");
           // allow-scripts WITHOUT allow-same-origin: the file is served from our
           // own origin, so granting allow-same-origin would hand an uploaded
           // script the viewing student's session (cookies, localStorage). This
