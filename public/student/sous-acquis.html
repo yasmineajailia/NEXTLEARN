@@ -2602,7 +2602,7 @@
           // unique origin with no access to NextLearn's own data.
           viewerFrame.setAttribute("sandbox", "allow-scripts");
           viewerFrame.src = filePath;
-          viewerNote.textContent = "Contenu interactif (bac à sable, sans accès à votre session).";
+          viewerNote.textContent = "";
           refreshFocusTarget();
           return;
         }
