@@ -302,6 +302,11 @@
       }
       .viewer-title { margin: 0; font-weight: 700; color: #2a3140; }
       .viewer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+      /* `display: flex` above overrides the UA default `[hidden]{display:none}`
+         (author styles always beat UA styles), so the hidden attribute alone
+         silently failed to hide this — it stayed visible, stacked on top of
+         whatever preview replaced it. Same fix as .pdf-canvas-wrap below. */
+      .viewer-controls[hidden] { display: none; }
       .viewer-controls button {
         border: 1px solid #e1e5ef; border-radius: 999px;
         padding: .42rem .78rem; background: #fff; color: #2a3140;
@@ -316,6 +321,10 @@
         display: flex; justify-content: center; align-items: flex-start;
         padding: 0.35rem;
       }
+      /* Same [hidden]-override gotcha as .viewer-controls: without this, the
+         last-rendered PDF page stayed visible forever, stacked above any
+         other preview (PPT embed, interactive HTML iframe, ...) shown after it. */
+      .pdf-canvas-wrap[hidden] { display: none; }
       .pdf-canvas-wrap canvas {
         display: block; max-width: 100%; height: auto;
         background: #fff; border: 1px solid #e4e7f0; border-radius: 12px;
@@ -719,6 +728,7 @@
       }
       .explain-btn:disabled { opacity: .55; cursor: default; box-shadow: none; }
       .explain-result { display: grid; gap: 1rem; border-top: 1px dashed #e5e7eb; padding-top: 1.05rem; }
+      .explain-result[hidden] { display: none; }
       .explain-score-row { display: flex; align-items: center; gap: 1.1rem; }
       .explain-ring { position: relative; width: 74px; height: 74px; flex-shrink: 0; }
       .explain-ring svg { display: block; transform: rotate(-90deg); }
