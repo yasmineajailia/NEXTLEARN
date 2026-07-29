@@ -85,10 +85,10 @@
         <div class="engines" id="engines"></div>
         <div class="controls">
           <label class="fld">Frames measured / engine
-            <input type="number" id="frames" value="100" min="20" max="600" step="10" />
+            <input type="number" id="frames" value="50" min="20" max="600" step="10" />
           </label>
           <label class="fld">Warm-up frames (discarded)
-            <input type="number" id="warmup" value="15" min="0" max="100" step="5" />
+            <input type="number" id="warmup" value="8" min="0" max="100" step="5" />
           </label>
           <label class="fld">Resolution
             <select id="res">
@@ -136,6 +136,11 @@
       const setStatus = (t) => { statusEl.textContent = t; };
       const setProg = (p) => { progEl.style.width = Math.round(p * 100) + "%"; };
       const yieldUI = () => new Promise((r) => setTimeout(r, 0));
+
+      // Elapsed-time readout so a slow-but-working run doesn't read as frozen.
+      let runStartTime = 0;
+      const elapsedStr = () => ((performance.now() - runStartTime) / 1000).toFixed(0) + "s";
+      const withElapsed = (msg) => `[${elapsedStr()}] ${msg}`;
 
       function loadScript(src) {
         return new Promise((res, rej) => {
@@ -206,8 +211,8 @@
         {
           id: "tfjs-mesh",
           name: "TF.js face-landmarks-detection (WebGL)",
-          desc: "Same FaceMesh weights, TensorFlow.js/WebGL runtime instead of WASM — a runtime comparison.",
-          checked: true,
+          desc: "Same FaceMesh weights, TensorFlow.js/WebGL runtime instead of WASM — a runtime comparison. Slow: ~15-20s model load, ~150-250ms/frame once running.",
+          checked: false,
           async setup() {
             if (typeof window.tf === "undefined") {
               await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.22.0/dist/tf-core.min.js");
@@ -244,7 +249,7 @@
           id: "faceapi",
           name: "face-api.js — 68 landmarks",
           desc: "TinyFaceDetector + 68-point landmark net. The common alternative; no iris points.",
-          checked: true,
+          checked: false,
           async setup() {
             if (typeof window.faceapi === "undefined") {
               await loadScript("https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js");
@@ -318,13 +323,16 @@
       async function benchEngine(engine, frames, warmup) {
         const out = { id: engine.id, name: engine.name, ok: false };
         try {
-          setStatus(`${engine.name}: loading model…`);
+          setStatus(withElapsed(`${engine.name}: loading model… (can take 15-20s on a slow CDN link)`));
           const t0 = performance.now();
           await engine.setup();
           await engine.detect();                       // first inference completes the init
           out.loadMs = performance.now() - t0;
 
-          for (let i = 0; i < warmup && !stopped; i++) await engine.detect();
+          for (let i = 0; i < warmup && !stopped; i++) {
+            setStatus(withElapsed(`${engine.name}: warming up ${i + 1}/${warmup}`));
+            await engine.detect();
+          }
 
           const times = []; let detected = 0, landmarks = 0;
           for (let i = 0; i < frames && !stopped; i++) {
@@ -333,7 +341,12 @@
             times.push(performance.now() - t);
             if (r && r.landmarks) { detected++; landmarks = r.landmarks; }
             if (i % 5 === 0) {
-              setStatus(`${engine.name}: frame ${i + 1}/${frames}`);
+              // Estimated remaining, from the per-frame time measured so far.
+              const avg = times.reduce((a, b) => a + b, 0) / times.length;
+              const remainMs = avg * (frames - times.length);
+              setStatus(withElapsed(
+                `${engine.name}: frame ${i + 1}/${frames} — ~${(remainMs / 1000).toFixed(0)}s left on this engine`
+              ));
               await yieldUI();
             }
           }
@@ -435,6 +448,7 @@
 
       async function run() {
         stopped = false;
+        runStartTime = performance.now();
         $("run").disabled = true; $("stop").disabled = false;
         ["results-card", "verdict-card", "json-card"].forEach((id) => $(id).classList.add("hidden"));
 
@@ -468,7 +482,7 @@
 
           stream.getTracks().forEach((t) => t.stop());
           video.srcObject = null;
-          setStatus(stopped ? "Stopped early — partial results shown." : "Done.");
+          setStatus(withElapsed(stopped ? "Stopped early — partial results shown." : "Done."));
           render(runs, meta);
         } catch (err) {
           setStatus("Error: " + (err && err.message ? err.message : String(err)));
