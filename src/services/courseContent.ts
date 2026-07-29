@@ -25,6 +25,7 @@ export function inferContentType(filename: string): string {
   if (lower.endsWith(".pdf")) return "application/pdf";
   if (lower.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
   if (lower.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+  if (lower.endsWith(".html") || lower.endsWith(".htm")) return "text/html; charset=utf-8";
   if (lower.endsWith(".mp4")) return "video/mp4";
   if (lower.endsWith(".webm")) return "video/webm";
   if (lower.endsWith(".ogg")) return "video/ogg";
@@ -214,6 +215,22 @@ export async function extractTextFromPptx(buffer: Buffer): Promise<string> {
   return slideTexts.join("\n\n");
 }
 
+/**
+ * Plain-text extraction for interactive HTML course files, for the chatbot's
+ * RAG index. Script/style contents are dropped entirely (not prose, and no
+ * reason to index or expose them) before stripping the remaining tags.
+ */
+export function extractTextFromHtml(buffer: Buffer): string {
+  const html = buffer.toString("utf-8");
+  const withoutScripts = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ");
+  return withoutScripts
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&");
+}
+
 export async function extractCourseContentSnippetsFromUrl(url: string): Promise<string[]> {
   const cacheKey = String(url || "").trim();
   if (!cacheKey) {
@@ -242,6 +259,8 @@ export async function extractCourseContentSnippetsFromUrl(url: string): Promise<
       rawText = String(parsed.text || "");
     } else if (extension === ".pptx" || extension === ".ppt") {
       rawText = await extractTextFromPptx(filePayload.buffer);
+    } else if (extension === ".html" || extension === ".htm") {
+      rawText = extractTextFromHtml(filePayload.buffer);
     } else {
       courseContentSnippetCache.set(cacheKey, []);
       return [];

@@ -239,7 +239,10 @@ mediaRouter.get("/api/media/:fileId/:filename", async (req, res) => {
 });
 
 // Backoffice course file upload endpoint.
-// Accepts PDF or PowerPoint files and always returns a public PDF URL.
+// Accepts PDF, PowerPoint or self-contained interactive HTML. PDF passes
+// through as-is; PowerPoint is converted server-side to PDF; HTML is stored
+// as-is (rendered client-side in a sandboxed iframe — see sous-acquis.html —
+// since it is the one format here that can contain executable script).
 mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
   try {
     const { moduleId, subAcquisId, fileName, fileType, fileDataUrl } = req.body ?? {};
@@ -257,16 +260,19 @@ mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
     const isPdfByExt = lowerName.endsWith(".pdf");
     const isPptxByExt = lowerName.endsWith(".pptx");
     const isPptByExt = lowerName.endsWith(".ppt");
+    const isHtmlByExt = lowerName.endsWith(".html") || lowerName.endsWith(".htm");
     const isPdfByMime = fileType === "application/pdf";
     const isPptxByMime =
       fileType === "application/vnd.openxmlformats-officedocument.presentationml.presentation";
     const isPptByMime = fileType === "application/vnd.ms-powerpoint";
+    const isHtmlByMime = fileType === "text/html";
 
     const isPdf = isPdfByExt || isPdfByMime;
     const isPowerPoint = isPptByExt || isPptxByExt || isPptByMime || isPptxByMime;
+    const isHtml = isHtmlByExt || isHtmlByMime;
 
-    if (!isPdf && !isPowerPoint) {
-      return res.status(400).json({ message: "Seuls les formats PDF et PowerPoint sont acceptes" });
+    if (!isPdf && !isPowerPoint && !isHtml) {
+      return res.status(400).json({ message: "Seuls les formats PDF, PowerPoint et HTML sont acceptes" });
     }
 
     const match = fileDataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -276,10 +282,6 @@ mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
 
     const mimeType = match[1];
     const base64Payload = match[2];
-
-    if (!isPdf && !isPowerPoint) {
-      return res.status(400).json({ message: "Type de fichier non supporte" });
-    }
 
     if (isPdf && mimeType !== "application/pdf") {
       return res.status(400).json({ message: "Le mime-type PDF est invalide" });
@@ -295,12 +297,22 @@ mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
       return res.status(400).json({ message: "Le mime-type PowerPoint est invalide" });
     }
 
+    if (isHtml && mimeType !== "text/html") {
+      return res.status(400).json({ message: "Le mime-type HTML est invalide" });
+    }
+
     const safeBaseName = sanitizePathSegment(path.parse(fileName).name || "support");
 
     let finalBuffer = Buffer.from(base64Payload, "base64");
     let finalFilename = `${safeBaseName}.pdf`;
+    let finalContentType = "application/pdf";
+    let outputType: "pdf" | "html" = "pdf";
 
-    if (!isPdf) {
+    if (isHtml) {
+      finalFilename = `${safeBaseName}.html`;
+      finalContentType = "text/html; charset=utf-8";
+      outputType = "html";
+    } else if (!isPdf) {
       const sourceExt: ".ppt" | ".pptx" = isPptByExt || isPptByMime ? ".ppt" : ".pptx";
       const sourcePath = buildSourceUploadPath(moduleId, subAcquisId, fileName, sourceExt);
       const outputPdfPath = path.join(
@@ -333,14 +345,14 @@ mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
     const uploadResult = await uploadBufferToGridFs({
       buffer: finalBuffer,
       filename: finalFilename,
-      contentType: "application/pdf",
+      contentType: finalContentType,
       metadata: { moduleId, subAcquisId, kind: "course-file" }
     });
 
     res.status(201).json({
       publicUrl: uploadResult.publicUrl,
       fileName: finalFilename,
-      outputType: "pdf"
+      outputType
     });
   } catch (error) {
     console.error("Failed to upload backoffice course file:", error);

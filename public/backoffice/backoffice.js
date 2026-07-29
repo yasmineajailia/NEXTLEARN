@@ -3107,8 +3107,10 @@ async function onAddSubFromModuleEditor(event) {
       lowerName.endsWith(".pptx") ||
       file.type === "application/vnd.ms-powerpoint" ||
       file.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-    if (!isPdf && !isPpt) {
-      showToast(`Fichier invalide : ${file.name}. Utilisez PDF ou PowerPoint.`);
+    const isHtml =
+      lowerName.endsWith(".html") || lowerName.endsWith(".htm") || file.type === "text/html";
+    if (!isPdf && !isPpt && !isHtml) {
+      showToast(`Fichier invalide : ${file.name}. Utilisez PDF, PowerPoint ou HTML.`);
       return;
     }
   }
@@ -3125,7 +3127,7 @@ async function onAddSubFromModuleEditor(event) {
         id: uniqueId("course"),
         title: file.name,
         url: publicUrl,
-        fileType: "pdf"
+        fileType: uploadResult?.outputType === "html" ? "html" : "pdf"
       });
     }
 
@@ -3133,7 +3135,7 @@ async function onAddSubFromModuleEditor(event) {
       id: subAcquisId,
       name: subName,
       bloomLevel,
-      resource: { type: "pdf", ref: courseFiles[0].url },
+      resource: { type: courseFiles[0].fileType, ref: courseFiles[0].url },
       lessonsCount: Math.max(1, lessonsCount),
       courseFiles,
       videos: videoUrl
@@ -3557,7 +3559,7 @@ async function onSaveSubEditor(event) {
         id: uniqueId("course"),
         title: file.name,
         url: publicUrl,
-        fileType: "pdf"
+        fileType: uploadResult?.outputType === "html" ? "html" : "pdf"
       });
     } catch (error) {
       console.error("Upload failed:", file.name, error);
@@ -3568,7 +3570,7 @@ async function onSaveSubEditor(event) {
 
   const firstFile = context.subAcquis.courseFiles[0];
   context.subAcquis.resource = firstFile
-    ? { type: "pdf", ref: firstFile.url }
+    ? { type: firstFile.fileType, ref: firstFile.url }
     : { type: "", ref: "" };
 
   if (!Array.isArray(context.subAcquis.quizzes)) {
