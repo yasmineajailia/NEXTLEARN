@@ -486,13 +486,10 @@
 
       // Escape HTML so code containing <, >, & renders literally. Kept as a local
       // fallback for renderRich when the shared module hasn't loaded.
-      function escapeHtml(value) {
-        return String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-      }
+      // Delegates to the shared implementation already loaded on this page
+      // (/shared/quiz-code.js's public escapeHtml) — kept as a local name so
+      // the existing call sites in this file don't need to change.
+      const escapeHtml = NextLearnQuizCode.escapeHtml;
 
       // Renders question / option text with code styling. Delegates to the shared
       // NextLearnQuizCode module (/shared/quiz-code.js), which detects unmarked

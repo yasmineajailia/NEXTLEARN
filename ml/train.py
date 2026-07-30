@@ -32,6 +32,8 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, roc_auc_score
 from sklearn.model_selection import cross_val_predict, cross_val_score, train_test_split
 
+from features import FEATURES, RISK_LABEL, GRADE_LABEL
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 CSV_PATH = os.path.join(ROOT, "data", "student_analytics.csv")
@@ -43,20 +45,6 @@ FEATURES_OUT = os.path.join(ROOT, "data", "model-features.json")
 SEED = 42
 N_ESTIMATORS = 100
 MAX_DEPTH = 10
-
-# Order MUST match PREDICTION_FEATURE_KEYS in src/services/prediction/features.ts.
-FEATURES = [
-    "delayWeeks",
-    "averageScore",
-    "loginFrequency",
-    "gapDepth",
-    "recencyRatio",
-    "weakSkillRatio",
-    "avgFocusScore",
-    "hasAttentionData",
-]
-RISK_LABEL = "caughtUp"
-GRADE_LABEL = "examGrade"
 
 
 def main() -> None:

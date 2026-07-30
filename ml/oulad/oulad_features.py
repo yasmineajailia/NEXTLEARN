@@ -20,24 +20,19 @@ Raw CSVs expected in ml/oulad/raw/ (free download from the Open University):
 """
 
 import os
+import sys
 
 import numpy as np
 import pandas as pd
 
-# MUST match PREDICTION_FEATURE_KEYS in features.ts AND the FEATURES list in
-# ml/shap_service.py + ml/train.py. Order is part of the model contract.
-FEATURES = [
-    "delayWeeks",
-    "averageScore",
-    "loginFrequency",
-    "gapDepth",
-    "recencyRatio",
-    "weakSkillRatio",
-    "avgFocusScore",
-    "hasAttentionData",
-]
-RISK_LABEL = "caughtUp"
-GRADE_LABEL = "examGrade"
+# ml/oulad/ isn't a package (no __init__.py) and this module is imported from
+# notebooks/scripts run from varying working directories, so unlike train.py
+# and shap_service.py (which can rely on Python auto-adding their own script
+# directory, ml/, to sys.path) this needs an explicit bootstrap to find
+# ml/features.py, the shared source of truth for FEATURES/RISK_LABEL/GRADE_LABEL.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from features import FEATURES, RISK_LABEL, GRADE_LABEL  # noqa: E402
+
 KEYS = ["code_module", "code_presentation", "id_student"]
 
 # OULAD demographics — NOT part of the deployed model (the app can't produce

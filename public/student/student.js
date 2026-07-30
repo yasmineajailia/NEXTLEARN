@@ -846,14 +846,10 @@ function buildSubAcquisUrl(moduleId, subAcquisId) {
   return `/student/sous-acquis.html?moduleId=${encodeURIComponent(String(moduleId || ""))}&subAcquisId=${encodeURIComponent(String(subAcquisId || ""))}`;
 }
 
-function htmlEscape(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// Delegates to the shared implementation (public/shared/dom-utils.js, loaded
+// before this script) — kept as a local name so the many existing call sites
+// in this file don't need to change.
+const htmlEscape = window.escapeHtml;
 
 function renderMessages(stats, modules = []) {
   const totalLessons = Array.isArray(modules)
@@ -2350,7 +2346,7 @@ function renderDashModuleProgress(overview, quizTrend) {
 // localStorage["nextlearn_vark_result"]: { dominant, scores{visual,readwrite,
 // auditory,kinesthetic}, completedAt }. We surface it at the top of the
 // dashboard: the call-to-action before it is taken, the profile after.
-const VARK_STORAGE_KEY = "nextlearn_vark_result";
+const VARK_STORAGE_KEY = window.VARK_STORAGE_KEY;
 const VARK_DIMS = {
   visual: { label: () => tr("mission.dim.V.label", "Visuel"), color: "#3266ad", emoji: "🗺️",
     pname: () => tr("mission.dim.V.pname", "Le Cartographe"),

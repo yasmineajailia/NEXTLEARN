@@ -6,6 +6,8 @@
     <script src="/shared/theme.js"></script>
     <script src="/shared/auth-guard.js"></script>
     <script src="/shared/i18n.js"></script>
+    <script src="/shared/dom-utils.js"></script>
+    <script src="/shared/vark.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
     <title data-i18n="title.lesson">Sous-acquis — Espace Étudiant</title>
     <link rel="icon" type="image/png" href="/images/favicon.png" />
@@ -1481,7 +1483,7 @@
 
       function getVarkProfile() {
         try {
-          const raw = JSON.parse(localStorage.getItem("nextlearn_vark_result") || "null");
+          const raw = JSON.parse(localStorage.getItem(window.VARK_STORAGE_KEY) || "null");
           if (raw && raw.dominant && VARK_STYLES[raw.dominant]) return raw;
         } catch (_e) {}
         return null;
@@ -1987,13 +1989,10 @@
         return { isFloating: () => floating, setFloating };
       })();
 
-      function chatEscapeHtml(value) {
-        return String(value ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-      }
+      // Delegates to the shared implementation (public/shared/dom-utils.js) —
+      // kept as a local name so the existing call sites in this file don't
+      // need to change.
+      const chatEscapeHtml = window.escapeHtml;
 
       // Inline markdown: `code` and **bold**, everything else escaped. Single
       // pass over the raw string so nothing is double-processed.
