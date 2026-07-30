@@ -862,6 +862,38 @@ body.chatbot-open {
   color: #7e8290;
 }
 
+.calendar-legend {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.calendar-legend-swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.calendar-legend-swatch.is-unlocked {
+  border: 1px solid #a00f23;
+  background: linear-gradient(145deg, #d4293f, #a00f23);
+}
+
+.calendar-legend-swatch.is-locked {
+  border: 1px dashed #a9b1c3;
+  background: #eef0f4;
+}
+
 .calendar-chip-shell {
   position: relative;
   display: inline-flex;
@@ -871,31 +903,42 @@ body.chatbot-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #cc3044;
-  color: #a00f23;
-  background: linear-gradient(145deg, #ffe8ec, #ffdce2);
+  gap: 0.22rem;
+  border: 1px solid #a00f23;
+  color: #ffffff;
+  background: linear-gradient(145deg, #d4293f, #a00f23);
   border-radius: 999px;
-  padding: 0.12rem 0.4rem;
+  padding: 0.14rem 0.48rem;
   font-size: 0.66rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: help;
-  box-shadow: 0 3px 9px rgba(169, 15, 35, 0.12);
+  box-shadow: 0 3px 9px rgba(169, 15, 35, 0.24);
   transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
 }
 
-.calendar-chip-shell:hover .calendar-sub-id,
-.calendar-chip-shell:focus-within .calendar-sub-id {
+.calendar-chip-shell:hover .calendar-sub-id:not(.is-locked),
+.calendar-chip-shell:focus-within .calendar-sub-id:not(.is-locked) {
   transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(169, 15, 35, 0.18);
+  box-shadow: 0 8px 16px rgba(169, 15, 35, 0.3);
   filter: saturate(1.08);
 }
 
+/* Locked chips are deliberately flat/dashed/muted — a distinct SHAPE, not
+   just a lighter shade of the same pink, so it reads at a glance even for
+   color-blind users. The lock icon in .calendar-lock-icon reinforces it. */
 .calendar-sub-id.is-locked {
-  border-color: #b8c0d1;
-  color: #65708a;
-  background: linear-gradient(145deg, #f1f4fb, #e6ecf7);
-  box-shadow: 0 3px 9px rgba(83, 93, 114, 0.14);
+  border: 1px dashed #a9b1c3;
+  color: #6b7280;
+  background: #eef0f4;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.calendar-lock-icon {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
 }
 
 .calendar-popover {
@@ -1682,6 +1725,38 @@ body.chatbot-open {
   color: #7e8290;
 }
 
+.calendar-legend {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.calendar-legend-swatch {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.calendar-legend-swatch.is-unlocked {
+  border: 1px solid #a00f23;
+  background: linear-gradient(145deg, #d4293f, #a00f23);
+}
+
+.calendar-legend-swatch.is-locked {
+  border: 1px dashed #a9b1c3;
+  background: #eef0f4;
+}
+
 .calendar-chip-shell {
   position: relative;
   display: inline-flex;
@@ -1691,31 +1766,42 @@ body.chatbot-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #cc3044;
-  color: #a00f23;
-  background: linear-gradient(145deg, #ffe8ec, #ffdce2);
+  gap: 0.22rem;
+  border: 1px solid #a00f23;
+  color: #ffffff;
+  background: linear-gradient(145deg, #d4293f, #a00f23);
   border-radius: 999px;
-  padding: 0.12rem 0.4rem;
+  padding: 0.14rem 0.48rem;
   font-size: 0.66rem;
   font-weight: 700;
   white-space: nowrap;
   cursor: help;
-  box-shadow: 0 3px 9px rgba(169, 15, 35, 0.12);
+  box-shadow: 0 3px 9px rgba(169, 15, 35, 0.24);
   transition: transform 150ms ease, box-shadow 150ms ease, filter 150ms ease;
 }
 
-.calendar-chip-shell:hover .calendar-sub-id,
-.calendar-chip-shell:focus-within .calendar-sub-id {
+.calendar-chip-shell:hover .calendar-sub-id:not(.is-locked),
+.calendar-chip-shell:focus-within .calendar-sub-id:not(.is-locked) {
   transform: translateY(-1px);
-  box-shadow: 0 8px 16px rgba(169, 15, 35, 0.18);
+  box-shadow: 0 8px 16px rgba(169, 15, 35, 0.3);
   filter: saturate(1.08);
 }
 
+/* Locked chips are deliberately flat/dashed/muted — a distinct SHAPE, not
+   just a lighter shade of the same pink, so it reads at a glance even for
+   color-blind users. The lock icon in .calendar-lock-icon reinforces it. */
 .calendar-sub-id.is-locked {
-  border-color: #b8c0d1;
-  color: #65708a;
-  background: linear-gradient(145deg, #f1f4fb, #e6ecf7);
-  box-shadow: 0 3px 9px rgba(83, 93, 114, 0.14);
+  border: 1px dashed #a9b1c3;
+  color: #6b7280;
+  background: #eef0f4;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.calendar-lock-icon {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
 }
 
 .calendar-popover {

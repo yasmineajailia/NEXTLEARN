@@ -775,16 +775,22 @@ function renderCalendar(calendarEntries = [], scheduleStartDate = null) {
             const subName = String(entry.subAcquisName || subId || "Sous-acquis");
             const moduleId = String(entry.moduleId || "");
             const isUnlocked = Boolean(entry?.unlocked);
-            const statusText = isUnlocked ? "Disponible" : "Indisponible";
+            const statusText = isUnlocked ? "Disponible" : "Verrouillé";
             const statusClass = isUnlocked ? "is-available" : "is-unavailable";
             const chipClass = isUnlocked ? "is-unlocked" : "is-locked";
             const accessAction = isUnlocked
               ? `<button type="button" class="calendar-popover-action" data-open-subacquis="1" data-module-id="${htmlEscape(moduleId)}" data-sub-acquis-id="${htmlEscape(subId)}">Accéder au sous-acquis</button>`
               : '<span class="calendar-popover-action disabled">Toujours indisponible</span>';
+            // Locked chips get an explicit lock icon rather than relying on color
+            // alone to distinguish them from unlocked ones (color-blind-safe, and
+            // scannable at a glance without hovering for the popover).
+            const lockIcon = isUnlocked
+              ? ""
+              : '<svg class="calendar-lock-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
 
             return `
               <span class="calendar-chip-shell">
-                <button type="button" class="calendar-sub-id ${chipClass}" aria-label="${htmlEscape(subName)}">${htmlEscape(subId)}</button>
+                <button type="button" class="calendar-sub-id ${chipClass}" aria-label="${htmlEscape(subName)}">${lockIcon}${htmlEscape(subId)}</button>
                 <aside class="calendar-popover" role="tooltip">
                   <p class="calendar-popover-title">${htmlEscape(subName)}</p>
                   <p class="calendar-popover-status ${statusClass}">${statusText}</p>

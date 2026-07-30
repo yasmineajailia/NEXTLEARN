@@ -184,6 +184,8 @@
     "modules.loading": "Loading modules…",
     "modules.back": "← Back to modules",
     "calendar.title": "Activity calendar",
+    "cal.legend.unlocked": "Available",
+    "cal.legend.locked": "Locked",
     "dash.notifications": "Notifications",
 
     /* Lesson page */
@@ -235,6 +237,7 @@
     "chat.sugKeyPoints": "What are the key points?",
     "chat.inputPh": "Type your question here...",
     "chat.now": "Just now",
+    "chat.yesterday": "Yesterday",
     "chat.disclaimer": "AI can make mistakes. Double-check important information.",
 
     /* Backoffice */

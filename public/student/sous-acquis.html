@@ -1619,9 +1619,15 @@
       const focusState   = { enabled: false, target: null };
 
       /* ── Chat conversation memory + persistence ── */
+      // Scoped to the MODULE, not the individual lesson: moving from one
+      // sous-acquis to the next within the same module continues the same
+      // conversation instead of starting over (retrieval already searches the
+      // whole module's unlocked content — the current lesson only boosts
+      // ranking — so the chat history matching that scope keeps the two
+      // consistent). Still isolated across different modules.
       const CHAT_HISTORY_TURNS = 6; // prior turns sent to the server for context
-      const chatStorageKey = (moduleId && subAcquisId)
-        ? `nextlearn_chat_${moduleId}_${subAcquisId}`
+      const chatStorageKey = moduleId
+        ? `nextlearn_chat_${moduleId}`
         : "";
 
       function loadStoredChatHistory() {
@@ -1641,7 +1647,7 @@
       function pushChatHistory(role, content) {
         const text = String(content || "").trim();
         if (!text) return;
-        chatbotState.history.push({ role, content: text });
+        chatbotState.history.push({ role, content: text, at: Date.now() });
         saveChatHistory();
       }
       function recentChatHistory() {
@@ -1652,7 +1658,7 @@
         if (!saved.length || !chatbotThread) return;
         chatbotState.history = saved;
         chatbotState.bootstrapped = true; // keep restored convo instead of the greeting
-        saved.forEach((turn) => appendChatMessage(turn.role === "assistant" ? "bot" : "user", turn.content));
+        saved.forEach((turn) => appendChatMessage(turn.role === "assistant" ? "bot" : "user", turn.content, turn.at));
       }
       function clearChatConversation() {
         chatbotState.history = [];
@@ -2131,12 +2137,42 @@
         return row;
       }
 
-      function appendChatMessage(role, text) {
+      // Messages under a minute old still read as "Maintenant"/"Just now"; beyond
+      // that this shows the real clock time so restored history (and anything
+      // sent more than a minute ago) doesn't just say "now" forever.
+      function formatChatTime(at) {
+        const date = at ? new Date(at) : new Date();
+        if (Number.isNaN(date.getTime())) {
+          return window.I18N ? window.I18N.t("chat.now", "Maintenant") : "Maintenant";
+        }
+
+        const now = new Date();
+        if (now.getTime() - date.getTime() < 60000) {
+          return window.I18N ? window.I18N.t("chat.now", "Maintenant") : "Maintenant";
+        }
+
+        const hm = new Intl.DateTimeFormat("fr-TN", { hour: "2-digit", minute: "2-digit" }).format(date);
+        if (date.toDateString() === now.toDateString()) {
+          return hm;
+        }
+
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+          const label = window.I18N ? window.I18N.t("chat.yesterday", "Hier") : "Hier";
+          return `${label}, ${hm}`;
+        }
+
+        const dm = new Intl.DateTimeFormat("fr-TN", { day: "2-digit", month: "2-digit" }).format(date);
+        return `${dm}, ${hm}`;
+      }
+
+      function appendChatMessage(role, text, at) {
         if (!chatbotThread) return;
         const row = document.createElement("div");
         row.className = `chatbot-bubble-row ${role}`;
 
-        const timeLabel = window.I18N ? window.I18N.t("chat.now", "Maintenant") : "Maintenant";
+        const timeLabel = formatChatTime(at);
 
         if (role === "bot") {
           const av = document.createElement("div");
@@ -2255,7 +2291,7 @@
 
           const time = document.createElement("span");
           time.className = "bubble-time";
-          time.textContent = window.I18N ? window.I18N.t("chat.now", "Maintenant") : "Maintenant";
+          time.textContent = formatChatTime();
           body.appendChild(time);
           chatbotThread.scrollTop = chatbotThread.scrollHeight;
         };
