@@ -87,6 +87,33 @@ export function toIsoDateOrNull(value: unknown): string | null {
   return date.toISOString();
 }
 
+/**
+ * Whether `caller` may act on a class-owned resource: an admin always can;
+ * otherwise only the teacher recorded as that resource's owner. The
+ * `/api/backoffice` router-level guard only proves the caller is SOME
+ * teacher/admin — this is the check that scopes it to the RIGHT teacher.
+ * Was previously duplicated inline (with the polarity inverted) across
+ * attention.ts, vark.ts, clustering.ts, and organization.ts; centralized here
+ * so it's tested once instead of trusted seven times.
+ */
+export function isOwnedByCaller(
+  resourceTeacherId: unknown,
+  auth: { id: string; role: string } | null | undefined
+): boolean {
+  if (auth?.role === "admin") {
+    return true;
+  }
+  const callerId = auth?.id ?? "";
+  // Fail closed: an empty caller id must never "match" a resource with no
+  // owner on record just because both sides stringify to "" (in practice
+  // requireAuth/requireRole never set req.auth.id to "", but this check
+  // shouldn't depend on that holding true elsewhere).
+  if (!callerId) {
+    return false;
+  }
+  return String(resourceTeacherId || "") === callerId;
+}
+
 export function isModuleBlocked(accessByModule: Record<string, string>, moduleId: string): boolean {
   return String(accessByModule[moduleId] || "").toLowerCase() === "blocked";
 }
@@ -237,7 +264,10 @@ export function filterOverviewByAccess(overview: ModuleOverview[], access: Class
         isSubAcquisAccessibleByAccessRules(access, moduleData.id, entry.id)
       );
 
-      if (!filteredSubAcquis.length) {
+      // A module that never had any content (no lessons added yet) should still
+      // show as an empty placeholder — only drop a module when the calendar hid
+      // everything that USED to be there, not when there was nothing to begin with.
+      if (moduleData.subAcquis.length > 0 && !filteredSubAcquis.length) {
         return null;
       }
 

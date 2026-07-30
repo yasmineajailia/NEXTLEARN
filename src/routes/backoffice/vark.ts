@@ -12,6 +12,7 @@ import mongoose from "mongoose";
 import { User } from "../../models/User";
 import { StudentProfile } from "../../models/StudentProfile";
 import { ClassRoom } from "../../models/ClassRoom";
+import { isOwnedByCaller } from "../../services/classAccess";
 
 export const varkRouter = express.Router();
 
@@ -39,7 +40,7 @@ varkRouter.get("/api/backoffice/vark/:classId", async (req: Request, res: Respon
     // proves the caller is A teacher, not THIS class's teacher.
     if (req.auth?.role !== "admin") {
       const classRoom = await ClassRoom.findById(classId).select({ teacherId: 1 }).lean();
-      if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+      if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
         return res.status(403).json({ message: "Accès non autorisé à cette classe" });
       }
     }

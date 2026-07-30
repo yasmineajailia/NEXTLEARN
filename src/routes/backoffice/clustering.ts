@@ -25,6 +25,7 @@ import {
   type StudentFeatures
 } from "../../services/clustering/kmeans";
 import { runKMeans } from "../../services/clustering/kmeansClient";
+import { isOwnedByCaller } from "../../services/classAccess";
 import {
   labelKMeansClusters,
   labelSingleCluster,
@@ -359,7 +360,7 @@ export const clusteringRouter = express.Router();
 async function classAccessDenied(req: Request, res: Response, classId: string): Promise<boolean> {
   if (req.auth?.role === "admin") return false;
   const classRoom = await ClassRoom.findById(classId).select({ teacherId: 1 }).lean();
-  if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+  if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
     res.status(403).json({ message: "Accès non autorisé à cette classe" });
     return true;
   }

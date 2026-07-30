@@ -16,6 +16,7 @@ import { computeModuleQuizScores, computeStudentProgress } from "../../services/
 import {
   buildScheduleBySubAcquis,
   encodeScheduleStorageKey,
+  isOwnedByCaller,
   parseStartDateInput,
   readCalendarWeekMapFromFile,
   toAccessRecord,
@@ -397,7 +398,7 @@ organizationRouter.post("/api/backoffice/students", async (req, res) => {
     // The /api/backoffice guard only proves the caller is SOME teacher/admin —
     // without this, any teacher could add a student straight into another
     // teacher's class.
-    if (req.auth?.role !== "admin" && String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+    if (!isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
       return res.status(403).json({ message: "Accès non autorisé à cette classe" });
     }
 
@@ -485,13 +486,17 @@ organizationRouter.put("/api/backoffice/students/:studentId", async (req, res) =
     // without this, any teacher could edit (including reset the password of)
     // another teacher's student, or move a student into a class that isn't
     // theirs either. Check both the student's CURRENT class and the target one.
-    if (req.auth?.role !== "admin") {
+    {
+      // isOwnedByCaller already lets an admin through on both checks, so no
+      // separate admin-bypass branch is needed here.
       const currentClassRoom = student.classId
         ? await ClassRoom.findById(student.classId).select({ teacherId: 1 }).lean()
         : null;
-      const ownsCurrentClass =
-        currentClassRoom && String((currentClassRoom as any).teacherId || "") === (req.auth?.id ?? "");
-      const ownsTargetClass = String((classRoom as any).teacherId || "") === (req.auth?.id ?? "");
+      const ownsCurrentClass = isOwnedByCaller(
+        currentClassRoom ? (currentClassRoom as any).teacherId : undefined,
+        req.auth
+      );
+      const ownsTargetClass = isOwnedByCaller((classRoom as any).teacherId, req.auth);
       if (!ownsCurrentClass || !ownsTargetClass) {
         return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
       }
@@ -573,7 +578,7 @@ organizationRouter.delete("/api/backoffice/students/:studentId", async (req, res
       const classRoom = (student as any).classId
         ? await ClassRoom.findById((student as any).classId).select({ teacherId: 1 }).lean()
         : null;
-      if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+      if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
         return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
       }
     }
@@ -608,7 +613,7 @@ organizationRouter.post("/api/backoffice/classes/:classId/access", async (req, r
     // The /api/backoffice guard only proves the caller is SOME teacher/admin —
     // without this, any teacher could block/unblock modules in another
     // teacher's class.
-    if (req.auth?.role !== "admin" && String(classRoom.teacherId || "") !== (req.auth?.id ?? "")) {
+    if (!isOwnedByCaller(classRoom.teacherId, req.auth)) {
       return res.status(403).json({ message: "Accès non autorisé à cette classe" });
     }
 
@@ -650,7 +655,7 @@ organizationRouter.post("/api/backoffice/classes/:classId/schedule", async (req,
 
     // The /api/backoffice guard only proves the caller is SOME teacher/admin —
     // without this, any teacher could reschedule another teacher's class.
-    if (req.auth?.role !== "admin" && String(classRoom.teacherId || "") !== (req.auth?.id ?? "")) {
+    if (!isOwnedByCaller(classRoom.teacherId, req.auth)) {
       return res.status(403).json({ message: "Accès non autorisé à cette classe" });
     }
 

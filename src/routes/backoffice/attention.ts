@@ -12,6 +12,7 @@ import { User } from "../../models/User";
 import { StudentProfile } from "../../models/StudentProfile";
 import { ClassRoom } from "../../models/ClassRoom";
 import { computeAttentionAnalytics } from "../../services/attention/attentionClient";
+import { isOwnedByCaller } from "../../services/classAccess";
 
 export const attentionRouter = express.Router();
 
@@ -55,7 +56,7 @@ attentionRouter.get("/api/backoffice/attention/:classId", async (req: Request, r
     // different classId.
     if (req.auth?.role !== "admin") {
       const classRoom = await ClassRoom.findById(classId).select({ teacherId: 1 }).lean();
-      if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+      if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
         return res.status(403).json({ message: "Accès non autorisé à cette classe" });
       }
     }
