@@ -40,4 +40,26 @@
       return response;
     });
   };
+
+  // First-login gate: every student page except the game itself checks the
+  // one-shot VARK profile and bounces to it until completed. Backoffice pages
+  // never hit this (VARK is a student-only concept), and a 401 here is already
+  // handled by the fetch wrapper above (redirect to sign-in).
+  var VARK_PATH = "/student/mission-apprenant";
+  if (location.pathname.indexOf("/student") === 0 && location.pathname.indexOf(VARK_PATH) !== 0) {
+    window
+      .fetch("/api/student/vark")
+      .then(function (response) {
+        return response && response.ok ? response.json() : null;
+      })
+      .then(function (data) {
+        if (data && !data.varkProfile && !redirecting) {
+          redirecting = true;
+          location.replace(VARK_PATH);
+        }
+      })
+      .catch(function () {
+        /* network hiccup: fail open rather than lock a student out of the app */
+      });
+  }
 })();

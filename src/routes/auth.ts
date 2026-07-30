@@ -187,7 +187,10 @@ authRouter.post("/api/sign-in", loginLimiter, async (req: Request, res: Response
           role: "étudiant",
           fullName: user.fullName || user.identifier,
           identifier: user.identifier,
-          email: user.email
+          email: user.email,
+          // First-login gate: the client redirects here instead of the dashboard
+          // until the one-shot VARK mini-game has been completed.
+          varkCompleted: Boolean(user.varkProfile?.completedAt)
         }
       });
     }

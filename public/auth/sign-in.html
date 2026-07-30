@@ -202,7 +202,11 @@
               }
 
               setTimeout(() => {
-                window.location.href = data.user?.role === 'étudiant' ? '/student/' : '/backoffice/';
+                if (data.user?.role === 'étudiant') {
+                  window.location.href = data.user.varkCompleted ? '/student/' : '/student/mission-apprenant';
+                } else {
+                  window.location.href = '/backoffice/';
+                }
               }, 1500);
             } else {
               messageNode.className = 'message-container error';

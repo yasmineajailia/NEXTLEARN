@@ -1408,7 +1408,7 @@ function dimScores() {
   return out;
 }
 
-function showResult() {
+async function showResult() {
   const ds = dimScores();
   const dominant = Object.keys(ds).reduce((a, b) => ds[b] > ds[a] ? b : a);
 
@@ -1422,28 +1422,36 @@ function showResult() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); } catch (_e) {}
 
   // Persist to the server so the profile is durable (survives cache clears / new
-  // devices) and visible in the backoffice analytics. localStorage stays the fast
-  // path; this is fire-and-forget and never blocks the result screen.
+  // devices), visible in the backoffice analytics, and — critically — actually
+  // gates the rest of the platform (auth-guard.js checks the SERVER copy, not
+  // localStorage). This must be awaited before the "Continuer" link is shown:
+  // a fire-and-forget request issued right before the student clicks straight
+  // to another page gets cancelled mid-flight by the navigation, so the
+  // profile silently never saves — every page after that then bounces forever
+  // between the dashboard (server says "not done") and this page (localStorage
+  // says "done").
   try {
-    fetch("/api/student/vark", {
+    await fetch("/api/student/vark", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dominant: stored.dominant, scores: stored.scores })
-    }).catch(function () {});
-  } catch (_e) {}
+    });
+  } catch (_e) {
+    /* offline / network error: local result still lets the student proceed
+       for this session; the server copy will be missing until a retake is
+       possible again from a device where the request succeeds. */
+  }
 
-  renderProfileScreen(ds, dominant, false);
+  renderProfileScreen(ds, dominant);
 }
 
-function renderProfileScreen(ds, dominant, fromStorage) {
+function renderProfileScreen(ds, dominant) {
   const d = DIMS[dominant];
   app.innerHTML = `
     <div class="in">
       <div class="res-hero">
         <span class="res-emoji">${d.emoji}</span>
-        <div class="res-eyebrow">${fromStorage
-          ? tr("mission.res.saved", "Ton profil enregistré")
-          : tr("mission.res.done", "8 jeux terminés — voici ton profil")}</div>
+        <div class="res-eyebrow">${tr("mission.res.done", "8 jeux terminés — voici ton profil")}</div>
         <h2 class="res-name">${esc(d.pname)}</h2>
         <span class="res-badge">${tr("mission.res.strength", "Point fort : " + esc(d.label), { label: esc(d.label) })}</span>
       </div>
@@ -1455,18 +1463,10 @@ function renderProfileScreen(ds, dominant, fromStorage) {
         </div>
         <canvas id="res-chart"></canvas>
         <div class="res-actions">
-          <button class="btn ghost" id="restart-btn">↺ ${fromStorage
-            ? tr("mission.res.retake", "Refaire le test")
-            : tr("mission.res.restart", "Recommencer")}</button>
           <a class="btn" href="/student/?view=cours">${tr("mission.res.continue", "Continuer vers mes cours →")}</a>
         </div>
       </div>
     </div>`;
-
-  document.getElementById("restart-btn").addEventListener("click", () => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (_e) {}
-    go(showWelcome);
-  });
 
   drawChart(ds, dominant);
 }
@@ -1589,15 +1589,11 @@ function showWelcome() {
   document.getElementById("start-btn").addEventListener("click", startRun);
 }
 
-function showStoredResult(stored) {
-  const dimKey = Object.keys(DIMS).find((k) => DIMS[k].key === stored.dominant) || "V";
-  const ds = {
-    V: Number(stored.scores?.visual) || 0,
-    R: Number(stored.scores?.readwrite) || 0,
-    A: Number(stored.scores?.auditory) || 0,
-    K: Number(stored.scores?.kinesthetic) || 0
-  };
-  renderProfileScreen(ds, dimKey, true);
+function showStoredResult(_stored) {
+  // One-shot game: a student who already has a profile only ever lands here via a
+  // stale bookmark/back-button. Forward them into the platform instead of letting
+  // them linger on (or replay) a test that is already done.
+  location.replace("/student/?view=cours");
 }
 
 /* ── init ── */
