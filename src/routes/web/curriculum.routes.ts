@@ -157,11 +157,14 @@ import {
 
 export const curriculumRouter = Router();
 
-curriculumRouter.get("/api/student/modules", async (req, res) => {
+curriculumRouter.get("/api/student/modules", requireAuth, async (req, res) => {
   try {
     const overview = await readPersistedProgramCOverview();
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
+    const access = await readClassAccessByStudentIdentifier(identifier);
+    const accessibleOverview = filterOverviewByAccess(overview, access);
 
-    const modules = overview.map((moduleData) => ({
+    const modules = accessibleOverview.map((moduleData) => ({
       id: moduleData.id,
       name: moduleData.name,
       sortOrder: moduleData.sortOrder,
@@ -181,33 +184,43 @@ curriculumRouter.get("/api/student/modules", async (req, res) => {
 });
 
 // Full module detail for student view: returns acquis[] → sousAcquis[] hierarchy.
-curriculumRouter.get("/api/student/module/:moduleId", async (req, res) => {
+curriculumRouter.get<{ moduleId: string }>("/api/student/module/:moduleId", requireAuth, async (req, res) => {
   try {
     const moduleId = String(req.params.moduleId || "").trim();
     if (!moduleId) {
       return res.status(400).json({ message: "moduleId is required" });
     }
 
-    const modules = await readPersistedCurriculumModules();
+    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
+    const [modules, access] = await Promise.all([
+      readPersistedCurriculumModules(),
+      readClassAccessByStudentIdentifier(identifier)
+    ]);
     const mod = modules.find((m) => m.id === moduleId);
     if (!mod) {
       return res.status(404).json({ message: "Module not found" });
     }
 
-    const acquis = (Array.isArray(mod.acquis) ? mod.acquis : []).map((acq) => ({
-      id: acq.id,
-      name: acq.name,
-      sousAcquis: (Array.isArray(acq.sousAcquis) ? acq.sousAcquis : []).map((sub) => ({
-        id: sub.id,
-        name: sub.name,
-        bloomLevel: sub.bloomLevel || "",
-        lessonsCount: Number(sub.lessonsCount || 0),
-        hasQuiz: Array.isArray(sub.quizzes) && sub.quizzes.length > 0,
-        hasVideo:
-          (Array.isArray(sub.videos) && sub.videos.length > 0) ||
-          Boolean(sub.resource?.ref)
+    const acquis = (Array.isArray(mod.acquis) ? mod.acquis : [])
+      .map((acq) => ({
+        id: acq.id,
+        name: acq.name,
+        sousAcquis: (Array.isArray(acq.sousAcquis) ? acq.sousAcquis : [])
+          .filter((sub) => isSubAcquisAccessibleByAccessRules(access, moduleId, sub.id))
+          .map((sub) => ({
+            id: sub.id,
+            name: sub.name,
+            bloomLevel: sub.bloomLevel || "",
+            lessonsCount: Number(sub.lessonsCount || 0),
+            hasQuiz: Array.isArray(sub.quizzes) && sub.quizzes.length > 0,
+            hasVideo:
+              (Array.isArray(sub.videos) && sub.videos.length > 0) ||
+              Boolean(sub.resource?.ref)
+          }))
       }))
-    }));
+      // Drop an acquis entirely once every one of its sous-acquis is locked,
+      // matching filterOverviewByAccess's module-drop behavior elsewhere.
+      .filter((acq) => acq.sousAcquis.length > 0);
 
     return res.status(200).json({
       module: { id: mod.id, name: mod.name, acquis }
