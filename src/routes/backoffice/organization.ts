@@ -4,6 +4,7 @@
  */
 import { Router } from "express";
 import mongoose from "mongoose";
+import { requireRole } from "../../middleware/auth";
 import { User } from "../../models/User";
 import { Teacher } from "../../models/Teacher";
 import { ClassRoom } from "../../models/ClassRoom";
@@ -113,13 +114,18 @@ organizationRouter.get("/api/backoffice/organization", async (req, res) => {
     }));
 
     res.status(200).json({
-      teachers: teachers.map((teacher) => ({
-        id: String(teacher._id),
-        role: teacher.role || "enseignant",
-        name: teacher.name,
-        email: teacher.email || "",
-        phone: teacher.phone || ""
-      })),
+      // Full roster (with contact info) is admin-only — the teacher-management
+      // UI is already admin-gated on the frontend; a regular teacher doesn't
+      // need colleagues' emails/phones (per-class teacherName is included below).
+      teachers: callerIsAdmin
+        ? teachers.map((teacher) => ({
+            id: String(teacher._id),
+            role: teacher.role || "enseignant",
+            name: teacher.name,
+            email: teacher.email || "",
+            phone: teacher.phone || ""
+          }))
+        : [],
       classes: classes.map((room) => ({
         id: String(room._id),
         name: room.name,
@@ -137,7 +143,10 @@ organizationRouter.get("/api/backoffice/organization", async (req, res) => {
   }
 });
 
-organizationRouter.post("/api/backoffice/teachers", async (req, res) => {
+// Teacher accounts are admin-only to manage: the router-level guard only proves
+// SOME teacher/admin is logged in, and without this, any "enseignant" could
+// create/edit/delete (including password-reset) any other teacher OR admin.
+organizationRouter.post("/api/backoffice/teachers", requireRole("admin"), async (req, res) => {
   try {
     const name = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
@@ -178,7 +187,7 @@ organizationRouter.post("/api/backoffice/teachers", async (req, res) => {
   }
 });
 
-organizationRouter.put("/api/backoffice/teachers/:teacherId", async (req, res) => {
+organizationRouter.put("/api/backoffice/teachers/:teacherId", requireRole("admin"), async (req, res) => {
   try {
     const teacherId = typeof req.params?.teacherId === "string" ? req.params.teacherId.trim() : "";
     const name = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
@@ -243,7 +252,7 @@ organizationRouter.put("/api/backoffice/teachers/:teacherId", async (req, res) =
   }
 });
 
-organizationRouter.delete("/api/backoffice/teachers/:teacherId", async (req, res) => {
+organizationRouter.delete("/api/backoffice/teachers/:teacherId", requireRole("admin"), async (req, res) => {
   try {
     const teacherId = typeof req.params?.teacherId === "string" ? req.params.teacherId.trim() : "";
 
@@ -385,6 +394,13 @@ organizationRouter.post("/api/backoffice/students", async (req, res) => {
       return res.status(404).json({ message: "Classe introuvable" });
     }
 
+    // The /api/backoffice guard only proves the caller is SOME teacher/admin —
+    // without this, any teacher could add a student straight into another
+    // teacher's class.
+    if (req.auth?.role !== "admin" && String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+      return res.status(403).json({ message: "Accès non autorisé à cette classe" });
+    }
+
     const [existingProfile, existingUser] = await Promise.all([
       StudentProfile.findOne({ $or: [{ identifier }, { email }] }).select({ _id: 1 }).lean(),
       User.findOne({ $or: [{ identifier }, { email }] }).select({ _id: 1 }).lean()
@@ -465,6 +481,22 @@ organizationRouter.put("/api/backoffice/students/:studentId", async (req, res) =
       return res.status(404).json({ message: "Etudiant introuvable" });
     }
 
+    // The /api/backoffice guard only proves the caller is SOME teacher/admin —
+    // without this, any teacher could edit (including reset the password of)
+    // another teacher's student, or move a student into a class that isn't
+    // theirs either. Check both the student's CURRENT class and the target one.
+    if (req.auth?.role !== "admin") {
+      const currentClassRoom = student.classId
+        ? await ClassRoom.findById(student.classId).select({ teacherId: 1 }).lean()
+        : null;
+      const ownsCurrentClass =
+        currentClassRoom && String((currentClassRoom as any).teacherId || "") === (req.auth?.id ?? "");
+      const ownsTargetClass = String((classRoom as any).teacherId || "") === (req.auth?.id ?? "");
+      if (!ownsCurrentClass || !ownsTargetClass) {
+        return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
+      }
+    }
+
     const linkedUser = await User.findOne({
       $or: [{ identifier: student.identifier }, { email: student.email || "" }]
     });
@@ -535,6 +567,17 @@ organizationRouter.delete("/api/backoffice/students/:studentId", async (req, res
       return res.status(404).json({ message: "Etudiant introuvable" });
     }
 
+    // The /api/backoffice guard only proves the caller is SOME teacher/admin —
+    // without this, any teacher could delete another teacher's student.
+    if (req.auth?.role !== "admin") {
+      const classRoom = (student as any).classId
+        ? await ClassRoom.findById((student as any).classId).select({ teacherId: 1 }).lean()
+        : null;
+      if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+        return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
+      }
+    }
+
     await StudentProfile.deleteOne({ _id: student._id });
     await User.deleteOne({
       $or: [{ identifier: student.identifier }, { email: student.email || "" }]
@@ -560,6 +603,13 @@ organizationRouter.post("/api/backoffice/classes/:classId/access", async (req, r
     const classRoom = await ClassRoom.findById(classId);
     if (!classRoom) {
       return res.status(404).json({ message: "Classe introuvable" });
+    }
+
+    // The /api/backoffice guard only proves the caller is SOME teacher/admin —
+    // without this, any teacher could block/unblock modules in another
+    // teacher's class.
+    if (req.auth?.role !== "admin" && String(classRoom.teacherId || "") !== (req.auth?.id ?? "")) {
+      return res.status(403).json({ message: "Accès non autorisé à cette classe" });
     }
 
     const access = classRoom.accessByModule || new Map<string, string>();
@@ -596,6 +646,12 @@ organizationRouter.post("/api/backoffice/classes/:classId/schedule", async (req,
     const classRoom = await ClassRoom.findById(classId);
     if (!classRoom) {
       return res.status(404).json({ message: "Classe introuvable" });
+    }
+
+    // The /api/backoffice guard only proves the caller is SOME teacher/admin —
+    // without this, any teacher could reschedule another teacher's class.
+    if (req.auth?.role !== "admin" && String(classRoom.teacherId || "") !== (req.auth?.id ?? "")) {
+      return res.status(403).json({ message: "Accès non autorisé à cette classe" });
     }
 
     const parsedStartDate = parseStartDateInput(startDateInput);
@@ -641,7 +697,9 @@ organizationRouter.post("/api/backoffice/classes/:classId/schedule", async (req,
   }
 });
 
-organizationRouter.post("/api/backoffice/classes/schedule-all", async (req, res) => {
+// Reschedules EVERY class platform-wide, so — unlike the single-class
+// /schedule route above — per-class ownership can't apply here; admin-only.
+organizationRouter.post("/api/backoffice/classes/schedule-all", requireRole("admin"), async (req, res) => {
   try {
     const startDateInput = typeof req.body?.startDate === "string" ? req.body.startDate.trim() : "";
     if (!startDateInput) {

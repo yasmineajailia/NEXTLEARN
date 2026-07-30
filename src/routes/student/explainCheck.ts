@@ -12,6 +12,8 @@ import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
 import { User } from "../../models/User";
 import { fetchAnswerGap } from "../../services/nlp/answerGapClient";
+import { isSubAcquisAccessibleByAccessRules } from "../../services/classAccess";
+import { readClassAccessByStudentIdentifier } from "../web";
 
 export const explainCheckRouter = Router();
 
@@ -37,6 +39,11 @@ explainCheckRouter.post("/api/student/explain-check", requireAuth, async (req, r
       return res.status(400).json({
         message: `Explication entre ${MIN_TEXT_CHARS} et ${MAX_TEXT_CHARS} caractères requise`
       });
+    }
+
+    const access = await readClassAccessByStudentIdentifier(identifier);
+    if (!isSubAcquisAccessibleByAccessRules(access, moduleId, subAcquisId)) {
+      return res.status(403).json({ message: "Sous-acquis non disponible pour le moment" });
     }
 
     const result = await fetchAnswerGap({ moduleId, subAcquisId, text, lang });

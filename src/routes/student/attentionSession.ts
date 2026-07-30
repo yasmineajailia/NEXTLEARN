@@ -7,6 +7,7 @@
  */
 
 import express, { type Request, type Response } from "express";
+import { requireAuth } from "../../middleware/auth";
 import { User } from "../../models/User";
 
 export const attentionSessionRouter = express.Router();
@@ -58,11 +59,14 @@ function sanitizeTimeline(raw: unknown): Array<{ t: number; score: number }> {
  * progress, then recomputes the rolling average focus score over the last
  * {@link ROLLING_WINDOW} sessions.
  */
-attentionSessionRouter.post("/api/student/attention-session", async (req: Request, res: Response) => {
+attentionSessionRouter.post("/api/student/attention-session", requireAuth, async (req: Request, res: Response) => {
   try {
     const body = req.body ?? {};
 
-    const identifier = typeof body.identifier === "string" ? body.identifier.trim() : "";
+    // Verified session identity, never the client-supplied body.identifier —
+    // this endpoint used to trust the body field outright, letting anyone post
+    // fake attention data for any student by guessing their identifier.
+    const identifier = req.auth?.id ?? "";
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }
