@@ -711,6 +711,13 @@ learningRouter.post("/api/student/vark", requireAuth, async (req, res) => {
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }
+    const existing = await User.findOne({ identifier }).select({ varkProfile: 1 }).lean();
+    const existingProfile = (existing as { varkProfile?: { completedAt?: unknown } } | null)?.varkProfile;
+    if (existingProfile?.completedAt) {
+      // One-shot by design: the VARK result gates first access to the platform, so it
+      // must not be retakeable/overwritable once recorded.
+      return res.status(409).json({ message: "Le test VARK a déjà été complété", varkProfile: existingProfile });
+    }
     const dominant = typeof req.body?.dominant === "string" ? req.body.dominant.trim() : "";
     if (!VARK_DOMINANTS.includes(dominant as (typeof VARK_DOMINANTS)[number])) {
       return res.status(400).json({ message: "dominant invalide" });
@@ -824,9 +831,13 @@ learningRouter.get(
   }
 );
 
-learningRouter.get("/api/student/progress/:identifier", async (req, res) => {
+learningRouter.get("/api/student/progress/:identifier", requireAuth, async (req, res) => {
   try {
-    const identifier = String(req.params.identifier || "").trim();
+    // Verified session identity, never the URL param — same IDOR class as the
+    // prediction/dashboard routes: this returns one student's full progress
+    // (quiz history, completed lessons), so it must never be readable for an
+    // identifier other than the caller's own.
+    const identifier = req.auth?.id ?? "";
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }

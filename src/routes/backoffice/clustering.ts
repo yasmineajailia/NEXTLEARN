@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 import { User } from "../../models/User";
 import { StudentProfile } from "../../models/StudentProfile";
 import { CurriculumModule } from "../../models/CurriculumModule";
+import { ClassRoom } from "../../models/ClassRoom";
 import {
   FEATURE_KEYS,
   TOTAL_SUB_ACQUIS,
@@ -350,6 +351,22 @@ async function computeClusteringForClass(classId: string): Promise<ClusteringRes
 export const clusteringRouter = express.Router();
 
 /**
+ * The /api/backoffice guard only proves the caller is SOME teacher/admin — it
+ * doesn't scope them to this class. Without this, any teacher could read/refresh
+ * any other teacher's class clustering by supplying a different classId.
+ * Returns true (and has already sent a 403) when the request should stop here.
+ */
+async function classAccessDenied(req: Request, res: Response, classId: string): Promise<boolean> {
+  if (req.auth?.role === "admin") return false;
+  const classRoom = await ClassRoom.findById(classId).select({ teacherId: 1 }).lean();
+  if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+    res.status(403).json({ message: "Accès non autorisé à cette classe" });
+    return true;
+  }
+  return false;
+}
+
+/**
  * GET /api/backoffice/clustering/:classId
  *
  * Returns the cached clustering result for the class if it was computed
@@ -364,6 +381,7 @@ clusteringRouter.get("/api/backoffice/clustering/:classId", async (req: Request,
     if (!mongoose.isValidObjectId(classId)) {
       return res.status(400).json({ message: "classId invalide" });
     }
+    if (await classAccessDenied(req, res, classId)) return;
 
     const cached = cache.get(classId);
     if (cached && cached.expiresAt > Date.now()) {
@@ -394,6 +412,7 @@ clusteringRouter.post("/api/backoffice/clustering/:classId/refresh", async (req:
     if (!mongoose.isValidObjectId(classId)) {
       return res.status(400).json({ message: "classId invalide" });
     }
+    if (await classAccessDenied(req, res, classId)) return;
 
     cache.delete(classId);
     const data = await computeClusteringForClass(classId);

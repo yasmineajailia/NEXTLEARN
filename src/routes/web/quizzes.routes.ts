@@ -157,7 +157,7 @@ import {
 
 export const quizzesRouter = Router();
 
-quizzesRouter.post("/api/teacher/quizzes/generate", async (req, res) => {
+quizzesRouter.post("/api/teacher/quizzes/generate", requireRole("enseignant", "admin"), async (req, res) => {
   try {
     cleanExpiredSessions();
 
@@ -264,7 +264,7 @@ quizzesRouter.post("/api/teacher/quizzes/generate", async (req, res) => {
 });
 
 // Endpoint: Regenerate specific questions or the entire batch
-quizzesRouter.post("/api/teacher/quizzes/regenerate", async (req, res) => {
+quizzesRouter.post("/api/teacher/quizzes/regenerate", requireRole("enseignant", "admin"), async (req, res) => {
   try {
     const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId.trim() : "";
     const regenerateAll = Boolean(req.body?.regenerateAll);
@@ -330,7 +330,7 @@ quizzesRouter.post("/api/teacher/quizzes/regenerate", async (req, res) => {
 });
 
 // Endpoint: Validate and save approved questions to the quiz
-quizzesRouter.post("/api/teacher/quizzes/validate", async (req, res) => {
+quizzesRouter.post("/api/teacher/quizzes/validate", requireRole("enseignant", "admin"), async (req, res) => {
   try {
     const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId.trim() : "";
     const questionIndices = Array.isArray(req.body?.questionIndices)
@@ -413,7 +413,7 @@ quizzesRouter.post("/api/teacher/quizzes/validate", async (req, res) => {
 });
 
 // Endpoint: Reject generated questions and clear session
-quizzesRouter.post("/api/teacher/quizzes/reject", async (req, res) => {
+quizzesRouter.post("/api/teacher/quizzes/reject", requireRole("enseignant", "admin"), async (req, res) => {
   try {
     const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId.trim() : "";
 

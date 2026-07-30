@@ -10,6 +10,7 @@ import express, { type Request, type Response } from "express";
 import mongoose from "mongoose";
 import { User } from "../../models/User";
 import { StudentProfile } from "../../models/StudentProfile";
+import { ClassRoom } from "../../models/ClassRoom";
 import { computeAttentionAnalytics } from "../../services/attention/attentionClient";
 
 export const attentionRouter = express.Router();
@@ -46,6 +47,17 @@ attentionRouter.get("/api/backoffice/attention/:classId", async (req: Request, r
     }
     if (!mongoose.isValidObjectId(classId)) {
       return res.status(400).json({ message: "classId invalide" });
+    }
+
+    // The /api/backoffice guard only proves the caller is SOME teacher/admin —
+    // it doesn't scope them to this class. Without this check, any teacher
+    // could read any other teacher's class attention analytics by supplying a
+    // different classId.
+    if (req.auth?.role !== "admin") {
+      const classRoom = await ClassRoom.findById(classId).select({ teacherId: 1 }).lean();
+      if (!classRoom || String((classRoom as any).teacherId || "") !== (req.auth?.id ?? "")) {
+        return res.status(403).json({ message: "Accès non autorisé à cette classe" });
+      }
     }
 
     const roster = await StudentProfile.find({ classId }).select({ identifier: 1, fullName: 1 }).lean();

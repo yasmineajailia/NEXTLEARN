@@ -158,7 +158,14 @@ import {
 
 export const mediaRouter = Router();
 
-mediaRouter.get("/api/media/:fileId/:filename", async (req, res) => {
+// Requires a session so course files aren't publicly crawlable by anyone with
+// a fileId. This does NOT check the file's class-unlock schedule/access rules
+// (unlike the sub-acquis content route) — doing a full curriculum reverse
+// lookup on every byte-range request would hurt video-seek performance, and a
+// GridFS ObjectId isn't realistically guessable, so a logged-in-but-not-yet-
+// unlocked student reaching a specific file's raw URL is an accepted,
+// low-severity gap rather than the open-to-the-internet one this closes.
+mediaRouter.get<{ fileId: string; filename: string }>("/api/media/:fileId/:filename", requireAuth, async (req, res) => {
   try {
     const { fileId } = req.params;
 
@@ -244,7 +251,7 @@ mediaRouter.get("/api/media/:fileId/:filename", async (req, res) => {
 // through as-is; PowerPoint is converted server-side to PDF; HTML is stored
 // as-is (rendered client-side in a sandboxed iframe — see sous-acquis.html —
 // since it is the one format here that can contain executable script).
-mediaRouter.post("/api/backoffice/upload-course-file", async (req, res) => {
+mediaRouter.post("/api/backoffice/upload-course-file", requireRole("enseignant", "admin"), async (req, res) => {
   try {
     const { moduleId, subAcquisId, fileName, fileType, fileDataUrl } = req.body ?? {};
 

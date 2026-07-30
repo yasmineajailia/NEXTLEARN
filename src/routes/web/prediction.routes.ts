@@ -241,9 +241,13 @@ async function buildModuleScopedPrediction(params: {
   };
 }
 
-predictionRouter.get("/api/student/prediction/:identifier", async (req, res) => {
+predictionRouter.get("/api/student/prediction/:identifier", requireAuth, async (req, res) => {
   try {
-    const identifier = String(req.params.identifier || "").trim();
+    // The verified session identity, never the URL param: this is a student's own
+    // risk/grade prediction, so req.params.identifier must never be trusted to
+    // pick whose data comes back (that was an IDOR — anyone logged in could read
+    // any other student's prediction just by changing the URL).
+    const identifier = req.auth?.id ?? "";
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }
@@ -330,9 +334,11 @@ predictionRouter.post("/api/ml/predict", async (req, res) => {
 // ---------------------------------------------------------------------------
 // Dashboard — comprehensive student dashboard data
 // ---------------------------------------------------------------------------
-predictionRouter.get("/api/student/dashboard/:identifier", async (req, res) => {
+predictionRouter.get("/api/student/dashboard/:identifier", requireAuth, async (req, res) => {
   try {
-    const identifier = String(req.params.identifier || "").trim();
+    // Same IDOR concern as /api/student/prediction above: trust the session, not
+    // the URL param, since this is the full dashboard payload for one student.
+    const identifier = req.auth?.id ?? "";
     if (!identifier) {
       return res.status(400).json({ message: "Identifiant requis" });
     }

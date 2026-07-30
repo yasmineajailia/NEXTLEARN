@@ -257,7 +257,7 @@ curriculumRouter.get("/api/programmation-c/overview", async (req, res) => {
   }
 });
 
-curriculumRouter.get("/api/backoffice/curriculum", async (_req, res) => {
+curriculumRouter.get("/api/backoffice/curriculum", requireRole("enseignant", "admin"), async (_req, res) => {
   try {
     const modules = await readPersistedCurriculumModules();
     res.status(200).json({ modules });
@@ -267,7 +267,7 @@ curriculumRouter.get("/api/backoffice/curriculum", async (_req, res) => {
   }
 });
 
-curriculumRouter.put("/api/backoffice/curriculum", async (req, res) => {
+curriculumRouter.put("/api/backoffice/curriculum", requireRole("enseignant", "admin"), async (req, res) => {
   try {
     const incomingModules = Array.isArray(req.body?.modules) ? req.body.modules : [];
 

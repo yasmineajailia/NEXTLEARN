@@ -193,7 +193,6 @@ const initialData = {
 };
 
 let state = loadState();
-let draftQuestions = [];
 let curriculumOverview = [];
 let curriculumSyncEnabled = false;
 let curriculumNames = {
@@ -257,19 +256,8 @@ const dom = {
     "sub-add": document.getElementById("view-sub-add"),
     "sub-editor": document.getElementById("view-sub-editor")
   },
-  contentSwitchButtons: Array.from(document.querySelectorAll(".content-switch-btn")),
-  contentPanels: {
-    module: document.getElementById("content-panel-module"),
-    "sous-acquis": document.getElementById("content-panel-sous-acquis"),
-    quiz: document.getElementById("content-panel-quiz")
-  },
   moduleIntroGrid: document.getElementById("module-intro-grid"),
   moduleManagementCard: document.getElementById("module-management-card"),
-  studentsSwitchButtons: Array.from(document.querySelectorAll(".students-switch-btn")),
-  studentsPanels: {
-    "add-single": document.getElementById("students-panel-add-single"),
-    "import-bulk": document.getElementById("students-panel-import-bulk")
-  },
   panelEyebrow: document.getElementById("panel-eyebrow"),
   panelTitle: document.getElementById("panel-title"),
   toast: document.getElementById("toast"),
@@ -285,17 +273,6 @@ const dom = {
   quizStruggleList: document.getElementById("quiz-struggle-list"),
   moduleTableBody: document.getElementById("module-table-body"),
 
-  moduleForm: document.getElementById("module-form"),
-  sousAcquisForm: document.getElementById("sous-acquis-form"),
-  sousModuleSelect: document.getElementById("sous-module-select"),
-  contentTree: document.getElementById("content-tree"),
-
-  quizForm: document.getElementById("quiz-form"),
-  quizModuleSelect: document.getElementById("quiz-module-select"),
-  quizSousAcquisSelect: document.getElementById("quiz-sous-acquis-select"),
-  addQuestionBtn: document.getElementById("add-question-btn"),
-  saveQuizBtn: document.getElementById("save-quiz-btn"),
-  draftQuestions: document.getElementById("draft-questions"),
   contentManagementList: document.getElementById("content-management-list"),
   addModuleBtn: document.getElementById("add-module-btn"),
   moduleInsertPage: document.getElementById("module-insert-page"),
@@ -345,20 +322,6 @@ const dom = {
   subEditAddQuestion: document.getElementById("sub-edit-add-question"),
   subEditQuizSummary: document.getElementById("sub-edit-quiz-summary"),
   subEditDeleteBtn: document.getElementById("sub-edit-delete-btn"),
-  manageModuleSelect: document.getElementById("manage-module-select"),
-  manageAcquisSelect: document.getElementById("manage-acquis-select"),
-  manageAcquisName: document.getElementById("manage-acquis-name"),
-  renameAcquisBtn: document.getElementById("rename-acquis-btn"),
-  deleteAcquisBtn: document.getElementById("delete-acquis-btn"),
-  manageSousAcquisSelect: document.getElementById("manage-sous-acquis-select"),
-  manageSousAcquisName: document.getElementById("manage-sous-acquis-name"),
-  renameSousAcquisBtn: document.getElementById("rename-sous-acquis-btn"),
-  deleteSousAcquisBtn: document.getElementById("delete-sous-acquis-btn"),
-  manageQuizSelect: document.getElementById("manage-quiz-select"),
-  manageQuizTitle: document.getElementById("manage-quiz-title"),
-  renameQuizBtn: document.getElementById("rename-quiz-btn"),
-  deleteQuizBtn: document.getElementById("delete-quiz-btn"),
-
   teacherForm: document.getElementById("teacher-form"),
   teacherFormTitle: document.getElementById("teacher-form-title"),
   teacherSubmitBtn: document.getElementById("teacher-submit-btn"),
@@ -383,7 +346,6 @@ const dom = {
   importStudentsForm: document.getElementById("import-students-form"),
   importClassSelect: document.getElementById("import-class-select"),
   importStudentsFile: document.getElementById("import-students-file"),
-  accessForm: document.getElementById("access-form"),
   scheduleForm: document.getElementById("schedule-form"),
   scheduleStartDate: document.getElementById("schedule-start-date"),
   scheduleDatePicker: document.getElementById("schedule-date-picker"),
@@ -395,9 +357,6 @@ const dom = {
   scheduleDatePrev: document.getElementById("schedule-date-prev"),
   scheduleDateNext: document.getElementById("schedule-date-next"),
   studentClassSelect: document.getElementById("student-class-select"),
-  accessClassSelect: document.getElementById("access-class-select"),
-  accessModuleSelect: document.getElementById("access-module-select"),
-  classAccessTable: document.getElementById("class-access-table"),
   classTable: document.getElementById("class-table"),
   studentTable: document.getElementById("student-table"),
   classesCreateFormCard: document.querySelector(".classes-create-form-card"),
@@ -765,7 +724,7 @@ function parseCurriculumNamesText(text) {
 
 async function hydrateCurriculumNamesFromFile() {
   try {
-    const response = await fetch("/Support_Cours_Pr%C3%A9paration/modules+noms.txt");
+    const response = await fetch("/support-cours/modules+noms.txt");
     if (!response.ok) {
       curriculumNames = { modulesById: {}, subAcquisById: {} };
       return;
@@ -784,34 +743,12 @@ function bindEvents() {
     button.addEventListener("click", () => switchView(button.dataset.view));
   });
 
-  dom.contentSwitchButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      switchContentPanel(button.dataset.contentPanel);
-    });
-  });
-
-  dom.studentsSwitchButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      switchStudentsPanel(button.dataset.studentsPanel);
-    });
-  });
-
   dom.overviewClassFilter.addEventListener("change", () => {
     populateOverviewStudentFilter();
     renderOverview();
   });
 
   dom.overviewStudentFilter.addEventListener("change", renderOverview);
-
-  dom.moduleForm?.addEventListener("submit", onAddModule);
-  dom.sousAcquisForm?.addEventListener("submit", onAddSousAcquis);
-
-  dom.quizModuleSelect?.addEventListener("change", () => {
-    populateSousAcquisByModuleSelect(dom.quizModuleSelect, dom.quizSousAcquisSelect);
-  });
-
-  dom.addQuestionBtn?.addEventListener("click", onAddDraftQuestion);
-  dom.saveQuizBtn?.addEventListener("click", onSaveQuiz);
 
   dom.contentManagementList?.addEventListener("click", onContentManagementListClick);
   dom.addModuleBtn?.addEventListener("click", () => openInsertModulePage(state.modules.length));
@@ -875,18 +812,6 @@ function bindEvents() {
     });
   });
 
-  dom.manageModuleSelect?.addEventListener("change", populateManagedAcquisSelect);
-  dom.manageAcquisSelect?.addEventListener("change", populateManagedSousAcquisSelect);
-  dom.manageSousAcquisSelect?.addEventListener("change", populateManagedQuizSelect);
-  dom.manageQuizSelect?.addEventListener("change", syncManageQuizInput);
-
-  dom.renameAcquisBtn?.addEventListener("click", onRenameAcquis);
-  dom.deleteAcquisBtn?.addEventListener("click", onDeleteAcquis);
-  dom.renameSousAcquisBtn?.addEventListener("click", onRenameSousAcquis);
-  dom.deleteSousAcquisBtn?.addEventListener("click", onDeleteSousAcquis);
-  dom.renameQuizBtn?.addEventListener("click", onRenameQuiz);
-  dom.deleteQuizBtn?.addEventListener("click", onDeleteQuiz);
-
   dom.teacherForm.addEventListener("submit", onAddTeacher);
   dom.teacherTable?.addEventListener("click", onTeacherTableClick);
   dom.teacherCancelEdit?.addEventListener("click", resetTeacherFormMode);
@@ -913,7 +838,6 @@ function bindEvents() {
       dom.studentClassSelect.value = selectedClassId;
     }
   });
-  dom.accessForm?.addEventListener("submit", onApplyAccess);
   dom.scheduleForm?.addEventListener("submit", onGenerateSchedule);
 
   dom.scheduleDateTrigger?.addEventListener("click", () => {
@@ -979,18 +903,13 @@ function bindEvents() {
 }
 
 function refreshAll() {
-  populateModuleSelects();
-  populateContentManagementSelects();
   populateTeacherSelects();
   populateClassSelects();
   populateOverviewFilters();
   renderOverview();
-  renderContentTree();
   renderContentManagementWorkspace();
-  renderDraftQuestions();
   renderTeachersTable();
   renderClassesTable();
-  renderClassAccessTable();
   renderStudentsTable();
   renderClassDetailStudents();
   renderPendingSubQuizDraft();
@@ -1234,33 +1153,6 @@ function onStudentModalClick(event) {
   }
 }
 
-function switchContentPanel(panelKey) {
-  const fallbackKey = "module";
-  const resolvedKey = panelKey && dom.contentPanels[panelKey] ? panelKey : fallbackKey;
-
-  dom.contentSwitchButtons.forEach((button) => {
-    const isActive = button.dataset.contentPanel === resolvedKey;
-    button.classList.toggle("active", isActive);
-    button.setAttribute("aria-selected", isActive ? "true" : "false");
-  });
-
-  Object.entries(dom.contentPanels).forEach(([key, node]) => {
-    if (!node) {
-      return;
-    }
-
-    const isActive = key === resolvedKey;
-    node.classList.toggle("active", isActive);
-    node.setAttribute("aria-hidden", isActive ? "false" : "true");
-  });
-
-  if (resolvedKey !== "module") {
-    closeContentEditors();
-  } else {
-    setModuleWorkspaceMode("list");
-  }
-}
-
 function setModuleWorkspaceMode(mode) {
   const resolvedMode = mode || "list";
   const isList = resolvedMode === "list";
@@ -1271,27 +1163,6 @@ function setModuleWorkspaceMode(mode) {
   if (dom.moduleManagementCard) dom.moduleManagementCard.hidden = !isList;
   if (dom.moduleInsertPage) dom.moduleInsertPage.hidden = !isInsertPage;
   if (dom.moduleEditorPage) dom.moduleEditorPage.hidden = !isModuleEditor;
-}
-
-function switchStudentsPanel(panelKey) {
-  const fallbackKey = "add-single";
-  const resolvedKey = panelKey && dom.studentsPanels[panelKey] ? panelKey : fallbackKey;
-
-  dom.studentsSwitchButtons.forEach((button) => {
-    const isActive = button.dataset.studentsPanel === resolvedKey;
-    button.classList.toggle("active", isActive);
-    button.setAttribute("aria-selected", isActive ? "true" : "false");
-  });
-
-  Object.entries(dom.studentsPanels).forEach(([key, node]) => {
-    if (!node) {
-      return;
-    }
-
-    const isActive = key === resolvedKey;
-    node.classList.toggle("active", isActive);
-    node.setAttribute("aria-hidden", isActive ? "false" : "true");
-  });
 }
 
 function uniqueId(prefix) {
@@ -1331,14 +1202,10 @@ async function uploadCourseResource({ moduleId, subAcquisId, file }) {
   return response.json();
 }
 
-function htmlEscape(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// Delegates to the shared implementation (public/shared/dom-utils.js, loaded
+// before this script) — kept as a local name so the many existing call sites
+// in this file don't need to change.
+const htmlEscape = window.escapeHtml;
 
 function setOptions(selectNode, items, includeAll = false) {
   if (!selectNode) {
@@ -1613,148 +1480,6 @@ function getOrCreateDefaultAcquis(module) {
   return defaultAcquis;
 }
 
-function populateModuleSelects() {
-  const modules = state.modules.map((module) => ({ id: module.id, name: module.name }));
-  const accessModules =
-    Array.isArray(curriculumOverview) && curriculumOverview.length
-      ? curriculumOverview.map((moduleData) => {
-          const moduleId = String(moduleData.id || "");
-          const matchingModule = state.modules.find((item) => item.id === moduleId);
-          const moduleNameFromFile = curriculumNames.modulesById[moduleId];
-          return {
-            id: moduleId,
-            name: moduleNameFromFile || matchingModule?.name || `Module ${moduleId}`
-          };
-        })
-      : modules;
-  const quizModules =
-    Array.isArray(curriculumOverview) && curriculumOverview.length ? accessModules : modules;
-
-  if (dom.sousModuleSelect) {
-    setOptions(dom.sousModuleSelect, accessModules);
-  }
-
-  if (dom.quizModuleSelect) {
-    setOptions(dom.quizModuleSelect, quizModules);
-  }
-
-  setOptions(dom.accessModuleSelect, accessModules);
-
-  if (dom.quizModuleSelect && dom.quizSousAcquisSelect) {
-    populateSousAcquisByModuleSelect(dom.quizModuleSelect, dom.quizSousAcquisSelect);
-  }
-}
-
-function populateSousAcquisByModuleSelect(moduleSelect, targetSelect) {
-  if (!moduleSelect || !targetSelect) {
-    return;
-  }
-
-  const sousAcquisItems = listSousAcquisOptionsByModule(moduleSelect.value);
-  setOptions(targetSelect, sousAcquisItems);
-}
-
-function populateContentManagementSelects() {
-  if (!dom.manageModuleSelect) {
-    return;
-  }
-
-  const modules = state.modules.map((module) => ({ id: module.id, name: module.name }));
-  setOptions(dom.manageModuleSelect, modules);
-  populateManagedAcquisSelect();
-}
-
-function populateManagedAcquisSelect() {
-  if (!dom.manageAcquisSelect) {
-    return;
-  }
-
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquisItems = Array.isArray(module?.acquis)
-    ? module.acquis.map((acquis) => ({ id: acquis.id, name: acquis.name }))
-    : [];
-
-  setOptions(dom.manageAcquisSelect, acquisItems);
-  const selectedAcquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((acquis) => acquis.id === dom.manageAcquisSelect.value)
-    : null;
-
-  if (dom.manageAcquisName) {
-    dom.manageAcquisName.value = selectedAcquis?.name || "";
-  }
-
-  populateManagedSousAcquisSelect();
-}
-
-function populateManagedSousAcquisSelect() {
-  if (!dom.manageSousAcquisSelect) {
-    return;
-  }
-
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((item) => item.id === dom.manageAcquisSelect.value)
-    : null;
-
-  const sousAcquisItems = Array.isArray(acquis?.sousAcquis)
-    ? acquis.sousAcquis.map((entry) => ({ id: entry.id, name: entry.name }))
-    : [];
-
-  setOptions(dom.manageSousAcquisSelect, sousAcquisItems);
-  const selectedSousAcquis = Array.isArray(acquis?.sousAcquis)
-    ? acquis.sousAcquis.find((entry) => entry.id === dom.manageSousAcquisSelect.value)
-    : null;
-
-  if (dom.manageSousAcquisName) {
-    dom.manageSousAcquisName.value = selectedSousAcquis?.name || "";
-  }
-
-  populateManagedQuizSelect();
-}
-
-function populateManagedQuizSelect() {
-  if (!dom.manageQuizSelect) {
-    return;
-  }
-
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((item) => item.id === dom.manageAcquisSelect.value)
-    : null;
-  const sousAcquis = Array.isArray(acquis?.sousAcquis)
-    ? acquis.sousAcquis.find((entry) => entry.id === dom.manageSousAcquisSelect.value)
-    : null;
-
-  const quizItems = Array.isArray(sousAcquis?.quizzes)
-    ? sousAcquis.quizzes.map((quiz, index) => ({
-        id: quiz.id,
-        name: quiz.title || `Quiz ${index + 1}`
-      }))
-    : [];
-
-  setOptions(dom.manageQuizSelect, quizItems);
-  syncManageQuizInput();
-}
-
-function syncManageQuizInput() {
-  if (!dom.manageQuizTitle) {
-    return;
-  }
-
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((item) => item.id === dom.manageAcquisSelect.value)
-    : null;
-  const sousAcquis = Array.isArray(acquis?.sousAcquis)
-    ? acquis.sousAcquis.find((entry) => entry.id === dom.manageSousAcquisSelect.value)
-    : null;
-  const quiz = Array.isArray(sousAcquis?.quizzes)
-    ? sousAcquis.quizzes.find((entry) => entry.id === dom.manageQuizSelect.value)
-    : null;
-
-  dom.manageQuizTitle.value = quiz?.title || "";
-}
-
 function populateTeacherSelects() {
   const teachers = state.teachers.map((teacher) => ({ id: teacher.id, name: teacher.name }));
   setOptions(dom.classTeacherSelect, teachers);
@@ -1764,7 +1489,6 @@ function populateClassSelects() {
   const classes = state.classes.map((room) => ({ id: room.id, name: room.name }));
   setOptions(dom.studentClassSelect, classes);
   setOptions(dom.importClassSelect, classes);
-  setOptions(dom.accessClassSelect, classes);
   syncScheduleFormDefaults();
 }
 
@@ -2099,83 +1823,6 @@ function buildTable(headers, rows) {
     .join("");
 
   return `<table><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table>`;
-}
-
-function renderContentTree() {
-  if (!dom.contentTree) {
-    return;
-  }
-
-  const hasApiOverview = Array.isArray(curriculumOverview) && curriculumOverview.length > 0;
-
-  if (!hasApiOverview && !state.modules.length) {
-    dom.contentTree.innerHTML = "<p>Aucun module pour le moment.</p>";
-    return;
-  }
-
-  if (hasApiOverview) {
-    dom.contentTree.innerHTML = curriculumOverview
-      .map((moduleData) => {
-        const moduleId = String(moduleData.id || "");
-        const matchingModule = state.modules.find((item) => item.id === moduleId);
-        const moduleNameFromFile = curriculumNames.modulesById[moduleId];
-        const moduleLabel = moduleNameFromFile || matchingModule?.name || `Module ${moduleId}`;
-
-        const subAcquis = Array.isArray(moduleData.subAcquis) ? moduleData.subAcquis : [];
-        const subAcquisHtml = subAcquis.length
-          ? subAcquis
-              .map((entry) => {
-                const subId = String(entry?.id || "");
-                const subLabel = curriculumNames.subAcquisById[subId] || subId || "Sous-acquis";
-
-                return `<li><strong>${htmlEscape(subLabel)}</strong></li>`;
-              })
-              .join("")
-          : "<li>Aucun sous-acquis detecte</li>";
-
-        return `<article class="tree-module">
-          <h4>${htmlEscape(moduleLabel)}</h4>
-          <h5>Sous-acquis</h5>
-          <ul>${subAcquisHtml}</ul>
-        </article>`;
-      })
-      .join("");
-
-    return;
-  }
-
-  dom.contentTree.innerHTML = state.modules
-    .map((module) => {
-      const sousAcquisList = listSousAcquisByModule(module.id);
-      const sousAcquisHtml = sousAcquisList.length
-        ? sousAcquisList
-            .map((entry) => {
-              const sub = findSousAcquis(module.id, entry.id);
-              const quizList = Array.isArray(sub?.quizzes) ? sub.quizzes : [];
-              const quizCount = quizList.length;
-              const quizTypes = quizList
-                .map((quiz) => quiz.type)
-                .filter(Boolean)
-                .join(", ");
-              const bloom = sub?.bloomLevel || "Non precise";
-              const resourceType = sub?.resource?.type || "non precise";
-              const resourceRef = sub?.resource?.ref || "non precise";
-
-              return `<li>
-                <strong>${htmlEscape(sub?.name || entry.name)}</strong><br />
-                Bloom: ${htmlEscape(bloom)}<br />
-                Support: ${htmlEscape(resourceType)} - ${htmlEscape(resourceRef)}<br />
-                Leçons: ${htmlEscape(sub?.lessonsCount || 0)} - Quiz: ${htmlEscape(quizCount)}${
-                  quizTypes ? ` (${htmlEscape(quizTypes)})` : ""
-                }
-              </li>`;
-            })
-            .join("")
-        : "<li>Aucun sous-acquis pour le moment</li>";
-
-      return `<article class="tree-module"><h4>${htmlEscape(module.name)}</h4><ul>${sousAcquisHtml}</ul></article>`;
-    })
-    .join("");
 }
 
 function escapeAttr(value) {
@@ -3646,31 +3293,13 @@ function onDeleteSubFromEditor() {
   restoreAcquisSubListView(acquisId);
 }
 
-function renderDraftQuestions() {
-  if (!dom.draftQuestions) {
-    return;
-  }
-
-  if (!draftQuestions.length) {
-    dom.draftQuestions.innerHTML = "<li>Aucune question en brouillon.</li>";
-    return;
-  }
-
-  dom.draftQuestions.innerHTML = draftQuestions
-    .map((question, index) => {
-      const answerLabel = ["A", "B", "C", "D"][question.correctAnswerIndex] || "?";
-      return `<li><strong>Q${index + 1}:</strong> ${htmlEscape(question.prompt)} (bonne reponse: ${answerLabel})</li>`;
-    })
-    .join("");
-}
-
 function renderTeachersTable() {
   const rows = state.teachers.map((teacher) => {
     const classesCount = state.classes.filter((room) => room.teacherId === teacher.id).length;
     return [
-      teacher.name,
-      teacher.email || "Non renseigne",
-      teacher.phone || "Non renseigne",
+      htmlEscape(teacher.name),
+      htmlEscape(teacher.email || "Non renseigne"),
+      htmlEscape(teacher.phone || "Non renseigne"),
       classesCount,
       `<span class="module-manage-actions">
         <button type="button" class="secondary-btn" data-action="edit-teacher" data-teacher-id="${escapeAttr(
@@ -3863,67 +3492,6 @@ function renderClassDetailStudents() {
   );
 }
 
-function renderClassAccessTable() {
-  if (!dom.classAccessTable) {
-    return;
-  }
-
-  const rows = state.classes.map((room) => {
-    const schedule = room.accessScheduleBySubAcquis && typeof room.accessScheduleBySubAcquis === "object"
-      ? room.accessScheduleBySubAcquis
-      : {};
-
-    const scheduleDates = Object.values(schedule)
-      .map((isoValue) => new Date(String(isoValue || "")))
-      .filter((date) => !Number.isNaN(date.getTime()))
-      .sort((a, b) => a.getTime() - b.getTime());
-
-    const now = Date.now();
-    const unlockedCount = scheduleDates.filter((date) => date.getTime() <= now).length;
-    const upcoming = scheduleDates.find((date) => date.getTime() > now) || null;
-
-    // Modules read as chips rather than a run of <br />-separated names: the
-    // granted/blocked state is then visible without reading the column header.
-    const moduleChips = (rule, className) => {
-      const names = state.modules
-        .filter((module) => (room.accessByModule?.[module.id] || "blocked") === rule)
-        .map((module) => `<span class="access-chip ${className}">${htmlEscape(module.name)}</span>`);
-      return names.length ? `<div class="access-chips">${names.join("")}</div>` : null;
-    };
-
-    return [
-      `<strong>${htmlEscape(room.name)}</strong>`,
-      room.scheduleStartDate
-        ? htmlEscape(formatIsoDateLabel(room.scheduleStartDate))
-        : `<span class="access-empty">${boTr("bo.notSet", "Non défini")}</span>`,
-      scheduleDates.length
-        ? `${unlockedCount}/${scheduleDates.length} ${boTr("bo.unlocked", "débloqués")}${
-            upcoming
-              ? `<br /><span class="access-muted">${boTr("bo.next", "prochain")} : ${htmlEscape(
-                  formatIsoDateLabel(upcoming.toISOString())
-                )}</span>`
-              : ""
-          }`
-        : `<span class="access-empty">${boTr("bo.noCalendar", "Aucun calendrier généré")}</span>`,
-      moduleChips("granted", "access-chip-granted") ||
-        `<span class="access-empty">${boTr("bo.noGranted", "Aucun module autorisé")}</span>`,
-      moduleChips("blocked", "access-chip-blocked") ||
-        `<span class="access-empty">${boTr("bo.noBlocked", "Aucun module bloqué")}</span>`
-    ];
-  });
-
-  dom.classAccessTable.innerHTML = buildTable(
-    [
-      boTr("bo.classLabel", "Classe"),
-      boTr("bo.startDate", "Date de démarrage"),
-      boTr("bo.subAcquisUnlocked", "Sous-acquis débloqués"),
-      boTr("bo.grantedModules", "Modules autorisés"),
-      boTr("bo.blockedModules", "Modules bloqués")
-    ],
-    rows
-  );
-}
-
 function renderStudentsTable() {
   const normalizedSearch = String(studentSearchTerm || "").trim().toLowerCase();
 
@@ -3949,11 +3517,11 @@ function renderStudentsTable() {
     .map((student) => {
     const room = state.classes.find((item) => item.id === student.classId);
     return [
-      student.fullName,
-      student.identifier || "Non defini",
-        student.email || "Non renseigne",
-      room ? room.name : "Aucune classe",
-        room ? getTeacherNameByClass(room) : "Enseignant non assigné",
+      htmlEscape(student.fullName),
+      htmlEscape(student.identifier || "Non defini"),
+        htmlEscape(student.email || "Non renseigne"),
+      htmlEscape(room ? room.name : "Aucune classe"),
+        htmlEscape(room ? getTeacherNameByClass(room) : "Enseignant non assigné"),
         `<span class="module-manage-actions">
           <button type="button" class="secondary-btn" data-action="edit-student" data-student-id="${escapeAttr(
             student.id
@@ -4077,215 +3645,6 @@ async function onStudentTableClick(event) {
   saveState();
   refreshAll();
   showToast("Étudiant supprimé");
-}
-
-function onAddModule(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const moduleName = form.moduleName.value.trim();
-
-  if (!moduleName) return;
-
-  state.modules.push({
-    id: uniqueId("mod"),
-    name: moduleName,
-    acquis: []
-  });
-
-  form.reset();
-  saveState();
-  refreshAll();
-  showToast("Module cree");
-}
-
-function onAddAcquis(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const moduleId = form.moduleId.value;
-  const acquisName = form.acquisName.value.trim();
-
-  if (!moduleId || !acquisName) return;
-
-  const module = findModule(moduleId);
-  if (!module) {
-    showToast("Selectionnez un module valide");
-    return;
-  }
-
-  module.acquis.push({
-    id: uniqueId("acq"),
-    name: acquisName,
-    sousAcquis: []
-  });
-
-  form.reset();
-  saveState();
-  refreshAll();
-  showToast("Acquis ajoute");
-}
-
-function onAddSousAcquis(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const moduleId = form.moduleId.value;
-  const sousAcquisName = form.sousAcquisName.value.trim();
-  const bloomLevel = form.bloomLevel.value;
-  const resourceType = form.resourceType.value;
-  const selectedFile = form.resourceFile.files && form.resourceFile.files[0];
-  const lessonsCount = Number(form.lessonsCount.value || 1);
-
-  if (!moduleId || !sousAcquisName || !bloomLevel || !resourceType || !selectedFile) {
-    showToast("Completez le module, le sous-acquis et le fichier support");
-    return;
-  }
-
-  const lowerName = selectedFile.name.toLowerCase();
-  const isPdfFile = lowerName.endsWith(".pdf") || selectedFile.type === "application/pdf";
-  const isPowerPointFile =
-    lowerName.endsWith(".ppt") ||
-    lowerName.endsWith(".pptx") ||
-    selectedFile.type === "application/vnd.ms-powerpoint" ||
-    selectedFile.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-
-  if (resourceType === "pdf" && !isPdfFile) {
-    showToast("Selectionnez un fichier PDF valide");
-    return;
-  }
-
-  if (resourceType === "powerpoint" && !isPowerPointFile) {
-    showToast("Selectionnez un fichier PowerPoint valide (.ppt ou .pptx)");
-    return;
-  }
-
-  let module = findModule(moduleId);
-  if (!module) {
-    const moduleNameFromFile = curriculumNames.modulesById[moduleId] || `Module ${moduleId}`;
-    module = {
-      id: moduleId,
-      name: moduleNameFromFile,
-      acquis: []
-    };
-    state.modules.push(module);
-  }
-
-  const acquis = getOrCreateDefaultAcquis(module);
-  const subAcquisId = uniqueId("sacq");
-
-  uploadCourseResource({ moduleId, subAcquisId, file: selectedFile })
-    .then((uploadResult) => {
-      const publicUrl = uploadResult?.publicUrl;
-
-      if (!publicUrl) {
-        throw new Error("URL publique introuvable");
-      }
-
-      acquis.sousAcquis.push({
-        id: subAcquisId,
-        name: sousAcquisName,
-        bloomLevel,
-        resource: {
-          type: "pdf",
-          ref: publicUrl
-        },
-        lessonsCount: Math.max(1, lessonsCount),
-        quizzes: []
-      });
-
-      form.reset();
-      saveState();
-      refreshAll();
-      showToast("Sous-acquis ajoute et support PDF publie");
-    })
-    .catch((error) => {
-      console.error("Course upload error:", error);
-      showToast("Echec de l'upload ou de la conversion du support");
-    });
-}
-
-function onAddDraftQuestion() {
-  const form = dom.quizForm;
-  const prompt = form.questionPrompt.value.trim();
-  const options = [
-    form.optionA.value.trim(),
-    form.optionB.value.trim(),
-    form.optionC.value.trim(),
-    form.optionD.value.trim()
-  ];
-  const correctAnswerIndex = Number(form.correctAnswer.value);
-
-  if (!prompt || options.some((option) => !option)) {
-    showToast("Completez la question et toutes les options");
-    return;
-  }
-
-  draftQuestions.push({ prompt, options, correctAnswerIndex });
-
-  form.questionPrompt.value = "";
-  form.optionA.value = "";
-  form.optionB.value = "";
-  form.optionC.value = "";
-  form.optionD.value = "";
-  form.correctAnswer.value = "0";
-
-  renderDraftQuestions();
-  showToast("Question ajoutee au brouillon");
-}
-
-function onSaveQuiz() {
-  const form = dom.quizForm;
-  const moduleId = form.moduleId.value;
-  const sousAcquisId = form.sousAcquisId.value;
-  const quizType = form.quizType.value;
-  const quizTitle = form.quizTitle.value.trim();
-
-  if (!moduleId || !sousAcquisId || !quizType || !quizTitle || !draftQuestions.length) {
-    showToast("Selectionnez module, sous-acquis, type et ajoutez au moins une question");
-    return;
-  }
-
-  let sousAcquis = findSousAcquis(moduleId, sousAcquisId);
-  if (!sousAcquis) {
-    let module = findModule(moduleId);
-    if (!module) {
-      const moduleNameFromFile = curriculumNames.modulesById[moduleId] || `Module ${moduleId}`;
-      module = {
-        id: moduleId,
-        name: moduleNameFromFile,
-        acquis: []
-      };
-      state.modules.push(module);
-    }
-
-    const acquis = getOrCreateDefaultAcquis(module);
-    const sousAcquisName = curriculumNames.subAcquisById[sousAcquisId] || sousAcquisId;
-
-    sousAcquis = {
-      id: sousAcquisId,
-      name: sousAcquisName,
-      lessonsCount: 0,
-      quizzes: []
-    };
-
-    acquis.sousAcquis.push(sousAcquis);
-  }
-
-  if (!Array.isArray(sousAcquis.quizzes)) {
-    sousAcquis.quizzes = [];
-  }
-
-  sousAcquis.quizzes.push({
-    id: uniqueId("quiz"),
-    type: quizType,
-    title: quizTitle,
-    questions: draftQuestions.map((question) => ({ ...question }))
-  });
-
-  draftQuestions = [];
-  form.quizTitle.value = "";
-  renderDraftQuestions();
-  saveState();
-  refreshAll();
-  showToast("Quiz enregistre");
 }
 
 async function onAddTeacher(event) {
@@ -4579,56 +3938,6 @@ async function onImportStudents(event) {
   }
 }
 
-async function onApplyAccess(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const classId = form.classId.value;
-  const moduleId = form.moduleId.value;
-  const accessRule = form.accessRule.value;
-
-  if (!classId || !moduleId || !accessRule) return;
-
-  const classRoom = state.classes.find((room) => room.id === classId);
-  if (!classRoom) {
-    showToast("Selection de classe invalide");
-    return;
-  }
-
-  if (!classRoom.accessByModule) {
-    classRoom.accessByModule = {};
-  }
-
-  try {
-    const response = await fetch(`/api/backoffice/classes/${encodeURIComponent(classId)}/access`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ moduleId, accessRule })
-    });
-
-    if (!response.ok) {
-      showToast(await parseApiError(response, "Impossible de mettre à jour l'accès"));
-      return;
-    }
-
-    const payload = await response.json();
-    if (payload?.classRoom) {
-      const index = state.classes.findIndex((room) => room.id === classId);
-      if (index >= 0) {
-        state.classes[index] = payload.classRoom;
-      }
-    } else {
-      classRoom.accessByModule[moduleId] = accessRule;
-    }
-  } catch (_error) {
-    showToast("Connexion serveur indisponible");
-    return;
-  }
-
-  saveState();
-  refreshAll();
-  showToast("Règle d'accès mise à jour");
-}
-
 async function onGenerateSchedule(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -4664,198 +3973,6 @@ async function onGenerateSchedule(event) {
   } catch (_error) {
     showToast("Connexion serveur indisponible");
   }
-}
-
-function onRenameAcquis() {
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquisId = dom.manageAcquisSelect.value;
-  const newName = String(dom.manageAcquisName?.value || "").trim();
-
-  if (!module || !acquisId || !newName) {
-    showToast("Selectionnez un module/acquis et saisissez un nom");
-    return;
-  }
-
-  const acquis = Array.isArray(module.acquis)
-    ? module.acquis.find((entry) => entry.id === acquisId)
-    : null;
-  if (!acquis) {
-    showToast("Acquis introuvable");
-    return;
-  }
-
-  const duplicate = module.acquis.some(
-    (entry) => entry.id !== acquisId && String(entry.name || "").toLowerCase() === newName.toLowerCase()
-  );
-
-  if (duplicate) {
-    showToast("Un acquis avec ce nom existe déjà");
-    return;
-  }
-
-  acquis.name = newName;
-  saveState();
-  refreshAll();
-  showToast("Acquis modifie");
-}
-
-function onDeleteAcquis() {
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquisId = dom.manageAcquisSelect.value;
-
-  if (!module || !acquisId) {
-    showToast("Sélectionnez un acquis à supprimer");
-    return;
-  }
-
-  const target = module.acquis.find((entry) => entry.id === acquisId);
-  if (!target) {
-    showToast("Acquis introuvable");
-    return;
-  }
-
-  if (!window.confirm(`Supprimer l'acquis \"${target.name}\" et tout son contenu ?`)) {
-    return;
-  }
-
-  module.acquis = module.acquis.filter((entry) => entry.id !== acquisId);
-  saveState();
-  refreshAll();
-  showToast("Acquis supprimé");
-}
-
-function onRenameSousAcquis() {
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((entry) => entry.id === dom.manageAcquisSelect.value)
-    : null;
-  const sousAcquisId = dom.manageSousAcquisSelect.value;
-  const newName = String(dom.manageSousAcquisName?.value || "").trim();
-
-  if (!module || !acquis || !sousAcquisId || !newName) {
-    showToast("Selectionnez un sous-acquis et saisissez un nom");
-    return;
-  }
-
-  const sousAcquis = Array.isArray(acquis.sousAcquis)
-    ? acquis.sousAcquis.find((entry) => entry.id === sousAcquisId)
-    : null;
-  if (!sousAcquis) {
-    showToast("Sous-acquis introuvable");
-    return;
-  }
-
-  const duplicate = acquis.sousAcquis.some(
-    (entry) => entry.id !== sousAcquisId && String(entry.name || "").toLowerCase() === newName.toLowerCase()
-  );
-
-  if (duplicate) {
-    showToast("Un sous-acquis avec ce nom existe déjà");
-    return;
-  }
-
-  sousAcquis.name = newName;
-  saveState();
-  refreshAll();
-  showToast("Sous-acquis modifie");
-}
-
-function onDeleteSousAcquis() {
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((entry) => entry.id === dom.manageAcquisSelect.value)
-    : null;
-  const sousAcquisId = dom.manageSousAcquisSelect.value;
-
-  if (!module || !acquis || !sousAcquisId) {
-    showToast("Sélectionnez un sous-acquis à supprimer");
-    return;
-  }
-
-  const target = acquis.sousAcquis.find((entry) => entry.id === sousAcquisId);
-  if (!target) {
-    showToast("Sous-acquis introuvable");
-    return;
-  }
-
-  if (!window.confirm(`Supprimer le sous-acquis \"${target.name}\" et ses quiz ?`)) {
-    return;
-  }
-
-  acquis.sousAcquis = acquis.sousAcquis.filter((entry) => entry.id !== sousAcquisId);
-  saveState();
-  refreshAll();
-  showToast("Sous-acquis supprimé");
-}
-
-function onRenameQuiz() {
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((entry) => entry.id === dom.manageAcquisSelect.value)
-    : null;
-  const sousAcquis = Array.isArray(acquis?.sousAcquis)
-    ? acquis.sousAcquis.find((entry) => entry.id === dom.manageSousAcquisSelect.value)
-    : null;
-  const quizId = dom.manageQuizSelect.value;
-  const newTitle = String(dom.manageQuizTitle?.value || "").trim();
-
-  if (!module || !acquis || !sousAcquis || !quizId || !newTitle) {
-    showToast("Selectionnez un quiz et saisissez un titre");
-    return;
-  }
-
-  const quiz = Array.isArray(sousAcquis.quizzes)
-    ? sousAcquis.quizzes.find((entry) => entry.id === quizId)
-    : null;
-  if (!quiz) {
-    showToast("Quiz introuvable");
-    return;
-  }
-
-  const duplicate = sousAcquis.quizzes.some(
-    (entry) => entry.id !== quizId && String(entry.title || "").toLowerCase() === newTitle.toLowerCase()
-  );
-
-  if (duplicate) {
-    showToast("Un quiz avec ce titre existe déjà");
-    return;
-  }
-
-  quiz.title = newTitle;
-  saveState();
-  refreshAll();
-  showToast("Quiz modifie");
-}
-
-function onDeleteQuiz() {
-  const module = findModule(dom.manageModuleSelect.value);
-  const acquis = Array.isArray(module?.acquis)
-    ? module.acquis.find((entry) => entry.id === dom.manageAcquisSelect.value)
-    : null;
-  const sousAcquis = Array.isArray(acquis?.sousAcquis)
-    ? acquis.sousAcquis.find((entry) => entry.id === dom.manageSousAcquisSelect.value)
-    : null;
-  const quizId = dom.manageQuizSelect.value;
-
-  if (!module || !acquis || !sousAcquis || !quizId) {
-    showToast("Sélectionnez un quiz à supprimer");
-    return;
-  }
-
-  const target = sousAcquis.quizzes.find((entry) => entry.id === quizId);
-  if (!target) {
-    showToast("Quiz introuvable");
-    return;
-  }
-
-  if (!window.confirm(`Supprimer le quiz \"${target.title || "Sans titre"}\" ?`)) {
-    return;
-  }
-
-  sousAcquis.quizzes = sousAcquis.quizzes.filter((entry) => entry.id !== quizId);
-  saveState();
-  refreshAll();
-  showToast("Quiz supprimé");
 }
 
 function showToast(message) {
