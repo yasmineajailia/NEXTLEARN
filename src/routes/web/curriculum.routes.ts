@@ -243,7 +243,7 @@ curriculumRouter.get("/api/programmation-c/modules", async (req, res) => {
   }
 });
 
-curriculumRouter.get("/api/programmation-c/overview", async (req, res) => {
+curriculumRouter.get("/api/programmation-c/overview", requireAuth, async (req, res) => {
   try {
     const modules = await readPersistedProgramCOverview();
     const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value

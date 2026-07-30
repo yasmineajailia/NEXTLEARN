@@ -157,7 +157,7 @@ import {
 
 export const learningRouter = Router();
 
-learningRouter.get("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", async (req, res) => {
+learningRouter.get<{ moduleId: string; subAcquisId: string }>("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId", requireAuth, async (req, res) => {
   try {
     const { moduleId, subAcquisId } = req.params;
     const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
