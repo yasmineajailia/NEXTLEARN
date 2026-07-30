@@ -1,6 +1,7 @@
 import express from "express";
 import path from "node:path";
 import mongoose from "mongoose";
+import helmet from "helmet";
 import { env } from "./config/env";
 import { webRouter } from "./routes/web";
 import { chatbotRouter } from "./routes/student/chatbot";
@@ -19,6 +20,24 @@ import { startShapService, stopShapService } from "./services/prediction/shapSup
 // App bootstrap.
 // Express serves static files from public/ and API/page routes from webRouter.
 const app = express();
+
+// Trust the first hop (cloud load balancer / reverse proxy) so req.ip and
+// secure-cookie detection (auth.ts's `secure: env.nodeEnv === "production"`)
+// see the real client, not the proxy. A bare `true` would trust the whole
+// X-Forwarded-For chain, which lets a client spoof its own IP — 1 hop is
+// correct for a single reverse proxy in front of the app; raise it only if
+// there's genuinely more than one proxy hop between the client and this app.
+app.set("trust proxy", 1);
+
+// Safe, non-breaking hardening headers (X-Content-Type-Options, X-Frame-Options,
+// Referrer-Policy, HSTS in production, etc.). Content-Security-Policy is
+// deliberately OFF: this app has inline <script>/<style> blocks on nearly every
+// page plus several external CDNs (Google Fonts, cdn.plyr.io, cdn.jsdelivr.net
+// for MediaPipe's WASM face-tracking model, drive.google.com/officeapps.live.com
+// embeds), and getting a CSP right for the WASM-loading attention tracker and
+// the chatbot specifically needs real browser testing to confirm nothing silently
+// breaks — not something to guess at blind. Worth a follow-up once that's possible.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -58,6 +77,33 @@ app.use(attentionSessionRouter);
 // Friendly 404 fallback for unknown routes.
 app.use((_req, res) => {
   res.status(404).json({ message: "Route not found" });
+});
+
+// Last-resort error handler: every route in this codebase wraps its body in
+// try/catch and responds itself, but this catches whatever slips through
+// (a synchronous throw in a middleware, a future route someone forgets to
+// wrap) so a single bad request 500s instead of taking the whole server down.
+// Must be registered last, and Express only treats a 4-arg function as an
+// error handler — do not drop `next` even though it's unused.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled request error:", err);
+  if (res.headersSent) return;
+  res.status(500).json({ message: "Une erreur inattendue est survenue" });
+});
+
+// Process-level safety net. uncaughtException means Node's state may be
+// corrupted, so we log and exit — Docker's `restart: unless-stopped` brings it
+// back clean. unhandledRejection is logged but not fatal: with every route
+// already try/catch'd, one reaching here is most likely a minor background
+// task (e.g. a fire-and-forget stat update) failing quietly, not a reason to
+// drop every other student's in-flight request.
+process.on("uncaughtException", (err) => {
+  console.error("[fatal] Uncaught exception:", err);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[warn] Unhandled promise rejection:", reason);
 });
 
 // MongoDB connection

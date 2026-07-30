@@ -14,6 +14,7 @@ import {
 } from "../../services/chatbot/ragClient";
 import { filterOverviewByAccess } from "../../services/classAccess";
 import { requireAuth } from "../../middleware/auth";
+import { rateLimit } from "../../middleware/rateLimit";
 import { User } from "../../models/User";
 import { buildLearnerProfile, type LearnerProfile } from "../../services/chatbot/learnerProfile";
 import type { ModuleOverview } from "../../types/curriculum";
@@ -27,6 +28,17 @@ export const chatbotRouter = Router();
 
 const NO_MODULES_MESSAGE =
   "Je ne trouve aucun module disponible pour votre compte actuellement. Vérifiez votre calendrier ou contactez votre enseignant.";
+
+// Each call hits a paid LLM API (+ the Python ML service); keyed per-student so
+// one account can't throttle a whole class on a shared campus network, and
+// generous enough (roughly one message every 6s, sustained) not to interrupt a
+// student actively working through a lesson.
+const chatbotLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 50,
+  keyFn: (req) => req.auth?.id || req.ip || "unknown",
+  message: "Trop de messages envoyés. Attendez quelques instants avant de continuer."
+});
 
 type ChatScope = { allowedModuleIds: string[]; allowedSubAcquisIds: string[] };
 
@@ -115,7 +127,7 @@ async function buildChatContext(
   return { scope, learnerProfile };
 }
 
-chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
+chatbotRouter.post("/api/student/chatbot", requireAuth, chatbotLimiter, async (req, res) => {
   try {
     const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
     const rawMessage = typeof req.body?.message === "string" ? req.body.message.trim() : "";
@@ -163,7 +175,7 @@ chatbotRouter.post("/api/student/chatbot", requireAuth, async (req, res) => {
 // Streaming variant: emits Server-Sent Events so answers render token-by-token.
 // Events: `meta` { mode }, `delta` { text }, `sources` { sources }, `done` {}, `error` { message }.
 // Python emits the frames; Node does access control then pipes them verbatim.
-chatbotRouter.post("/api/student/chatbot/stream", requireAuth, async (req, res) => {
+chatbotRouter.post("/api/student/chatbot/stream", requireAuth, chatbotLimiter, async (req, res) => {
   const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
   const rawMessage = typeof req.body?.message === "string" ? req.body.message.trim() : "";
 

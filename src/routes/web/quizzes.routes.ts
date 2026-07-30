@@ -26,6 +26,7 @@ import { hashPassword } from "../../utils/password";
 import { Recommender, type ChapterScoreEntry, type RecommendOptions, type ScoreEntry, type SkillsJson } from "../../services/recommendation/skill-recommender.js";
 import { computeRemediationTargets, type RemediationTarget } from "../../services/recommendation/remediationTargets.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { rateLimit } from "../../middleware/rateLimit.js";
 import { computeItemAnalysis, type ItemAttempt } from "../../services/quiz/itemAnalysisClient.js";
 import { env } from "../../config/env";
 import { MLPredictorService } from "../../services/MLPredictorService";
@@ -157,7 +158,16 @@ import {
 
 export const quizzesRouter = Router();
 
-quizzesRouter.post("/api/teacher/quizzes/generate", requireRole("enseignant", "admin"), async (req, res) => {
+// Each call hits a paid LLM API; keyed per-teacher (not per-IP) so one account
+// generating quizzes doesn't throttle every other teacher on a shared network.
+const quizGenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  keyFn: (req) => req.auth?.id || req.ip || "unknown",
+  message: "Trop de générations de quiz. Réessayez dans quelques minutes."
+});
+
+quizzesRouter.post("/api/teacher/quizzes/generate", requireRole("enseignant", "admin"), quizGenLimiter, async (req, res) => {
   try {
     cleanExpiredSessions();
 
@@ -264,7 +274,7 @@ quizzesRouter.post("/api/teacher/quizzes/generate", requireRole("enseignant", "a
 });
 
 // Endpoint: Regenerate specific questions or the entire batch
-quizzesRouter.post("/api/teacher/quizzes/regenerate", requireRole("enseignant", "admin"), async (req, res) => {
+quizzesRouter.post("/api/teacher/quizzes/regenerate", requireRole("enseignant", "admin"), quizGenLimiter, async (req, res) => {
   try {
     const sessionId = typeof req.body?.sessionId === "string" ? req.body.sessionId.trim() : "";
     const regenerateAll = Boolean(req.body?.regenerateAll);
