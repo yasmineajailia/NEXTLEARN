@@ -59,7 +59,11 @@ anything.
    uploaded through JSON payloads.
 2. Static mounts:
    - `public/` at `/` (all pages, CSS, client JS)
-   - `content/Support_Cours_Préparation/` — the course files on disk
+   - `content/Support_Cours_Préparation/` — the course files on disk, served at
+     `/support-cours/` (an ASCII mount path on purpose: Express matches a mount
+     path against the still percent-encoded request URL, so a literal accented
+     character there never matches what the browser sends and every file
+     404s)
    - `/graph.json` — the prerequisite graph (file lives in `data/graph.json`, served at this URL)
    - `/vendor/pdfjs` — mapped straight into `node_modules/pdfjs-dist/build`, so the
      PDF viewer is served without a bundler

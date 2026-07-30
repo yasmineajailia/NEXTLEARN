@@ -18,7 +18,9 @@ import { normalizeWhitespace } from "./textNormalize";
 
 const publicRoot = path.join(process.cwd(), "public");
 const supportRoot = path.join(process.cwd(), "content", "Support_Cours_Préparation");
-const supportPublicPrefix = "/Support_Cours_Préparation/";
+// Must match the ASCII mount path in server.ts (see the comment there for why
+// it can't be the accented folder name).
+const supportPublicPrefix = "/support-cours/";
 
 export function inferContentType(filename: string): string {
   const lower = filename.toLowerCase();

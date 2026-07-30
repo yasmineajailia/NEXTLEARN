@@ -44,8 +44,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static assets: CSS, images, and any future client-side JavaScript.
 app.use(express.static(path.join(process.cwd(), "public")));
+// Mounted at an ASCII path deliberately: Express 4 matches a mount path
+// against the still percent-encoded req.url, so a literal accented character
+// here (as "/Support_Cours_Préparation" used to be) never matches the
+// %C3%A9-encoded form every browser actually sends, and every file under it
+// 404s silently. The folder on disk keeps its accented name — only the URL
+// prefix has to be ASCII.
 app.use(
-  "/Support_Cours_Préparation",
+  "/support-cours",
   express.static(path.join(process.cwd(), "content", "Support_Cours_Préparation"))
 );
 // The physical file lives in data/, but the public URL stays /graph.json so no
