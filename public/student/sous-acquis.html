@@ -2562,6 +2562,12 @@
         const fi = pdfState.pdfFiles.indexOf(filePath);
         if (fi >= 0) pdfState.currentFileIndex = fi;
         if (pdfState.currentUrl === abs && pdfState.pdf) {
+          // Same PDF already parsed (e.g. the student switched to another
+          // resource — interactive HTML, a PPT embed — and clicked back to
+          // this one): still have to re-show the PDF canvas/controls and
+          // re-hide viewerFrame, or whatever was shown last stays stuck on
+          // screen even though we skip re-fetching/re-parsing the document.
+          setPdfControlsVisible(true);
           pdfState.pageNumber = startAtLastPage ? pdfState.pageCount : Math.max(1, Math.min(pdfState.pageCount, startAtPage));
           await renderPdfPage(pdfState.pageNumber);
           return;
