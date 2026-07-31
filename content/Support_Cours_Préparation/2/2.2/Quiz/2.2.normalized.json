@@ -1,0 +1,47 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/2/2.2/Quiz/2.2.docx",
+  "generatedAt": "2026-04-02T16:35:30.249Z",
+  "questionCount": 4,
+  "questions": [
+    {
+      "prompt": "int x = 2; switch (x) { case 1: printf(\"Un\"); break; case 2: printf(\"Deux\"); break; case 3: printf(\"Trois\"); break; } Quelle est la sortie ?",
+      "options": [
+        "Un",
+        "Deux",
+        "Trois",
+        "Rien du tout"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "int y = 1; switch (y) { case 1: printf(\"A\"); case 2: printf(\"B\"); case 3: printf(\"C\"); } Quelle est la sortie ?",
+      "options": [
+        "A",
+        "A B C",
+        "B C",
+        "Erreur de compilation"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "int z = 10; switch (z) { case 1: printf(\"Petit\"); break; case 2: printf(\"Moyen\"); break; default: printf(\"Autre\"); } Quelle est la sortie ?",
+      "options": [
+        "Petit",
+        "Moyen",
+        "Autre",
+        "Rien"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "char ch = 'b'; switch (ch) { case 'a': printf(\"Voyelle A\"); break; case 'e': printf(\"Voyelle E\"); break; default: printf(\"Consonne\"); } Que va-t-il s’afficher ?",
+      "options": [
+        "Voyelle A",
+        "Voyelle E",
+        "Consonne",
+        "Rien du tout"
+      ],
+      "correctOptionIndex": 2
+    }
+  ]
+}

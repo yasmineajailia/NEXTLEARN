@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/3/3.1/Quizz/3.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 1,
+  "questions": [
+    {
+      "prompt": "Quelle est la sortie de ce code ?: int i;for(i = 0; i < 5; i++) if(i % 2 == 0)continue; else printf(\"% d \", i);",
+      "options": [
+        "0 2 4",
+        "1 3 ",
+        "1 3 5",
+        "0 1 3"
+      ],
+      "correctOptionIndex": 1
+    },
+        {
+      "prompt": "Quelle est la différence entre ces deux boucles ? for(int i = 0; i < 5; i++) { ... }    et int i;    for(i = 0; i < 5; i++) { ... }",
+      "options": [
+        "Aucune différence de fonctionnement ni de portée de la variable i",
+        "La variable i est locale à la boucle dans la première, et accessible dans tout le bloc contenant la boucle dans la seconde ",
+        "La deuxième boucle est plus rapide à l'exécution",
+        "La première boucle est invalide car i est détruite à chaque itération"
+      ],
+      "correctOptionIndex": 1
+    },
+        {
+      "prompt": "Quel est l'effet de cette écriture ? for(;;)printf(\"Boucle\");",
+      "options": [
+        "Boucle qui affiche une seule fois",
+        "Erreur de compilation",
+        "Boucle infinie",
+        "Boucle exécutée 3 fois"
+      ],
+      "correctOptionIndex": 2
+    },
+        {
+      "prompt": "Quelle est la sortie de ce code ?  for (int i = 0; i < 5; i++);{    printf(\"Bonjour\\n\");} ",
+      "options": [
+        "Affiche « Bonjour » 5 fois",
+        "Affiche « Bonjour » une seule fois ",
+        "Boucle infinie",
+        "Ne compile pas"
+      ],
+      "correctOptionIndex": 1
+    },
+        {
+      "prompt": "Quel est le résultat de ce code ? for (int i = 0; i < 3; i++)   printf(\"i = %d\\n\", i);    printf(\"Fin de la boucle\\n\");",
+      "options": [
+        "i = 0 i = 1 i = 2 Fin de la boucle",
+        "i = 0 i = 1 i = 2 Fin de la boucle Fin de la boucle Fin de la boucle",
+        "Boucle infinie",
+        "Erreur de compilation"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

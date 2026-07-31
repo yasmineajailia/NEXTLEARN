@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/6/6.1/Quizz/6.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Pourquoi une chaîne de caractères doit-elle se terminer par '\\0' ?",
+      "options": [
+        "Pour indiquer la fin de la chaîne et permettre aux fonctions de la manipuler correctement",
+        "Pour compter le nombre de caractères",
+        "Ce n’est pas obligatoire",
+        "Pour éviter les erreurs de compilation"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Que se passe-t-il si une chaîne n’est pas terminée par '\\0' ?",
+      "options": [
+        "Rien de spécial",
+        "Les fonctions de manipulation peuvent lire au-delà, provoquant un comportement indéfini",
+        "La chaîne est automatiquement corrigée",
+        "Le programme plantera toujours"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Comment peut-on définir une chaîne de caractères vide ?",
+      "options": [
+        "Une chaîne avec un seul caractère '\\0'",
+        "Une chaîne avec un espace",
+        "Une chaîne avec un caractère nul non visible",
+        "Une chaîne avec plusieurs caractères nuls"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quelle propriété principale différencie une chaîne de caractères en C d’un simple tableau de char ?",
+      "options": [
+        "La taille fixe",
+        "La terminaison par '\\0' qui délimite la fin effective de la chaîne",
+        "La présence d’espaces",
+        "Aucune différence"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que se passe-t-il si une chaîne est définie avec une taille trop petite pour son contenu ?",
+      "options": [
+        "La chaîne sera tronquée ou provoquera un dépassement de mémoire (buffer overflow)",
+        "Le compilateur ajuste automatiquement la taille",
+        "Rien, la chaîne sera stockée normalement",
+        "Le programme s’arrête automatiquement"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

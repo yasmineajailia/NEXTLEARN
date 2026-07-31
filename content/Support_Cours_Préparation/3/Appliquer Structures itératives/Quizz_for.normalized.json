@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/3/3.5/Quizz/3.5.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Combien de fois le bloc de code suivant s'exécutera-t-il ? int i = 0; do { printf(\"Bonjour\\n\"); } while (i != 0);",
+      "options": [
+        "0 fois",
+        "1 fois",
+        "2 fois",
+        "Une boucle infinie"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle est la sortie du code suivant ? int i = 1; do { printf(\"%d \", i); i++; } while (i < 4);",
+      "options": [
+        "1 2 3",
+        "1 2 3 4",
+        "1 2",
+        "1 2 3 4 5"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quel est le rôle principal de la boucle do-while en C ?",
+      "options": [
+        "Exécuter un bloc de code uniquement si la condition est vraie",
+        "Exécuter un bloc de code au moins une fois, puis répéter tant que la condition est vraie",
+        "Exécuter un bloc de code tant que la condition est fausse",
+        "Exécuter un bloc de code un nombre fixe de fois"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quel est le problème dans le code suivant ? int i = 0; do { printf(\"%d\\n\", i); i++; } while (i < 5)",
+      "options": [
+        "La condition de la boucle est incorrecte",
+        "Il manque un point-virgule après la condition while",
+        "La variable i n'est pas initialisée",
+        "La boucle ne s'exécutera jamais"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quel code utilise une boucle do-while pour afficher les nombres de 1 à 5 ?",
+      "options": [
+        "int i = 1; do { printf(\"%d \", i); i++; } while (i <= 5);",
+        "int i = 1; while (i <= 5) { printf(\"%d \", i); i++; }",
+        "int i = 1; for (; i <= 5;) { printf(\"%d \", i); i++; }",
+        "int i = 1; do { printf(\"%d \", i); i--; } while (i <= 5);"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

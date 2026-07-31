@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/4/4.6/Quizz/4.6.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Le but d’un algorithme de tri est :",
+      "options": [
+        "Ajouter de nouveaux éléments dans le tableau",
+        "Réarranger les éléments pour qu’ils soient classés selon un ordre donné",
+        "Supprimer les éléments identiques",
+        "Compter le nombre d’éléments du tableau"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Un bon algorithme de tri doit…",
+      "options": [
+        "Toujours utiliser un même principe de tri",
+        "Minimiser le nombre de comparaisons et d’échanges",
+        "Utiliser des boucles imbriquées",
+        "Utiliser un tableau supplémentaire"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Dans le tri à bulles, le nombre maximal de passages est :",
+      "options": [
+        "n",
+        "n – 1",
+        "n / 2",
+        "n + 1"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que représente la variable pos dans ce code ? for (i = 0; i < n-1; i++) { pos = i; for (j = i+1; j < n; j++) if (T[j] < T[pos]) pos = j; }",
+      "options": [
+        "L'indice du premier élément du tableau",
+        "L’indice du plus grand élément trouvé",
+        "L’indice du plus petit élément trouvé dans la zone non triée",
+        "Le nombre d’échanges effectués"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Dans le tri par insertion, la zone avant l'indice i est :",
+      "options": [
+        "Inversée",
+        "Toujours triée",
+        "Complètement aléatoire",
+        "Toujours vide"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

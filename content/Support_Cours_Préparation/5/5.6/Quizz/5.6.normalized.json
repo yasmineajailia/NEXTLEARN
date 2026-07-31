@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/6/6.6/Quizz/6.6.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Quelle est la différence principale entre strcpy et strncpy ?",
+      "options": [
+        "strncpy copie une chaîne uniquement si elle est plus courte que dest",
+        "strncpy copie au maximum un nombre donné de caractères, pouvant ne pas ajouter de '\\0' si la limite est atteinte",
+        "strncpy concatène deux chaînes",
+        "Pas de différence"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que fait la fonction strcmp(s1, s2) ?",
+      "options": [
+        "Copie s2 dans s1",
+        "Compare deux chaînes et retourne 0 si elles sont égales",
+        "Retourne la longueur de s1",
+        "Concatène deux chaînes"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que fait la fonction strcat(dest, src) ?",
+      "options": [
+        "Copie src dans dest",
+        "Compare deux chaînes",
+        "Ajoute la chaîne src à la fin de dest",
+        "Retourne la longueur de dest"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Quel est le problème potentiel de strcpy(dest, src) si dest est trop petit ?",
+      "options": [
+        "Rien, elle s’adapte automatiquement",
+        "Dépassement de tampon (buffer overflow) pouvant causer un comportement indéfini",
+        "Erreur de compilation",
+        "La chaîne est tronquée automatiquement"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que fait la fonction strlen(s) ?",
+      "options": [
+        "Copie la chaîne s",
+        "Compare deux chaînes",
+        "Retourne la longueur de la chaîne s (sans compter '\\0')",
+        "Concatène deux chaînes"
+      ],
+      "correctOptionIndex": 2
+    }
+  ]
+}

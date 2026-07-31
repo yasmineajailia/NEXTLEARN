@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/3/3.3/Quizz/3.3.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Quand est-ce que la condition d’une boucle while est testée ?",
+      "options": [
+        "Avant d’exécuter le bloc",
+        "Après avoir exécuté le bloc",
+        "Après la première itération uniquement",
+        "Jamais, la boucle s’exécute toujours"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quel est le problème dans ce code ? int i = 0; while (i < 5) { printf(\"%d \", i); }",
+      "options": [
+        "Rien, il fonctionne bien",
+        "Boucle infinie car i n’est jamais modifiée",
+        "Ne compile pas",
+        "Affiche 0 cinq fois"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Qu’affiche ce code ? int i = 0; while (i++ < 3) { printf(\"%d \", i); }",
+      "options": [
+        "Affiche 1 2 3",
+        "Affiche 0 1 2 3",
+        "Boucle infinie",
+        "Affiche 1 2 3 4"
+      ],
+      "correctOptionIndex": 3
+    },
+    {
+      "prompt": "Que fait ce code ? int i = 0; while (i < 5) { printf(\"%d \", i); i++; } printf(\"Fin\\n\");",
+      "options": [
+        "Affiche 0 1 2 3 4 Fin",
+        "Affiche Fin puis 0 1 2 3 4",
+        "Affiche 0 1 2 3 4 et boucle infinie",
+        "Ne compile pas"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Que fait ce code ? int i = 0; while (i < 5) printf(\"%d \", i); i++;",
+      "options": [
+        "Affiche 0 1 2 3 4",
+        "Boucle infinie",
+        "Ne compile pas",
+        "Affiche 0 une fois"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

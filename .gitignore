@@ -5,7 +5,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/content/Support_Cours_Préparation/
 /public/generated-quizzes/
 
 # Python service — caches + generated RAG vector store

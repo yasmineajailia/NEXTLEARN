@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/5/5.1/Quizz/5.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Un tableau à une dimension (1D) sert principalement à :",
+      "options": [
+        "Représenter une table à double entrée",
+        "Stocker une liste linéaire d’éléments",
+        "Gérer des données sous forme de matrice",
+        "Faire une recherche binaire automatiquement"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Un tableau à deux dimensions (2D) sert principalement à :",
+      "options": [
+        "Stocker un seul entier",
+        "Stocker plusieurs chaînes indépendantes",
+        "Représenter des données en lignes et colonnes",
+        "Ranger des pointeurs"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "La déclaration d'un tableau 1D contenant des entiers s’écrit :",
+      "options": [
+        "int T[5];",
+        "int T[3][5];",
+        "float T[2][5];",
+        "char T[3][3];"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Ce tableau contient quel type d’éléments ? char noms[20][30];",
+      "options": [
+        "20 entiers",
+        "20 tableaux de 30 caractères",
+        "Un seul tableau de 600 caractères",
+        "30 tableaux de 20 caractères"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle déclaration est incorrecte ?",
+      "options": [
+        "int T[10];",
+        "float M[5][3];",
+        "char C[][4];",
+        "double D[10][10];"
+      ],
+      "correctOptionIndex": 2
+    }
+  ]
+}

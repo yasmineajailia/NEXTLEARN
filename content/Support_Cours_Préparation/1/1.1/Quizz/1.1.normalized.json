@@ -1,0 +1,62 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/1/1.1/Quizz/1.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.167Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Étape de départ Question : Quelle est la première étape à réaliser avant d’écrire un programme en langage C ?",
+      "options": [
+        "Compiler le programme",
+        "Écrire l’algorithme",
+        "Positionner le problème à résoudre",
+        "Tester le code sur un ordinateur",
+        "Positionner le problème à résoudre"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Analyse du problème Question : Que contient généralement la phase de spécification et d’analyse ?",
+      "options": [
+        "Le code en langage C",
+        "La recherche des bibliothèques à utiliser",
+        "La compréhension des entrées, sorties et contraintes du problème",
+        "La phase de test du programme ",
+        "La compréhension des entrées, sorties et contraintes du problème"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Étape intermédiaire Question : Quelle étape précède l’écriture du programme ?",
+      "options": [
+        "Le débogage",
+        "L’écriture de l’algorithme",
+        "L’analyse du programme compilé",
+        "L’installation du compilateur ",
+        "L’écriture de l’algorithme"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Traduction en langage C Question : L’écriture du programme en langage C correspond à :",
+      "options": [
+        "La spécification",
+        "La mise en œuvre de l’algorithme dans un langage compréhensible par l’ordinateur",
+        "La définition du problème",
+        "L’utilisation de bibliothèques graphiques ",
+        "La mise en œuvre de l’algorithme dans un langage compréhensible par l’ordinateur"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Dernière étape Question : Que doit-on faire après avoir écrit un programme en C ?",
+      "options": [
+        "L’exécuter et le tester",
+        "Réécrire l’algorithme",
+        "Supprimer les commentaires",
+        "L’analyser manuellement sans l’exécuter",
+        "L’exécuter et le tester"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/2/2.1/Quiz/2.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.229Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Question n1 int a = 5; if (a > 3) printf(\"A\\n\"); else printf(\"B\\n\");   Quelle est la sortie ?",
+      "options": [
+        "A",
+        "B",
+        "Erreur",
+        "Rien ne s’affiche"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "int a = 2; if (a > 5) printf(\"Hello\"); else printf(\"World\");     Que va-t-il s’afficher ?",
+      "options": [
+        "Hello",
+        "World",
+        "Rien",
+        "Erreur de compilation"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "int x = 0; if (x == 0) printf(\"X est nul\\n\"); printf(\"Fin\\n\");    Que va-t-il s’afficher ?",
+      "options": [
+        "X est nul",
+        "X est nulFin",
+        "Fin",
+        "Erreur"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "int a = 10; if (a > 5) if (a < 15) printf(\"Entre 5 et 15\"); else printf(\"Trop grand\");    Quelle est la sortie ?",
+      "options": [
+        "Entre 5 et 15",
+        "Trop grand",
+        "Rien",
+        "Erreur"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "int x = 5, y = 10; if (x > y) if (x == 5) printf(\"A\"); else printf(\"B\");     Que va-t-il s’afficher ?",
+      "options": [
+        "A",
+        "B",
+        "Rien",
+        "Erreur de compilation"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

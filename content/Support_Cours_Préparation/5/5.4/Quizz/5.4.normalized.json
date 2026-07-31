@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/6/6.4/Quizz/6.4.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Que retourne l'expression suivante ? char s[] = \"Bonjour\"; printf(\"%c\", s[0]);",
+      "options": [
+        "'B'",
+        "\"Bonjour\"",
+        "0",
+        "'\\0'"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Que contient s[5] dans la chaîne suivante ? char s[] = \"Salut\";",
+      "options": [
+        "'u'",
+        "'\\0'",
+        "\"t\"",
+        "Erreur de dépassement"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle boucle permet d’afficher chaque caractère d’une chaîne jusqu’à la fin ? char s[] = \"Test\";",
+      "options": [
+        "for(int i = 0; s[i] == '\\0'; i++) printf(\"%c\", s[i]);",
+        "for(int i = 0; s[i] != '\\0'; i++) printf(\"%c\", s[i]);",
+        "while(s[i] != 0) printf(\"%s\", s[i]);",
+        "for(char c : s) printf(\"%c\", c);"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Pourquoi s[0] = 'M'; est-il valide si s a été défini ainsi : char s[] = \"Bonjour\";",
+      "options": [
+        "Parce que s est un tableau modifiable",
+        "Parce que tous les caractères d'une chaîne sont constants",
+        "Parce que s référence une zone mémoire modifiable",
+        "Ce n’est pas valide"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Peut-on modifier un caractère d’une chaîne char s[] à l’aide de son indice ?",
+      "options": [
+        "Non, les chaînes sont constantes",
+        "Oui, avec s[i] = 'x';",
+        "Non, car les chaînes sont toujours en lecture seule",
+        "Non, on ne peut modifier les caractères que si la chaîne est déclarée comme tableau modifiable"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

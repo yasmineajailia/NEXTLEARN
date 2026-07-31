@@ -1,0 +1,56 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/1/1.7/Quizz/1.7.docx",
+  "generatedAt": "2026-04-02T16:35:30.215Z",
+  "questionCount": 3,
+  "questions": [
+    {
+      "prompt": "Parmi les opérateurs suivants, lequel a la priorité la plus élevée ?",
+      "options": [
+        "+",
+        "*",
+        "&&",
+        "=="
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Dans l’expression a || b && c, quelle opération est évaluée en premier ?",
+      "options": [
+        "a || b",
+        "b && c",
+        "a || c",
+        "Erreur de syntaxe"
+      ],
+      "correctOptionIndex": 1},
+    {
+      "prompt": "Quel opérateur a la priorité la plus basse parmi ceux-ci ?",
+      "options": [
+        "||",
+        "&&",
+        "==",
+        "*"
+      ],
+      "correctOptionIndex": 0
+    },
+        {
+      "prompt": "Quel opérateur est évalué avant dans l’expression !a == b ?",
+      "options": [
+        "!",
+        "==",
+        "Même priorité",
+        "Priorité indéterminée"
+      ],
+      "correctOptionIndex": 0
+    },
+            {
+      "prompt": "Quelle est la priorité entre + et - ?",
+      "options": [
+        "+ est prioritaire",
+        "- est prioritaire",
+        "Même priorité",
+        "Priorité indéterminée"
+      ],
+      "correctOptionIndex": 2
+    }
+  ]
+}

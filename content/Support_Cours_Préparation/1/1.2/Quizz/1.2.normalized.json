@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/1/1.2/Quizz/1.2.docx",
+  "generatedAt": "2026-04-02T16:35:30.181Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Quel est le point d’entrée obligatoire d’un programme C ?",
+      "options": [
+        "start()",
+        "begin()",
+        "main()",
+        "init()"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Quelle directive permet d’inclure une bibliothèque standard dans un programme C ?",
+      "options": [
+        "import",
+        "include",
+        "using",
+        "#include"
+      ],
+      "correctOptionIndex": 3
+    },
+    {
+      "prompt": "Quelle bibliothèque standard faut-il inclure pour utiliser la fonction printf ?",
+      "options": [
+        "stdli b.h",
+        "iostream",
+        "conio.h",
+        "stdio.h"
+      ],
+      "correctOptionIndex": 3
+    },
+    {
+      "prompt": "Quel est le bon ordre d’un programme C simple ?",
+      "options": [
+        "main(), #include, return",
+        "#include, main(), return",
+        "#include, return, main()",
+        "main(), return, #include"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que signifie return 0; à la fin de main() ?",
+      "options": [
+        "Arrête le programme sans succès",
+        "Retourne une erreur",
+        "Indique que le programme s’est bien terminé",
+        "Redémarre le programme"
+      ],
+      "correctOptionIndex": 2
+    }
+  ]
+}

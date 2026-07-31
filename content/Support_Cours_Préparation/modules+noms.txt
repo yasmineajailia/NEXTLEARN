@@ -1,0 +1,58 @@
+1. Lecture & Écriture des données
+- 1.1. Lister les étapes pour passer d’un code source à un exécutable   1
+- 1.2. Décrire la structure d’un programme C   2
+- 1.3. Utiliser les variables    3
+- 1.4. Examiner la portée d’une variable  4
+- 1.5. Pratiquer les fonctions d’entrées / sorties  3 
+- 1. 6. Utiliser les opérateurs arithmétiques et logiques 3
+-1.7. Ordonner les opérateurs arithmétiques et logiques  5
+
+2. Les structures conditionnelles
+- 2.1. Appliquer la structure if else  3
+- 2.2. Appliquer la structures switch  3
+- 2.3. Distinguer les structures conditionnelles ( if, if else et switch ) du langage C  4
+
+3. Les structures itératives
+- 3.1. Utiliser la boucle for  3
+- 3.2. Utiliser la boucle do while  3
+- 3.3. Utiliser la boucle while 3
+- 3.4. Différencier les structures itératives 4
+
+4. Les tableaux unidimensionnels et bidimensionnels
+- 4.1. Définir un tableau 1
+- 4.2. Pratiquer l’ opération d’ajout  3
+- 4.3. Pratiquer l’ opération  de suppression 3
+- 4.4. Pratiquer l’ opération de parcours 3
+- 4.5. Appliquer la recherche séquentielle  3
+- 4.6. Ordonner un tableau 4
+- 4.7. Appliquer la recherche dichotomique  3
+- 4.8. Identifier les types des tableaux 1        
+- 4.9.  Appliquer une structure itérative pour le parcours d’un tableau bidimentionnel 3    
+
+5. Les chaînes de caractères
+- 5.1. Définir une chaîne de caractères 1
+- 5.2. Pratiquer les fonctions de saisie et d’affichage d’une chaîne de caractères 3
+- 5.3. Utiliser les fonctions prédéfinies de la bibliothèque String.h pour la manipulation d’une chaîne de caractères 3
+- 5.4. Pratiquer les tableaux de chaîne de caractères 3
+- 5.5. Saisie d'une chaîne de caractères 3
+- 5.6. Fonction de manipulation de chaînes 3
+- 5.7. Tableau de chaînes 3
+
+6. Les structures
+- 6.1. Définir une structure avec des champs simples, des champs de type tableau   et des champs de type enregistrement  1    
+- 6.2. Utiliser une variable de type structure  3
+- 6.3 Utiliser un tableau de structure  3    
+
+7. Les pointeurs
+- 7.1. Définir un pointeur  1
+- 7.2. Utiliser les pointeurs dans les prototypes des fonctions (paramètres d'entrée ,retour) et dans les sous programmes  3
+- 7.3. Appliquer les pointeurs  pour la manipulation des tableaux  3      
+
+8. Les fonctions
+- 8.1. Définir une fonction, ses intérêts et ses caractéristiques  1
+- 8.2. Représenter le prototype ( définition ) d’une fonction  3
+- 8.3. Pratiquer l’appel des fonctions  3
+- 8.4. Différencier les paramètres effectifs des paramètres formels  4
+- 8.5. Distinguer les modes de passage des paramètres d’une fonction  4			
+- 8.6. Utiliser les tableaux dans des fonctions  3		
+

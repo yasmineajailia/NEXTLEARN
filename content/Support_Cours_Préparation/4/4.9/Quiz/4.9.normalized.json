@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/5/5.2/Quizz/5.2.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Pour parcourir un tableau à deux dimensions T[n][m], on utilise généralement :",
+      "options": [
+        "Une seule boucle for",
+        "Deux boucles imbriquées (une pour les lignes, une pour les colonnes)",
+        "Une structure switch",
+        "Une boucle while obligatoire"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Dans un tableau 2D T[i][j], l’indice i représente :",
+      "options": [
+        "Le numéro de la colonne",
+        "Le numéro de la ligne",
+        "La taille de la ligne",
+        "Le dernier élément du tableau"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Le parcours d'un tableau T[4][6] visite :",
+      "options": [
+        "4 cases",
+        "6 cases",
+        "10 cases",
+        "24 cases"
+      ],
+      "correctOptionIndex": 3
+    },
+    {
+      "prompt": "Quelle est l’erreur dans ce code ? for (i = 0; i <= n; i++) for (j = 0; j <= m; j++) printf(\"%d\", T[i][j]);",
+      "options": [
+        "Les <= causent un dépassement du tableau",
+        "Il manque un ;",
+        "Le tableau n’est pas trié",
+        "Le code ne contient que 1 boucle"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quel est le problème dans le code suivant ? int T[4][5]; int i, j; for (i = 0; i < 5; i++) for (j = 0; j < 4; j++) printf(\"%d \", T[i][j]);",
+      "options": [
+        "Les variables i et j ne sont pas initialisées",
+        "Les boucles parcourent le tableau dans le mauvais sens (inversion des limites)",
+        "Le tableau ne s'affiche jamais",
+        "Il manque un ; après la première boucle"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/6/6.5/Quizz/6.5.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Quelle fonction affiche une chaîne de caractères en ajoutant automatiquement un retour à la ligne ?",
+      "options": [
+        "printf(\"%s\", s);",
+        "puts(s);",
+        "scanf(\"%s\", s);",
+        "gets(s);"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle fonction permet de lire une chaîne jusqu’au premier espace ?",
+      "options": [
+        "scanf(\"%s\", s);",
+        "gets(s);",
+        "fgets(s, size, stdin);",
+        "puts(s);"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quelle fonction permet de lire une chaîne avec espaces (une ligne complète) ?",
+      "options": [
+        "scanf(\"%s\", s);",
+        "gets(s);",
+        "puts(s);",
+        "printf(\"%s\", s);"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle est la principale différence entre printf(\"%s\", s); et puts(s); ?",
+      "options": [
+        "printf ajoute un retour à la ligne automatique",
+        "printf ne peut afficher que des caractères",
+        "puts ajoute un retour à la ligne automatique",
+        "puts ne peut afficher que des entiers"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Que se passe-t-il si on utilise scanf(\"%s\", s); pour saisir \"Bonjour le monde\" ?",
+      "options": [
+        "s contiendra \"Bonjour\" uniquement",
+        "s contiendra \"Bonjour le monde\"",
+        "Erreur à l’exécution",
+        "s contiendra \"Bonjour_le_monde\""
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/4/4.5/Quizz/4.5.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "La recherche séquentielle consiste à :",
+      "options": [
+        "Chercher uniquement au milieu du tableau",
+        "Chercher de la fin vers le début, obligatoirement",
+        "Parcourir le tableau case par case jusqu’à trouver la valeur",
+        "Trier le tableau avant la recherche"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Soit le code suivant : for(int i = 0; i < n; i++) if(t[i] == x) printf(\"Trouvé\"); Ce code :",
+      "options": [
+        "Cherche x dans chaque case du tableau",
+        "Remplace x par t[i]",
+        "Supprime x du tableau",
+        "Trie le tableau"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Soit le code suivant : i = 0; trouve = 0; while(i < n && trouve == 0) { if(t[i] == x) trouve = 1; i++; } Cette version :",
+      "options": [
+        "Continue à parcourir même après avoir trouvé x",
+        "S'arrête dès que x est trouvé",
+        "Cherche uniquement dans les cases paires",
+        "Ne fonctionne pas"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "La recherche séquentielle consiste à :",
+      "options": [
+        "Chercher uniquement dans la moitié gauche du tableau",
+        "Chercher uniquement dans un tableau trié",
+        "Comparer la valeur recherchée avec les éléments du tableau un par un",
+        "Calculer la somme des éléments pour trouver la valeur cherchée"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Quel est l’avantage principal de la structure while dans une recherche séquentielle par rapport à un for ? i = 0; while(i < n && trouve == 0) { if(t[i] == x) trouve = 1; i++; }",
+      "options": [
+        "while permet d’arrêter la recherche dès que la valeur est trouvée",
+        "while parcourt toujours tout le tableau sans s’arrêter",
+        "while parcourt le tableau deux fois",
+        "Il n’y a aucune différence entre for et while dans ce contexte"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

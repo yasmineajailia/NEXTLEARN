@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/3/3.7/Quizz/3.7.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Quelle est la sortie du programme suivant ? int i = 0; while (i < 3) { printf(\"%d \", i); i++; }",
+      "options": [
+        "0 1 2",
+        "1 2 3",
+        "0 1 2 3",
+        "1 2"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quel est le problème dans la boucle suivante ? int i = 5; while (i > 0) { printf(\"%d \", i); }",
+      "options": [
+        "La condition est fausse dès le début",
+        "La boucle ne s’exécute jamais",
+        "Il manque une instruction d’incrémentation ou de décrémentation",
+        "i est trop petit pour la condition"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Combien de fois la boucle suivante s’exécute-t-elle ? int x = 10; while (x != 0) { x = x - 2; }",
+      "options": [
+        "5 fois",
+        "4 fois",
+        "10 fois",
+        "Boucle infinie"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Quel code corrige l’algorithme suivant pour afficher les entiers de 5 à 1 ? int i = 5; while (???) { printf(\"%d \", i); ???; }",
+      "options": [
+        "i < 1, i++",
+        "i >= 1, i--",
+        "i <= 5, i++",
+        "i > 5, i--"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quel est l’effet du code suivant ? int i = 1; while (i <= 4) { int j = 1; while (j <= i) { printf(\"* \"); j++; } printf(\"\\n\"); i++; }",
+      "options": [
+        "Affiche un carré de 4 lignes et 4 étoiles par ligne",
+        "Affiche 4 lignes de 1 seule étoile",
+        "Affiche un triangle d’étoiles croissantes",
+        "Affiche un motif aléatoire"
+      ],
+      "correctOptionIndex": 2
+    }
+  ]
+}

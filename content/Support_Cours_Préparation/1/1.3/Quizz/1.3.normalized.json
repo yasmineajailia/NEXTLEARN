@@ -1,0 +1,33 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/1/1.3/Quizz/1.3.docx",
+  "generatedAt": "2026-04-02T16:35:30.189Z",
+  "questionCount": 1,
+  "questions": [
+    {
+      "prompt": "Quelle est la bonne déclaration d’une variable réelle (nombre à virgule) ?",
+      "options": [
+        "float x = 3.14;",
+        "double x = \"3.14\";",
+        "char x = 3.14;",
+        "int x = 3.14; Quelle déclaration de variable permet de stocker un caractère ?",
+        "string c = 'a';",
+        "int c = \"a\";",
+        "char c = 'a';",
+        "float c = 'a'; Quelle variable est invalide en C ?",
+        "int age = 25;",
+        "float 2note = 14.5;",
+        "char sexe = 'M';",
+        "double moyenne = 15.2; Que se passe-t-il si on essaie d’utiliser une variable non déclarée ?",
+        "Le programme s’exécute avec un avertissement",
+        "Le compilateur la crée automatiquement",
+        "Une erreur de compilation se produit",
+        "Elle est ignorée Quel est le type approprié pour stocker un nombre avec une grande précision (ex. : 3.1415926535) ?",
+        "int",
+        "float",
+        "char",
+        "double"
+      ],
+      "correctOptionIndex": 3
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/6/6.2/Quizz/6.2.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Que contient un tableau de char déclaré comme char s[10]; sans initialisation ?",
+      "options": [
+        "Une chaîne vide",
+        "Des valeurs indéterminées (déchets mémoire)",
+        "Une chaîne nulle terminée par '\\0'",
+        "Le mot \"Hello\""
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Comment peut-on déclarer une chaîne vide avec un tableau de caractères ?",
+      "options": [
+        "char s[] = \"\";",
+        "char s[] = ' ';",
+        "char s[0];",
+        "char s = \"\";"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Laquelle des instructions suivantes déclare une chaîne sans l’initialiser ?",
+      "options": [
+        "char s[] = \"Hello\";",
+        "char *s = \"Hello\";",
+        "char s[10];",
+        "char s[] = {'H', 'e', 'l', 'l', 'o', '\\0'};"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Quelle est la taille maximale d’une chaîne stockée dans char s[20]; ?",
+      "options": [
+        "20",
+        "19",
+        "21",
+        "Variable selon le système"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Laquelle des syntaxes suivantes n’est pas une déclaration valide de chaîne sans initialisation ?",
+      "options": [
+        "char s[5];",
+        "char s[];",
+        "char s[10];",
+        "char s[1];"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

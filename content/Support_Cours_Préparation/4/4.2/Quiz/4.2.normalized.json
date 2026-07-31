@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/4/4.2/Quizz/4.2.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Que signifie “ajouter un élément à un tableau” en C ?",
+      "options": [
+        "Créer un nouveau tableau vide",
+        "Modifier la taille du tableau existant automatiquement",
+        "Placer une nouvelle valeur dans une case libre du tableau",
+        "Supprimer un élément pour le remplacer"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Pour insérer une valeur x à la position pos dans un tableau T, il faut :",
+      "options": [
+        "Écraser la valeur de T[pos] directement",
+        "Décaler les éléments à partir de pos vers la droite avant l’insertion",
+        "Créer un nouveau tableau et copier toutes les valeurs",
+        "Supprimer un élément avant d’ajouter"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Pourquoi est-il important de mettre à jour la taille n du tableau après chaque ajout ?",
+      "options": [
+        "Pour éviter de perdre la nouvelle valeur",
+        "Pour savoir combien de cases sont réellement utilisées",
+        "Pour pouvoir afficher ou traiter uniquement les valeurs valides",
+        "Toutes les réponses précédentes"
+      ],
+      "correctOptionIndex": 3
+    },
+    {
+      "prompt": "Quelle est la sortie de ce programme ? #include <stdio.h> int main() { int T[5] = {1, 2, 3}; int n = 3; T[n] = 4; n++; printf(\"%d\", T[3]); return 0; }",
+      "options": [
+        "3",
+        "4",
+        "0",
+        "Erreur d’exécution"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle est la sortie de ce programme ? #include <stdio.h> int main() { int T[6] = {1, 2, 3, 5, 6}; int n = 5, pos = 3, val = 4; for(int i = n; i > pos; i--) T[i] = T[i-1]; T[pos] = val; n++; for(int i = 0; i < n; i++) printf(\"%d \", T[i]); return 0; }",
+      "options": [
+        "1 2 3 4 5 6",
+        "1 2 3 5 4 6",
+        "1 2 4 3 5 6",
+        "1 2 3 4 6"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

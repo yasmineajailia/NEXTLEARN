@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/4/4.1/Quizz/4.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Qu’est-ce qu’un tableau en langage C ?",
+      "options": [
+        "Une variable capable de stocker plusieurs valeurs de types différents",
+        "Une structure de données qui contient des valeurs du même type, stockées de manière contiguë en mémoire",
+        "Une fonction spéciale permettant de regrouper des variables",
+        "Une liste dynamique dont la taille change pendant l’exécution"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle est la bonne manière de déclarer un tableau de 10 entiers en C ?",
+      "options": [
+        "int T[10];",
+        "int T = [10];",
+        "int T(10);",
+        "int[10] T;"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "De quoi dépend la taille maximale d’un tableau statique en C ?",
+      "options": [
+        "Du compilateur et de la mémoire disponible",
+        "Du nombre d’éléments qu’on veut afficher",
+        "Du processeur utilisé",
+        "Du type de boucle utilisée"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Si on déclare int T[50]; mais qu’on ne remplit que 20 cases, la taille réelle du tableau est :",
+      "options": [
+        "20",
+        "30",
+        "50",
+        "Indéfinie"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Comment accéder au troisième élément d’un tableau T déclaré comme int T[5]; ?",
+      "options": [
+        "T[2]",
+        "T(3)",
+        "T[3]",
+        "T.3"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

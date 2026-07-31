@@ -1,0 +1,33 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/1/1.6/Quizz/1.6.docx",
+  "generatedAt": "2026-04-02T16:35:30.208Z",
+  "questionCount": 1,
+  "questions": [
+    {
+      "prompt": "Que fait l’opérateur % en C ?",
+      "options": [
+        "Additionne deux nombres",
+        "Donne le reste de la division entière",
+        "Divise deux nombres",
+        "Multiplie deux nombres Quel opérateur permet de tester l’égalité entre deux valeurs ?",
+        "=",
+        "==",
+        "!=",
+        "&& Que retourne l’expression (5 > 3) && (2 < 4) ?",
+        "0",
+        "1",
+        "5",
+        "Erreur Quel est le résultat de l’expression logique !(0 || 1) ?",
+        "1",
+        "0",
+        "2",
+        "Erreur Quelle est la valeur de l’expression 10 / 4 en C si les deux opérandes sont des entiers ?",
+        "2.5",
+        "2",
+        "3",
+        "4"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

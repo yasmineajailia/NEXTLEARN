@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/7/7.1/Quizz/7.1.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Comment déclare-t-on un tableau de 3 chaînes, chaque chaîne pouvant contenir jusqu’à 20 caractères ?",
+      "options": [
+        "char tab[3][20];",
+        "char tab[20];",
+        "char tab[20][3];",
+        "char tab[] = {\"chaine1\", \"chaine2\", \"chaine3\"};"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Comment accéder au deuxième caractère de la troisième chaîne dans char tab[3][20]; ?",
+      "options": [
+        "tab[3][2]",
+        "tab[2][1]",
+        "tab[1][2]",
+        "tab[2][3]"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Comment copier la chaîne \"World\" dans la deuxième chaîne d’un tableau char tab[3][20]; ?",
+      "options": [
+        "tab[2] = \"World\";",
+        "strncpy(tab[2], \"World\");",
+        "tab[1] = \"World\";",
+        "strcpy(tab[1], \"World\");"
+      ],
+      "correctOptionIndex": 3
+    },
+    {
+      "prompt": "Comment accéder au premier caractère de la deuxième chaîne dans char tab[3][20]; ?",
+      "options": [
+        "tab[2][0]",
+        "tab[1][0]",
+        "tab[0][1]",
+        "tab[0][0]"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Comment initialiser un tableau de 3 chaînes vides (taille 20) ?",
+      "options": [
+        "char tab[3][20] = {{0}};",
+        "char tab[3][20] = {\"\"}",
+        "char tab[3][20] = {\"\" , \"\" , \"\"}",
+        "char tab[3][20] = {NULL}"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

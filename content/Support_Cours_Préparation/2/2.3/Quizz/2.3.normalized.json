@@ -1,0 +1,58 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/2/2.3/Quizz/2.3.docx",
+  "generatedAt": "2026-04-02T16:35:30.278Z",
+  "questionCount": 5,
+  "questions": [
+        {
+      "prompt": "La différence principale entre if et if…else est :",
+      "options": [
+        "if peut avoir plusieurs conditions",
+        "if…else permet de choisir entre deux blocs selon que la condition est vraie ou fausse",
+        "if…else est plus rapide",
+        "if ne fonctionne pas avec des entiers"
+      ],
+      "correctOptionIndex": 1
+    },
+            {
+      "prompt": "Laquelle de ces affirmations est vraie ?",
+      "options": [
+        "switch peut tester des conditions comme x > 5",
+        "if…else peut tester n’importe quelle condition logique",
+        "switch peut tester des chaînes de caractères en C standard",
+        " if ne peut tester que des entiers"
+      ],
+      "correctOptionIndex": 1
+    },
+
+                {
+      "prompt": "Quelle structure est plus adaptée pour choisir entre plusieurs valeurs fixes d’une variable entière ?",
+      "options": [
+        "if",
+        "if…else",
+        "switch",
+        "while"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Quelle structure ne peut pas directement gérer plusieurs conditions différentes sur la même variable sans imbriquer ?",
+      "options": [
+        "if",
+        "if…else",
+        "switch",
+        "Les trois peuvent"
+      ],
+      "correctOptionIndex": 0
+    },
+        {
+      "prompt": "Quel code est correct pour tester plusieurs conditions différentes sur x ?",
+      "options": [
+        "if (x==1) printf(\"Un\");else if (x==2) printf(\"Deux\");else printf(\"Autre\");",
+        "switch(x > 0) { ... }",
+        "if x = 1 { ... }",
+        "switch(x == 1) { ... }"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

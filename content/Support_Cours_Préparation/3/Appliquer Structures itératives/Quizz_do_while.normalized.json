@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/3/3.6/Quizz/3.6.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Quelle est la sortie du programme suivant ? #include <stdio.h> int main() { int i; for (i = 0; i < 3; i++) { printf(\"C \"); } return 0; }",
+      "options": [
+        "C",
+        "C C",
+        "C C C",
+        "Rien n’est affiché"
+      ],
+      "correctOptionIndex": 2
+    },
+    {
+      "prompt": "Quelle sera la dernière valeur affichée par cette boucle ? for (i = 15; i > 0; i -= 4) { printf(\"%d \", i); }",
+      "options": [
+        "3",
+        "1",
+        "4",
+        "5"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Lequel des codes suivants affiche les nombres pairs entre 1 et 10 ?",
+      "options": [
+        "for (int i = 1; i <= 10; i++) if (i % 2 == 1) printf(\"%d \", i);",
+        "for (int i = 2; i <= 10; i += 2) printf(\"%d \", i);",
+        "for (int i = 0; i <= 10; i++) if (i % 2 == 1) printf(\"%d \", i);",
+        "for (int i = 1; i < 10; i += 2) printf(\"%d \", i);"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle instruction permet d'afficher la table de 6 de 1 à 10 dans une boucle for ?",
+      "options": [
+        "for (i = 0; i <= 10; i++) printf(\"6 x %d = %d\\n\", i, i+6);",
+        "for (i = 1; i <= 10; i++) printf(\"6 x %d = %d\\n\", i, 6*i);",
+        "for (i = 1; i < 10; i++) printf(\"6 * %d = %d\\n\", i, 6+i);",
+        "for (i = 1; i <= 6; i++) printf(\"%d x 10 = %d\\n\", i, i*10)"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Que produit le code suivant ? for (i = 1; i <= 3; i++) { for (j = 1; j <= i; j++) { printf(\"%d \", j); } printf(\"\\n\"); }",
+      "options": [
+        "1 1 1\n2 2 2\n3 3 3",
+        "1\n1 2\n1 2 3",
+        "1\n2\n3",
+        "1 2 3\n1 2\n1"
+      ],
+      "correctOptionIndex": 1
+    }
+  ]
+}

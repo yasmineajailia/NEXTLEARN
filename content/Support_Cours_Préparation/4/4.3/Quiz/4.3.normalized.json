@@ -1,0 +1,57 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/4/4.3/Quizz/4.3.docx",
+  "generatedAt": "2026-04-02T16:35:30.289Z",
+  "questionCount": 5,
+  "questions": [
+    {
+      "prompt": "Lorsqu’on supprime un élément d’un tableau en langage C, quelle opération doit-on effectuer ?",
+      "options": [
+        "Effacer directement la valeur sans rien changer d’autre",
+        "Décaler tous les éléments suivants vers la gauche",
+        "Remplacer l’élément supprimé par zéro",
+        "Réduire automatiquement la taille du tableau en mémoire"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Si un tableau contient 8 éléments et qu’on en supprime un, quelle doit être la nouvelle valeur de la variable représentant la taille logique du tableau ?",
+      "options": [
+        "9",
+        "7",
+        "8",
+        "0"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle est la sortie de ce programme #include <stdio.h> int main() { int T[5] = {1, 2, 3, 4, 5}; int n = 5; n--; printf(\"%d\", T[n]); return 0; }",
+      "options": [
+        "4",
+        "5",
+        "3",
+        "Erreur"
+      ],
+      "correctOptionIndex": 0
+    },
+    {
+      "prompt": "Que va afficher ce programme ? #include <stdio.h> int main() { int T[6] = {10, 20, 30, 40, 50}; int n = 5, pos = 2; for(int i = pos; i < n - 1; i++) T[i] = T[i + 1]; n--; for(int i = 0; i < n; i++) printf(\"%d \", T[i]); return 0; }",
+      "options": [
+        "10 20 30 40",
+        "10 20 40 50",
+        "10 30 40 50",
+        "20 30 40 50"
+      ],
+      "correctOptionIndex": 1
+    },
+    {
+      "prompt": "Quelle sera la valeur affichée ? #include <stdio.h> int main() { int T[5] = {2, 4, 6, 8, 10}; int n = 5, val = 6, pos = -1; for(int i = 0; i < n; i++) if(T[i] == val) pos = i; if(pos != -1) { for(int i = pos; i < n - 1; i++) T[i] = T[i + 1]; n--; } printf(\"%d\", n); return 0; }",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "3"
+      ],
+      "correctOptionIndex": 0
+    }
+  ]
+}

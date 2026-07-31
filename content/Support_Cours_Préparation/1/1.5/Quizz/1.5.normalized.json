@@ -1,0 +1,33 @@
+{
+  "sourceDocx": "public/Support_Cours_Préparation/1/1.5/Quizz/1.5.docx",
+  "generatedAt": "2026-04-02T16:35:30.198Z",
+  "questionCount": 1,
+  "questions": [
+    {
+      "prompt": "Quelle fonction est utilisée pour afficher un message à l’écran en langage C ?",
+      "options": [
+        "scanf()",
+        "cout",
+        "write()",
+        "printf() Quelle fonction est utilisée pour lire une valeur saisie par l’utilisateur ?",
+        "get()",
+        "input()",
+        "scanf()",
+        "print() Quel est le format correct pour lire un entier avec scanf ?",
+        "scanf(\"%d\", x);",
+        "scanf(\"%d\", &x);",
+        "scanf(\"%i\", x);",
+        "scanf(\"%int\", &x); Quelle ligne permet d’afficher la valeur de la variable x entière ?",
+        "printf(\"x\");",
+        "printf(\"%x\", x);",
+        "printf(\"%d\", x);",
+        "print(x); Que se passe-t-il si on oublie le & dans un appel à scanf ?",
+        "Le programme affiche une erreur à l’exécution",
+        "La valeur saisie est stockée correctement",
+        "Une erreur de compilation se produit",
+        "La valeur n’est pas stockée dans la variable"
+      ],
+      "correctOptionIndex": 3
+    }
+  ]
+}
