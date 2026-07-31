@@ -288,25 +288,99 @@ function bindEvents() {
     closeModuleDetail();
   });
 
-  dom.calendarList?.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-      return;
-    }
+  // The popover is portaled to <body> instead of living next to its trigger
+  // chip (see getCalendarPopoverPortal) — a calendar card, and every week
+  // card inside it, each carry a CSS transform (the week/month entrance
+  // animations leave `transform: translateY(0)` at rest via fill-mode
+  // forwards, and .card itself transforms on hover). ANY transformed
+  // ancestor becomes the containing block for position:fixed descendants,
+  // which is what made the popover impossible to keep fully on-screen no
+  // matter how its offset was corrected — it was never actually escaping to
+  // the real viewport. A single shared element parented directly to <body>
+  // has no such ancestor in the way, so position:fixed there means what it
+  // says. Content is populated per-chip from data-popover-* attributes.
+  let calendarPopoverHideTimer = null;
 
-    const openButton = target.closest("[data-open-subacquis='1']");
-    if (!(openButton instanceof HTMLElement)) {
-      return;
-    }
+  function getCalendarPopoverPortal() {
+    let portal = document.getElementById("calendar-popover-portal");
+    if (portal) return portal;
 
-    event.preventDefault();
-    const moduleId = String(openButton.dataset.moduleId || "");
-    const subAcquisId = String(openButton.dataset.subAcquisId || "");
-    if (!moduleId || !subAcquisId) {
-      return;
-    }
+    portal = document.createElement("aside");
+    portal.id = "calendar-popover-portal";
+    portal.className = "calendar-popover";
+    portal.setAttribute("role", "tooltip");
+    portal.innerHTML = `
+      <p class="calendar-popover-title"></p>
+      <p class="calendar-popover-status"></p>
+      <div class="calendar-popover-action-slot"></div>
+    `;
+    // Hovering/focusing the popover itself (e.g. to click its button) must
+    // keep it open rather than have it disappear the instant the pointer
+    // leaves the (now unrelated, DOM-wise) trigger chip.
+    portal.addEventListener("mouseenter", cancelCalendarPopoverHide);
+    portal.addEventListener("mouseleave", scheduleCalendarPopoverHide);
+    portal.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const openButton = target.closest("[data-open-subacquis='1']");
+      if (!openButton) return;
+      event.preventDefault();
+      const moduleId = String(openButton.dataset.moduleId || "");
+      const subAcquisId = String(openButton.dataset.subAcquisId || "");
+      if (moduleId && subAcquisId) window.location.href = buildSubAcquisUrl(moduleId, subAcquisId);
+    });
+    document.body.appendChild(portal);
+    return portal;
+  }
 
-    window.location.href = buildSubAcquisUrl(moduleId, subAcquisId);
+  function showCalendarPopover(chip) {
+    cancelCalendarPopoverHide();
+    const portal = getCalendarPopoverPortal();
+    const unlocked = chip.dataset.popoverUnlocked === "1";
+    const moduleId = chip.dataset.moduleId || "";
+    const subAcquisId = chip.dataset.subAcquisId || "";
+
+    portal.querySelector(".calendar-popover-title").textContent = chip.dataset.popoverName || "";
+    const statusEl = portal.querySelector(".calendar-popover-status");
+    statusEl.textContent = chip.dataset.popoverStatus || "";
+    statusEl.className = `calendar-popover-status ${chip.dataset.popoverStatusClass || ""}`;
+    portal.querySelector(".calendar-popover-action-slot").innerHTML = unlocked
+      ? `<button type="button" class="calendar-popover-action" data-open-subacquis="1" data-module-id="${htmlEscape(moduleId)}" data-sub-acquis-id="${htmlEscape(subAcquisId)}">Accéder au sous-acquis</button>`
+      : '<span class="calendar-popover-action disabled">Toujours indisponible</span>';
+
+    portal.classList.add("is-visible");
+  }
+
+  function scheduleCalendarPopoverHide() {
+    cancelCalendarPopoverHide();
+    calendarPopoverHideTimer = window.setTimeout(() => {
+      document.getElementById("calendar-popover-portal")?.classList.remove("is-visible");
+      calendarPopoverHideTimer = null;
+    }, 150);
+  }
+
+  function cancelCalendarPopoverHide() {
+    if (calendarPopoverHideTimer) {
+      clearTimeout(calendarPopoverHideTimer);
+      calendarPopoverHideTimer = null;
+    }
+  }
+
+  dom.calendarList?.addEventListener("mouseover", (event) => {
+    const chip = event.target instanceof HTMLElement ? event.target.closest(".calendar-sub-id") : null;
+    if (chip) showCalendarPopover(chip);
+  });
+  dom.calendarList?.addEventListener("mouseout", (event) => {
+    const chip = event.target instanceof HTMLElement ? event.target.closest(".calendar-sub-id") : null;
+    if (chip) scheduleCalendarPopoverHide();
+  });
+  dom.calendarList?.addEventListener("focusin", (event) => {
+    const chip = event.target instanceof HTMLElement ? event.target.closest(".calendar-sub-id") : null;
+    if (chip) showCalendarPopover(chip);
+  });
+  dom.calendarList?.addEventListener("focusout", (event) => {
+    const chip = event.target instanceof HTMLElement ? event.target.closest(".calendar-sub-id") : null;
+    if (chip) scheduleCalendarPopoverHide();
   });
 
   window.addEventListener("focus", () => {
@@ -778,9 +852,6 @@ function renderCalendar(calendarEntries = [], scheduleStartDate = null) {
             const statusText = isUnlocked ? "Disponible" : "Verrouillé";
             const statusClass = isUnlocked ? "is-available" : "is-unavailable";
             const chipClass = isUnlocked ? "is-unlocked" : "is-locked";
-            const accessAction = isUnlocked
-              ? `<button type="button" class="calendar-popover-action" data-open-subacquis="1" data-module-id="${htmlEscape(moduleId)}" data-sub-acquis-id="${htmlEscape(subId)}">Accéder au sous-acquis</button>`
-              : '<span class="calendar-popover-action disabled">Toujours indisponible</span>';
             // Locked chips get an explicit lock icon rather than relying on color
             // alone to distinguish them from unlocked ones (color-blind-safe, and
             // scannable at a glance without hovering for the popover).
@@ -790,12 +861,14 @@ function renderCalendar(calendarEntries = [], scheduleStartDate = null) {
 
             return `
               <span class="calendar-chip-shell">
-                <button type="button" class="calendar-sub-id ${chipClass}" aria-label="${htmlEscape(subName)}">${lockIcon}${htmlEscape(subId)}</button>
-                <aside class="calendar-popover" role="tooltip">
-                  <p class="calendar-popover-title">${htmlEscape(subName)}</p>
-                  <p class="calendar-popover-status ${statusClass}">${statusText}</p>
-                  ${accessAction}
-                </aside>
+                <button type="button" class="calendar-sub-id ${chipClass}" aria-label="${htmlEscape(subName)}"
+                  data-popover-name="${htmlEscape(subName)}"
+                  data-popover-status="${htmlEscape(statusText)}"
+                  data-popover-status-class="${statusClass}"
+                  data-popover-unlocked="${isUnlocked ? "1" : "0"}"
+                  data-module-id="${htmlEscape(moduleId)}"
+                  data-sub-acquis-id="${htmlEscape(subId)}"
+                >${lockIcon}${htmlEscape(subId)}</button>
               </span>
             `;
           })

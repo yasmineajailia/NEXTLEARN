@@ -635,13 +635,14 @@
       }
 
       .calendar-popover {
-        position: absolute;
+        position: fixed;
         left: 50%;
-        top: calc(100% + 8px);
-        transform: translate(-50%, 4px);
-        min-width: 200px;
-        max-width: 280px;
-        z-index: 20;
+        bottom: 1.5rem;
+        transform: translate(-50%, 12px);
+        width: min(420px, calc(100vw - 2rem));
+        max-height: min(50vh, 420px);
+        overflow-y: auto;
+        z-index: 200;
         border: 1px solid var(--line);
         border-radius: 12px;
         padding: 0.7rem 0.85rem;
@@ -652,8 +653,7 @@
         transition: opacity 150ms ease, transform 150ms ease;
       }
 
-      .calendar-chip-shell:hover .calendar-popover,
-      .calendar-chip-shell:focus-within .calendar-popover {
+      .calendar-popover.is-visible {
         opacity: 1;
         transform: translate(-50%, 0);
         pointer-events: auto;

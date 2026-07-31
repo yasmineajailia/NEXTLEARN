@@ -941,28 +941,34 @@ body.chatbot-open {
   flex-shrink: 0;
 }
 
+/* Anchored to a fixed spot on screen (like a toast) instead of positioned
+   relative to each tiny chip. A calendar with a dozen weeks has chips
+   scattered all over the page — near-edge and near-bottom chips kept sending
+   a chip-relative popover off-screen no matter how the offset was corrected.
+   Fixed positioning sidesteps that entirely: it's always fully visible,
+   always the same size, regardless of which chip triggered it. */
 .calendar-popover {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  top: calc(100% + 8px);
-  transform: translate(-50%, 6px);
-  min-width: 220px;
-  max-width: 300px;
-  z-index: 20;
+  bottom: 1.5rem;
+  transform: translate(-50%, 12px);
+  width: min(420px, calc(100vw - 2rem));
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
+  z-index: 200;
   border: 1px solid #e4c783;
   border-radius: 12px;
-  padding: 0.62rem;
+  padding: 0.75rem;
   background:
     radial-gradient(circle at 84% 18%, rgba(252, 221, 150, 0.42), transparent 45%),
     linear-gradient(160deg, #fffef8, #fff6de);
-  box-shadow: 0 16px 34px rgba(31, 36, 48, 0.2);
+  box-shadow: 0 16px 34px rgba(31, 36, 48, 0.25);
   opacity: 0;
   pointer-events: none;
   transition: opacity 170ms ease, transform 170ms ease;
 }
 
-.calendar-chip-shell:hover .calendar-popover,
-.calendar-chip-shell:focus-within .calendar-popover {
+.calendar-popover.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
   pointer-events: auto;
@@ -1804,28 +1810,34 @@ body.chatbot-open {
   flex-shrink: 0;
 }
 
+/* Anchored to a fixed spot on screen (like a toast) instead of positioned
+   relative to each tiny chip. A calendar with a dozen weeks has chips
+   scattered all over the page — near-edge and near-bottom chips kept sending
+   a chip-relative popover off-screen no matter how the offset was corrected.
+   Fixed positioning sidesteps that entirely: it's always fully visible,
+   always the same size, regardless of which chip triggered it. */
 .calendar-popover {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  top: calc(100% + 8px);
-  transform: translate(-50%, 6px);
-  min-width: 220px;
-  max-width: 300px;
-  z-index: 20;
+  bottom: 1.5rem;
+  transform: translate(-50%, 12px);
+  width: min(420px, calc(100vw - 2rem));
+  max-height: min(50vh, 420px);
+  overflow-y: auto;
+  z-index: 200;
   border: 1px solid #e4c783;
   border-radius: 12px;
-  padding: 0.62rem;
+  padding: 0.75rem;
   background:
     radial-gradient(circle at 84% 18%, rgba(252, 221, 150, 0.42), transparent 45%),
     linear-gradient(160deg, #fffef8, #fff6de);
-  box-shadow: 0 16px 34px rgba(31, 36, 48, 0.2);
+  box-shadow: 0 16px 34px rgba(31, 36, 48, 0.25);
   opacity: 0;
   pointer-events: none;
   transition: opacity 170ms ease, transform 170ms ease;
 }
 
-.calendar-chip-shell:hover .calendar-popover,
-.calendar-chip-shell:focus-within .calendar-popover {
+.calendar-popover.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
   pointer-events: auto;
