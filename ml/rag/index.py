@@ -91,6 +91,7 @@ def reindex(modules: list, base_url: str = "", reset: bool = False, embed_fn=Non
         store.reset()
     embed_fn = embed_fn or embedder.embed
 
+    content.reset_fetch_failures()
     chunks = build_chunks(modules, base_url)
     current_ids = {c["chunkId"] for c in chunks}
     existing = store.existing_ids()
@@ -113,10 +114,20 @@ def reindex(modules: list, base_url: str = "", reset: bool = False, embed_fn=Non
     if stale:
         store.delete(list(stale))
 
+    # A non-zero courseFileFailures means some lessons were indexed WITHOUT
+    # their course content — the chatbot will answer from structural metadata
+    # alone for those and look merely unhelpful rather than broken. Surfaced
+    # here so `npm run reindex:rag` shows it instead of it having to be noticed
+    # months later.
+    failures = content.fetch_failures()
+    if failures:
+        print(f"[rag] WARNING: {failures} course file(s) could not be indexed — see [content] logs above")
+
     return {
         "totalChunks": len(chunks),
         "embedded": len(todo),
         "skipped": len(chunks) - len(todo),
         "pruned": len(stale),
+        "courseFileFailures": failures,
         "storeCount": store.count(),
     }

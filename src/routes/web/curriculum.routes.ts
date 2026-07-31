@@ -233,7 +233,15 @@ curriculumRouter.get<{ moduleId: string }>("/api/student/module/:moduleId", requ
 
 // Programmation C modules endpoint.
 // Reads modules from the MongoDB curriculum collection.
-curriculumRouter.get("/api/programmation-c/modules", async (req, res) => {
+//
+// requireAuth like every sibling route: this returns the whole curriculum
+// outline (module + sous-acquis names) and was the only /api/programmation-c/*
+// endpoint left unguarded, so the structure was readable by anyone with the
+// URL. Nothing in the app calls it — /api/student/modules is the guarded,
+// access-filtered route the frontend actually uses — so it is a candidate for
+// deletion; guarding it is the non-breaking fix in case anything external
+// (a demo, a notebook) still points here.
+curriculumRouter.get("/api/programmation-c/modules", requireAuth, async (req, res) => {
   try {
     const overview = await readPersistedProgramCOverview();
 

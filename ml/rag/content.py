@@ -26,6 +26,22 @@ MAX_SNIPPETS = 8
 MIN_SNIPPET_LEN = 40
 MAX_SNIPPET_LEN = 600
 
+# Count of course files that could not be fetched/extracted during the current
+# reindex. Surfaced in the reindex stats (see index.reindex) because a silent
+# fetch failure is indistinguishable from "this file has no text" at the chunk
+# level — which is how the auth gap stayed invisible. A non-zero count here
+# means the chatbot is being indexed WITHOUT some of its course content.
+_fetch_failures = 0
+
+
+def reset_fetch_failures() -> None:
+    global _fetch_failures
+    _fetch_failures = 0
+
+
+def fetch_failures() -> int:
+    return _fetch_failures
+
 
 def _b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
@@ -118,6 +134,20 @@ def snippets_from_url(url: str, base_url: str = "") -> list:
     try:
         r = requests.get(full, timeout=FETCH_TIMEOUT_S, headers=headers)
         r.raise_for_status()
-        return split_snippets(extract_bytes(r.content, url))
-    except Exception:  # noqa: BLE001 — a bad/missing file must not fail the whole reindex
+        snippets = split_snippets(extract_bytes(r.content, url))
+        if not snippets:
+            # Reached the file but got nothing usable out of it — a scanned PDF
+            # with no text layer, an unsupported extension, or a truncated
+            # upload. Worth surfacing: the chunk silently vanishes either way.
+            print(f"[content] no text extracted from {url} ({len(r.content)} bytes)")
+        return snippets
+    except Exception as exc:  # noqa: BLE001 — a bad/missing file must not fail the whole reindex
+        # MUST stay non-fatal (one broken file shouldn't abort a whole reindex),
+        # but never silent. This handler swallowing a 401 is exactly how the
+        # course-file auth gap went unnoticed for months: every fetch failed,
+        # every failure looked identical to "this file has no text", and the
+        # chatbot ended up indexed with nothing but structural metadata.
+        global _fetch_failures
+        _fetch_failures += 1
+        print(f"[content] fetch/extract FAILED for {full} ({type(exc).__name__}: {exc})")
         return []
