@@ -54,6 +54,12 @@ services:
       PORT: "3000"
       MONGODB_URI: "mongodb://mongo:27017/nextlearn"
       SHAP_SERVICE_URL: "http://ml:8000"   # adopt the ML container, never spawn locally
+      # How the ML container reaches THIS app to fetch course files during a
+      # reindex. Must stay a service name: APP_BASE_URL is the public domain
+      # (it goes into password-reset emails) and is not resolvable from inside
+      # the ML container, so sharing one variable left the chatbot indexed
+      # without any course content.
+      INTERNAL_BASE_URL: "http://app:3000"
     ports:
       - "3000:3000"
     depends_on:

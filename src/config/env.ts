@@ -9,7 +9,20 @@ export const env = {
   port: Number(process.env.PORT ?? 3000),
   nodeEnv: process.env.NODE_ENV ?? "development",
   mongodbUri: process.env.MONGODB_URI ?? "",
+  // PUBLIC url of this app. Goes into password-reset emails, so it must be
+  // whatever a student's browser can actually open.
   appBaseUrl: process.env.APP_BASE_URL ?? "http://localhost:3000",
+  // Where the Python ML service should reach this app to fetch course files
+  // during a RAG reindex. Deliberately separate from appBaseUrl: in a
+  // containerised deploy the two are different hosts — the ML container talks
+  // to the app over the internal network (http://app:3000), a name no browser
+  // could resolve, while password-reset links need the public domain. Sharing
+  // one variable meant one of the two was always wrong, and the losing side
+  // here fails silently (course files 404/refuse, the fetch error is
+  // swallowed, and the chatbot ends up indexed with no course content).
+  // Falls back to appBaseUrl for single-host setups where they're the same.
+  internalBaseUrl:
+    process.env.INTERNAL_BASE_URL ?? process.env.APP_BASE_URL ?? "http://localhost:3000",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiEmbeddingBaseUrl: process.env.OPENAI_EMBEDDING_BASE_URL ?? "https://api.openai.com/v1",
   openaiEmbeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? "text-embedding-3-small",

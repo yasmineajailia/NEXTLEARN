@@ -21,7 +21,10 @@ import { readPersistedCurriculumModules } from "../src/routes/web";
 
 const RESET = process.argv.includes("--reset");
 // Base URL the ML service uses to fetch course-file URLs stored on the modules.
-const APP_BASE_URL = env.appBaseUrl;
+// Resolved inside the ML service, so it must be reachable from THERE, not from
+// this script's host (see config/env.ts) — e.g. http://app:3000 when running
+// this against a compose stack.
+const APP_BASE_URL = env.internalBaseUrl;
 
 async function main() {
   await mongoose.connect(env.mongodbUri);

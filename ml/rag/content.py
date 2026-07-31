@@ -48,8 +48,11 @@ def _service_token() -> str | None:
         return None
     now = int(time.time())
     header = _b64url(json.dumps({"alg": "HS256", "typ": "JWT"}, separators=(",", ":")).encode())
+    # Least privilege: /api/media/* only calls requireAuth, which accepts ANY
+    # valid role, so the lowest one is enough — an "admin" token here would
+    # carry backoffice authority this indexer has no use for.
     payload = _b64url(json.dumps(
-        {"sub": "rag-indexer", "role": "admin", "iat": now, "exp": now + 300},
+        {"sub": "rag-indexer", "role": "student", "iat": now, "exp": now + 300},
         separators=(",", ":"),
     ).encode())
     signing_input = f"{header}.{payload}".encode()

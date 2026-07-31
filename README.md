@@ -32,7 +32,9 @@ Créer un fichier `.env` à la racine :
 ```
 MONGODB_URI=mongodb://...
 AUTH_SECRET=...               # signe les sessions JWT ; obligatoire en production
-APP_BASE_URL=http://localhost:3000   # utilisé par le service Python pour relire les fichiers de cours
+APP_BASE_URL=http://localhost:3000   # URL PUBLIQUE (liens de réinitialisation de mot de passe)
+# INTERNAL_BASE_URL=http://app:3000  # seulement si le service Python tourne sur un autre hôte
+                                     # (en Docker : le nom du service, pas le domaine public)
 
 # Fournisseur LLM/embeddings : Gemini est utilisé en priorité si sa clé est présente,
 # sinon on retombe sur les variables OPENAI_* (compatibles OpenRouter).
@@ -83,6 +85,29 @@ côté back-office, mais on peut le forcer manuellement :
 npm run reindex:rag            # incrémental
 npm run reindex:rag -- --reset # reconstruit l'index vectoriel depuis zéro
 ```
+
+## Déploiement
+
+```bash
+docker compose up --build
+```
+
+Trois conteneurs : `mongo`, `ml` (FastAPI) et `app` (Node). Les secrets viennent
+du `.env` local (jamais commité) ; le fichier compose fixe lui-même le câblage
+réseau entre conteneurs. Deux volumes persistent les données : `mongo-data`
+(base + fichiers de cours en GridFS) et `chroma-store` (index du chatbot).
+
+À vérifier avant une mise en production :
+
+- `AUTH_SECRET` doit être défini — le serveur refuse de démarrer sans lui.
+- `APP_BASE_URL` doit être le domaine public (il part dans les emails de
+  réinitialisation). En Docker, `INTERNAL_BASE_URL` est déjà réglé sur
+  `http://app:3000` : c'est par là que le service Python relit les fichiers de
+  cours pour construire l'index.
+- Mettre un reverse proxy HTTPS devant : les cookies de session sont émis avec
+  `secure` en production et ne seront pas acceptés en HTTP simple.
+- `mongo-data` contient **tous** les fichiers déposés par les enseignants —
+  prévoir une sauvegarde régulière du volume.
 
 ## Scripts utiles
 

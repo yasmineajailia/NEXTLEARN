@@ -187,7 +187,9 @@ export function requestPythonReindex(modules: unknown[]): void {
   fetch(serviceUrl("/rag/reindex"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ modules, baseUrl: env.appBaseUrl })
+    // internalBaseUrl, not appBaseUrl: this URL is resolved by the ML service,
+    // not by a browser (see the note in config/env.ts).
+    body: JSON.stringify({ modules, baseUrl: env.internalBaseUrl })
   }).catch((error) => {
     console.warn("[rag] Python reindex trigger failed:", error instanceof Error ? error.message : error);
   });
