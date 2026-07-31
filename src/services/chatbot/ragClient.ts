@@ -53,10 +53,21 @@ export type RagAnswerResult = {
   }>;
 };
 
+// Both of these must stay comfortably ABOVE ml/rag/generate.py's own
+// LLM_TIMEOUT_S (40s): Python catches a slow LLM call at that mark and falls
+// back to a deterministic (non-LLM) answer instead of failing outright — but
+// only if it gets the chance to actually send that fallback back before Node
+// gives up waiting. These were previously at-or-below Python's timeout, so
+// Node could abort at almost the exact moment Python was about to recover,
+// turning a graceful degradation into a hard "didn't reply" for the student.
 const RAG_ANSWER_TIMEOUT_MS = 60_000;
 // Streaming has no single deadline (a long answer is legitimate), but a stalled
-// upstream must not hang the SSE forever — abort if no chunk arrives for this long.
-const RAG_STREAM_IDLE_TIMEOUT_MS = 45_000;
+// upstream must not hang the SSE forever — abort if no chunk arrives for this
+// long. The very first "meta" SSE frame is sent before the LLM call even
+// starts, so this idle window is really timing "how long until either the
+// first real token or Python's own fallback arrives" — needs the same margin
+// over LLM_TIMEOUT_S as the buffered path above.
+const RAG_STREAM_IDLE_TIMEOUT_MS = 60_000;
 
 function serviceUrl(path: string): string {
   return `${SHAP_SERVICE_URL.replace(/\/$/, "")}${path}`;
@@ -66,6 +77,12 @@ export async function answerViaPython(params: {
   question: string;
   allowedModuleIds: string[];
   allowedSubAcquisIds: string[];
+  // Class access WITHOUT the progress-frontier restriction — lets Python's
+  // "this is a real course topic, just not available yet" detector tell apart
+  // genuinely calendar-locked content from content that's unlocked but simply
+  // not yet reached by this student (see buildChatContext in chatbot.ts).
+  calendarAllowedModuleIds?: string[];
+  calendarAllowedSubAcquisIds?: string[];
   filterToModuleId?: string;
   filterToSubAcquisId?: string;
   history: StudentChatTurn[];
@@ -110,6 +127,8 @@ export async function streamViaPython(
     question: string;
     allowedModuleIds: string[];
     allowedSubAcquisIds: string[];
+    calendarAllowedModuleIds?: string[];
+    calendarAllowedSubAcquisIds?: string[];
     filterToModuleId?: string;
     filterToSubAcquisId?: string;
     history: StudentChatTurn[];

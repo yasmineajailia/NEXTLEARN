@@ -101,6 +101,92 @@ def _allowed(chunk: dict, allowed_modules: set, allowed_subacquis: set) -> bool:
     return f"{chunk.get('moduleId')}::{sub}" in allowed_subacquis
 
 
+def find_locked_topic_match(
+    question: str,
+    filter_module: str | None,
+    allowed_modules: set,
+    allowed_subacquis: set,
+    calendar_allowed_modules: set | None = None,
+    calendar_allowed_subacquis: set | None = None,
+) -> dict | None:
+    """Searches indexed content — ignoring access restrictions — for a chunk
+    genuinely on-topic for `question`, using the same token-overlap bar as
+    has_meaningful_grounding (overlap >= 2 or coverage >= 0.35) rather than a
+    new ad-hoc threshold. If the best such match falls OUTSIDE the caller's
+    allowed scope (`allowed_modules`/`allowed_subacquis` — class access ∩
+    progress frontier), returns its module/sous-acquis so the chatbot can say
+    "that part of the course isn't available yet" instead of a vague "I don't
+    have that information" — but only for a real, on-topic hit, not incidental
+    keyword overlap, and only when it's actually outside scope (an allowed
+    match just answers normally through the regular retrieval path).
+
+    When `filter_module` is set (the chatbot is scoped to one lesson page), the
+    search is narrowed to that module's content only. When it's None (the
+    general, unscoped chatbot), the WHOLE indexed course is searched — this is
+    the only way that assistant can recognize "pointeurs" as a real, just-locked
+    topic instead of falling through to the vector/lexical fallback, which has
+    no such concept and can only cite whatever it's allowed to see (occasionally
+    matching on an unrelated shared word, e.g. "utiliser" across many acquis
+    titles).
+
+    `reason` in the result distinguishes two different situations a caller must
+    word differently: "calendar" (genuinely locked by the schedule — telling the
+    student to check their calendar is correct) vs. "progress" (already
+    calendar-unlocked, just not yet reached by this student — telling them to
+    check the calendar would be wrong, since the calendar already shows it as
+    available). Determined by checking the match against the CALENDAR-only
+    scope (no progress-frontier restriction); when that isn't supplied, this
+    can't distinguish the two and defaults to "calendar" as the safer wording.
+    """
+    question_tokens = tokenize(question)
+    if not question_tokens:
+        return None
+    unique = set(question_tokens)
+    query_normalized = normalize_for_lookup(question)
+
+    where = {"moduleId": filter_module} if filter_module else None
+    all_chunks = store.fetch(where=where)
+    # Rank with the same weighted score_chunk() used for real retrieval, not raw
+    # overlap: several quiz items across the whole course share the exact same
+    # question template ("Quand utiliser X plutôt que Y ?"), so "quand"/"utiliser"
+    # alone can tie a genuinely on-topic chunk's overlap count on pure coincidence
+    # — kind_weight (sub-acquis/course-content > quiz) and the exact-substring
+    # boost break that tie in favor of real content instead of boilerplate.
+    best_chunk = None
+    best_score = 0.0
+    best_overlap = 0
+    for chunk in all_chunks:
+        scored = with_tokens(chunk)
+        overlap = sum(1 for t in unique if t in set(scored["tokens"]))
+        if overlap == 0:
+            continue
+        score = score_chunk(scored, query_normalized, question_tokens)
+        if score > best_score:
+            best_score = score
+            best_chunk = chunk
+            best_overlap = overlap
+
+    if not best_chunk:
+        return None
+    coverage = best_overlap / max(1, len(unique))
+    if not (best_overlap >= 2 or coverage >= 0.35):
+        return None
+    if _allowed(best_chunk, allowed_modules, allowed_subacquis):
+        return None
+
+    reason = "calendar"
+    if calendar_allowed_modules is not None and calendar_allowed_subacquis is not None:
+        if _allowed(best_chunk, calendar_allowed_modules, calendar_allowed_subacquis):
+            reason = "progress"
+
+    return {
+        "moduleId": best_chunk.get("moduleId"),
+        "subAcquisId": best_chunk.get("subAcquisId"),
+        "subAcquisName": best_chunk.get("subAcquisName"),
+        "reason": reason,
+    }
+
+
 def lexical_retrieve(chunks: list, question: str, boost_sub: str | None = None, limit: int = 6) -> list:
     qn = normalize_for_lookup(question)
     qt = tokenize(question)

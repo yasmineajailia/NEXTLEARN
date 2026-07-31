@@ -10,6 +10,7 @@ owns the DB (access control, curriculum) and passes the allowed module/sub-acqui
 ids; everything else runs here.
 """
 
+import concurrent.futures
 import json
 import os
 import re
@@ -25,7 +26,14 @@ from .guards import (
     tokenize,
 )
 
-LLM_TIMEOUT_S = 60
+# Was 60s, matching (or, for the stream path, exceeding) Node's own timeouts on
+# this service (see ragClient.ts) — meaning Node could give up and abort the
+# connection at almost the exact moment this timeout was about to fire and fall
+# back to deterministic_answer(), turning a graceful degradation into a hard
+# error the student just sees as "the chatbot didn't reply". Lowered so this
+# timeout — and the fallback it triggers — always has room to complete and
+# reach Node before Node's own timeout does.
+LLM_TIMEOUT_S = 40
 
 
 # ── prompts (port of buildStudentChatPrompts) ──────────────────────────────
@@ -290,6 +298,34 @@ def generate(question: str, top_chunks: list, history: list, lang: str = "fr", l
     return None
 
 
+# requests' `timeout` measures time BETWEEN reads, not total call duration — a
+# response that trickles in slowly enough (a real, observed OpenRouter/Llama
+# behavior) can run well past LLM_TIMEOUT_S without ever tripping it, which
+# defeats the deterministic-answer fallback below entirely (Node's own hard
+# timeout fires first, and the student sees a bare failure instead of a
+# fallback answer). Running the call in a worker thread with a real
+# future.result(timeout=...) enforces a true wall-clock deadline regardless of
+# how the network call itself behaves internally. If it overruns, the thread
+# is abandoned (not killed — Python can't do that) to finish or eventually
+# hit its own timeout on its own; its result is simply never used.
+_GENERATE_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=8, thread_name_prefix="rag-generate")
+
+
+def generate_with_deadline(
+    question: str,
+    top_chunks: list,
+    history: list,
+    lang: str = "fr",
+    learner_profile: dict | None = None,
+    deadline_s: float = LLM_TIMEOUT_S,
+) -> str | None:
+    future = _GENERATE_EXECUTOR.submit(generate, question, top_chunks, history, lang, learner_profile)
+    try:
+        return future.result(timeout=deadline_s)
+    except concurrent.futures.TimeoutError:
+        return None
+
+
 SCOPE_GUARD_ANSWER = (
     "Je peux vous aider uniquement sur le module en cours et en langage C. "
     "Reformulez votre question sans mentionner un autre langage."
@@ -302,6 +338,39 @@ SCOPE_GUARD_ANSWER_EN = (
 
 def scope_guard_answer(lang: str) -> str:
     return SCOPE_GUARD_ANSWER_EN if lang == "en" else SCOPE_GUARD_ANSWER
+
+
+def locked_topic_answer(locked: dict, lang: str) -> str:
+    """`locked` is find_locked_topic_match()'s return: a real course topic the
+    question is genuinely about, just outside what this student can currently
+    ask about. Worded differently depending on WHY: locked["reason"] == "calendar"
+    means the schedule hasn't unlocked it yet (checking the calendar is correct
+    advice); "progress" means it's already calendar-unlocked but this student
+    hasn't personally reached it yet (telling them to check the calendar would
+    be wrong — the calendar already shows it as available; they need to
+    actually visit that lesson)."""
+    name = str(locked.get("subAcquisName") or "").strip()
+    label = f" ({name})" if name else ""
+    is_progress = locked.get("reason") == "progress"
+    if lang == "en":
+        if is_progress:
+            return (
+                f"That topic{label} is already available in your course, but you haven't reached it "
+                "yet — visit that lesson first, then come back and ask me about it."
+            )
+        return (
+            f"That topic{label} is part of the course, but it isn't unlocked for you yet — "
+            "check your calendar to see when it becomes available, or ask your teacher."
+        )
+    if is_progress:
+        return (
+            f"Ce sujet{label} est déjà disponible dans ton cours, mais tu ne l'as pas encore atteint — "
+            "va d'abord consulter cette leçon, puis reviens me poser la question."
+        )
+    return (
+        f"Ce sujet{label} fait partie du cours, mais il n'est pas encore disponible pour toi — "
+        "consulte ton calendrier pour savoir quand il sera débloqué, ou demande à ton enseignant."
+    )
 
 
 # ── streaming generation (port of streamStudentChatAnswer) ─────────────────
@@ -356,7 +425,8 @@ def _sse(event: str, data: dict) -> str:
 
 
 def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
-                  filter_module=None, filter_sub=None, history=None, lang="fr", learner_profile=None):
+                  filter_module=None, filter_sub=None, history=None, lang="fr", learner_profile=None,
+                  calendar_allowed_module_ids=None, calendar_allowed_subacquis_ids=None):
     """Yield the full SSE event stream (event:/data: frames) for the streaming
     chatbot route: meta -> delta* -> sources -> done. Node proxies these frames
     straight to the browser, so the events match the JS route 1:1. The 'empty'
@@ -364,9 +434,21 @@ def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
     ranked = retrieve.retrieve(question, allowed_module_ids, allowed_subacquis_ids, filter_module, filter_sub)
     refined = retrieve.refine_chunks(question, ranked)
 
-    if (filter_module or filter_sub) and is_outside_langage_c(question):
+    if is_outside_langage_c(question):
         yield _sse("meta", {"mode": "scope-guard"})
         yield _sse("delta", {"text": scope_guard_answer(lang)})
+        yield _sse("sources", {"sources": []})
+        yield _sse("done", {})
+        return
+
+    locked = retrieve.find_locked_topic_match(
+        question, filter_module, set(allowed_module_ids or []), set(allowed_subacquis_ids or []),
+        calendar_allowed_modules=set(calendar_allowed_module_ids or []) if calendar_allowed_module_ids is not None else None,
+        calendar_allowed_subacquis=set(calendar_allowed_subacquis_ids or []) if calendar_allowed_subacquis_ids is not None else None,
+    )
+    if locked:
+        yield _sse("meta", {"mode": "locked-topic"})
+        yield _sse("delta", {"text": locked_topic_answer(locked, lang)})
         yield _sse("sources", {"sources": []})
         yield _sse("done", {})
         return
@@ -408,12 +490,21 @@ def stream_answer(question, allowed_module_ids, allowed_subacquis_ids,
 
 # ── orchestrator (port of buildStudentChatContext + generation block) ──────
 def answer(question, allowed_module_ids, allowed_subacquis_ids,
-           filter_module=None, filter_sub=None, history=None, lang="fr", learner_profile=None) -> dict:
+           filter_module=None, filter_sub=None, history=None, lang="fr", learner_profile=None,
+           calendar_allowed_module_ids=None, calendar_allowed_subacquis_ids=None) -> dict:
     ranked = retrieve.retrieve(question, allowed_module_ids, allowed_subacquis_ids, filter_module, filter_sub)
     refined = retrieve.refine_chunks(question, ranked)
 
-    if (filter_module or filter_sub) and is_outside_langage_c(question):
+    if is_outside_langage_c(question):
         return {"answer": scope_guard_answer(lang), "mode": "scope-guard", "retrieved": 0, "sources": []}
+
+    locked = retrieve.find_locked_topic_match(
+        question, filter_module, set(allowed_module_ids or []), set(allowed_subacquis_ids or []),
+        calendar_allowed_modules=set(calendar_allowed_module_ids or []) if calendar_allowed_module_ids is not None else None,
+        calendar_allowed_subacquis=set(calendar_allowed_subacquis_ids or []) if calendar_allowed_subacquis_ids is not None else None,
+    )
+    if locked:
+        return {"answer": locked_topic_answer(locked, lang), "mode": "locked-topic", "retrieved": 0, "sources": []}
 
     sources = [{
         "moduleId": c.get("moduleId"),
@@ -427,7 +518,7 @@ def answer(question, allowed_module_ids, allowed_subacquis_ids,
     ans = deterministic_answer(question, refined, lang)
     mode = "vector" if embedder.has_provider() else "rag"
     try:
-        gen = generate(question, refined, history or [], lang, learner_profile)
+        gen = generate_with_deadline(question, refined, history or [], lang, learner_profile)
         if gen and not is_refusal_like(gen) and is_answer_grounded(gen, refined):
             ans = gen
             mode = f"{mode}+llm"

@@ -56,6 +56,11 @@ class RagAnswerBody(BaseModel):
     question: str = ""
     allowedModuleIds: list[str] = []
     allowedSubAcquisIds: list[str] = []
+    # Class access WITHOUT the progress-frontier restriction — lets the
+    # "locked topic" detector tell apart genuinely calendar-locked content
+    # from content that's unlocked but not yet reached by this student.
+    calendarAllowedModuleIds: list[str] = []
+    calendarAllowedSubAcquisIds: list[str] = []
     filterToModuleId: str | None = None
     filterToSubAcquisId: str | None = None
     history: list[ChatTurn] = []
@@ -128,6 +133,8 @@ def rag_answer_endpoint(body: RagAnswerBody):
         history=[t.model_dump() for t in body.history],
         lang="en" if body.lang == "en" else "fr",
         learner_profile=body.learnerProfile.model_dump() if body.learnerProfile else None,
+        calendar_allowed_module_ids=body.calendarAllowedModuleIds,
+        calendar_allowed_subacquis_ids=body.calendarAllowedSubAcquisIds,
     )
 
 
@@ -145,6 +152,8 @@ def rag_stream_endpoint(body: RagAnswerBody):
         history=[t.model_dump() for t in body.history],
         lang="en" if body.lang == "en" else "fr",
         learner_profile=body.learnerProfile.model_dump() if body.learnerProfile else None,
+        calendar_allowed_module_ids=body.calendarAllowedModuleIds,
+        calendar_allowed_subacquis_ids=body.calendarAllowedSubAcquisIds,
     )
     return StreamingResponse(gen, media_type="text/event-stream; charset=utf-8")
 

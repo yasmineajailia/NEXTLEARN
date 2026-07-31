@@ -92,18 +92,33 @@ export function restrictToProgressFrontier(
     .filter((moduleEntry) => moduleEntry.subAcquis.length > 0);
 }
 
+function toScope(overview: ModuleOverview[]): ChatScope | null {
+  return overview.length
+    ? {
+        allowedModuleIds: overview.map((entry) => entry.id),
+        allowedSubAcquisIds: overview.flatMap((entry) => entry.subAcquis.map((sub) => `${entry.id}::${sub.id}`))
+      }
+    : null;
+}
+
 /**
- * Resolves, from one set of reads, both the access-control scope (which modules
- * the student may ask about — class access intersected with their progress
- * frontier) and the learner profile that personalizes the answer (name, level,
- * VARK style, weak areas, current lesson). `scope` is null when nothing is in
- * scope.
+ * Resolves, from one set of reads, the learner profile plus TWO scopes:
+ *  - scope: class access ∩ progress frontier — what retrieval actually draws
+ *    answers from.
+ *  - calendarScope: class access ALONE (no progress-frontier restriction) —
+ *    passed through only so Python's "this is a real course topic, just not
+ *    available yet" detector can tell apart two different reasons a topic
+ *    might be outside `scope`: genuinely calendar-locked (calendarScope also
+ *    excludes it — the calendar message is correct) vs. calendar-unlocked but
+ *    not yet reached by this student (calendarScope DOES include it — telling
+ *    them to "check the calendar" would be actively wrong, since the calendar
+ *    already shows it as available).
  */
 async function buildChatContext(
   identifier: string,
   filterToModuleId?: string,
   filterToSubAcquisId?: string
-): Promise<{ scope: ChatScope | null; learnerProfile?: LearnerProfile }> {
+): Promise<{ scope: ChatScope | null; calendarScope: ChatScope | null; learnerProfile?: LearnerProfile }> {
   const [overview, access, user] = await Promise.all([
     readPersistedProgramCOverview(),
     readClassAccessByStudentIdentifier(identifier),
@@ -115,16 +130,10 @@ async function buildChatContext(
     moduleId: filterToModuleId,
     subAcquisId: filterToSubAcquisId
   });
-  const scope: ChatScope | null = scopedOverview.length
-    ? {
-        allowedModuleIds: scopedOverview.map((entry) => entry.id),
-        allowedSubAcquisIds: scopedOverview.flatMap((entry) =>
-          entry.subAcquis.map((sub) => `${entry.id}::${sub.id}`)
-        )
-      }
-    : null;
-  const learnerProfile = buildLearnerProfile(user as never, overview, filterToSubAcquisId);
-  return { scope, learnerProfile };
+  const scope = toScope(scopedOverview);
+  const calendarScope = toScope(accessibleOverview);
+  const learnerProfile = buildLearnerProfile(user as never, overview, filterToSubAcquisId, filterToModuleId);
+  return { scope, calendarScope, learnerProfile };
 }
 
 chatbotRouter.post("/api/student/chatbot", requireAuth, chatbotLimiter, async (req, res) => {
@@ -144,7 +153,7 @@ chatbotRouter.post("/api/student/chatbot", requireAuth, chatbotLimiter, async (r
     const history = normalizeChatHistory(req.body?.history);
     const lang: "fr" | "en" = req.body?.lang === "en" ? "en" : "fr";
 
-    const { scope, learnerProfile } = await buildChatContext(identifier, filterToModuleId, filterToSubAcquisId);
+    const { scope, calendarScope, learnerProfile } = await buildChatContext(identifier, filterToModuleId, filterToSubAcquisId);
     if (!scope) {
       return res.status(200).json({ answer: NO_MODULES_MESSAGE });
     }
@@ -153,6 +162,8 @@ chatbotRouter.post("/api/student/chatbot", requireAuth, chatbotLimiter, async (r
       question: rawMessage,
       allowedModuleIds: scope.allowedModuleIds,
       allowedSubAcquisIds: scope.allowedSubAcquisIds,
+      calendarAllowedModuleIds: calendarScope?.allowedModuleIds ?? [],
+      calendarAllowedSubAcquisIds: calendarScope?.allowedSubAcquisIds ?? [],
       filterToModuleId,
       filterToSubAcquisId,
       history,
@@ -205,7 +216,7 @@ chatbotRouter.post("/api/student/chatbot/stream", requireAuth, chatbotLimiter, a
     const history = normalizeChatHistory(req.body?.history);
     const lang: "fr" | "en" = req.body?.lang === "en" ? "en" : "fr";
 
-    const { scope, learnerProfile } = await buildChatContext(identifier, filterToModuleId, filterToSubAcquisId);
+    const { scope, calendarScope, learnerProfile } = await buildChatContext(identifier, filterToModuleId, filterToSubAcquisId);
     if (!scope) {
       send("meta", { mode: "empty" });
       send("delta", { text: NO_MODULES_MESSAGE });
@@ -219,6 +230,8 @@ chatbotRouter.post("/api/student/chatbot/stream", requireAuth, chatbotLimiter, a
         question: rawMessage,
         allowedModuleIds: scope.allowedModuleIds,
         allowedSubAcquisIds: scope.allowedSubAcquisIds,
+        calendarAllowedModuleIds: calendarScope?.allowedModuleIds ?? [],
+        calendarAllowedSubAcquisIds: calendarScope?.allowedSubAcquisIds ?? [],
         filterToModuleId,
         filterToSubAcquisId,
         history,
