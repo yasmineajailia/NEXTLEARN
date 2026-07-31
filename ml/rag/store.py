@@ -112,6 +112,13 @@ def existing_ids() -> set:
     return set(got.get("ids") or [])
 
 
+def delete(ids: list) -> None:
+    """Removes chunks by id (e.g. ones orphaned by an edited/deleted lesson —
+    see index.reindex). No-op on an empty list; Chroma errors on an empty ids=[]."""
+    if ids:
+        _coll().delete(ids=list(ids))
+
+
 def count() -> int:
     return _coll().count()
 

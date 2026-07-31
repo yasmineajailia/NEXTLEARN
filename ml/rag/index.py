@@ -78,12 +78,21 @@ def build_chunks(modules: list, base_url: str = "") -> list:
 
 
 def reindex(modules: list, base_url: str = "", reset: bool = False, embed_fn=None) -> dict:
-    """Build chunks, embed only the ones not already in the store, and upsert."""
+    """Build chunks, embed only the ones not already in the store, upsert, and
+    prune chunks that no longer correspond to anything in the current
+    curriculum. `modules` is always Node's complete, authoritative module list
+    (savePersistedCurriculumModules treats a module's absence from it as a
+    deletion) — so any stored chunk id absent from the freshly built `chunks`
+    is safely orphaned: either its lesson/module was deleted, or its content
+    changed (the chunk id encodes the text, so an edit mints a new id and
+    leaves the old one behind). Without this, edited-away content stayed
+    permanently retrievable and could still be cited to students."""
     if reset:
         store.reset()
     embed_fn = embed_fn or embedder.embed
 
     chunks = build_chunks(modules, base_url)
+    current_ids = {c["chunkId"] for c in chunks}
     existing = store.existing_ids()
 
     todo, seen = [], set()
@@ -100,9 +109,14 @@ def reindex(modules: list, base_url: str = "", reset: bool = False, embed_fn=Non
             c["embedding"] = vec
         store.upsert(todo)
 
+    stale = existing - current_ids
+    if stale:
+        store.delete(list(stale))
+
     return {
         "totalChunks": len(chunks),
         "embedded": len(todo),
         "skipped": len(chunks) - len(todo),
+        "pruned": len(stale),
         "storeCount": store.count(),
     }
