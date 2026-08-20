@@ -1,7 +1,7 @@
 /**
  * learning.routes.ts
  *
- * Sub-acquis content, self-evaluation, calendar, progress and VARK.
+ * Sub-acquis content, calendar, progress and VARK.
  * Split out of the former monolithic web.ts; shares helpers via ./shared.js.
  */
 import { Router } from "express";
@@ -92,15 +92,12 @@ import {
   QuizAttemptState,
   RecommendationGraphNode,
   RecommendationGraphPayload,
-  SELF_EVALUATION_PASS_SCORE,
   SESSION_TTL,
-  SelfEvaluationResult,
   TeacherQuizGenerationSession,
   applyCurriculumNames,
   buildCourseFileEntries,
   buildCurriculumSeedFromFilesystem,
   buildRemediationQuizJsonFilePath,
-  buildSelfEvaluationOverview,
   buildSourceUploadPath,
   buildVideoEntries,
   cleanExpiredSessions,
@@ -111,7 +108,6 @@ import {
   escapePowerShellSingleQuoted,
   execFileAsync,
   extractHttpLinksFromUnknownPayload,
-  extractSelfEvaluationResults,
   findFirstDirectoryByName,
   generateSessionId,
   generatedQuizzesRoot,
@@ -120,7 +116,6 @@ import {
   hasRenderableCurriculum,
   listSubAcquisIds,
   loadRecommendationGraph,
-  makeSelfEvaluationKey,
   mergeMissingCurriculumEntries,
   moduleDocToPublic,
   normalizeRecommendationGraph,
@@ -145,7 +140,6 @@ import {
   sanitizePathSegment,
   savePersistedCurriculumModules,
   saveRemediationQuizJsonFile,
-  scoreSelfEvaluationQuestions,
   subAcquisHasQuiz,
   subAcquisHasVideo,
   supportPublicPrefix,
@@ -240,204 +234,6 @@ learningRouter.get<{ moduleId: string; subAcquisId: string }>("/api/programmatio
   } catch (error) {
     console.error("Failed to read sub-acquis resources:", error);
     res.status(404).json({ message: "Sous-acquis introuvable" });
-  }
-});
-
-learningRouter.get("/api/student/self-evaluation/overview", requireAuth, async (req, res) => {
-  try {
-    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
-    if (!identifier) {
-      return res.status(400).json({ message: "Identifiant requis" });
-    }
-
-    const [modules, user] = await Promise.all([
-      readPersistedCurriculumModules(),
-      User.findOne({ identifier }).select({ progress: 1 }).lean()
-    ]);
-
-    if (!user) {
-      return res.status(404).json({ message: "Etudiant introuvable" });
-    }
-
-    const resultsMap = extractSelfEvaluationResults(user);
-    const overview = buildSelfEvaluationOverview(modules, resultsMap);
-
-    res.status(200).json({
-      passScore: SELF_EVALUATION_PASS_SCORE,
-      modules: overview
-    });
-  } catch (error) {
-    console.error("Failed to build self-evaluation overview:", error);
-    res.status(500).json({ message: "Impossible de charger les quiz" });
-  }
-});
-
-learningRouter.get("/api/student/self-evaluation/quiz", requireAuth, async (req, res) => {
-  try {
-    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
-    const moduleId = typeof req.query?.moduleId === "string" ? req.query.moduleId.trim() : "";
-    const acquisId = typeof req.query?.acquisId === "string" ? req.query.acquisId.trim() : "";
-
-    if (!identifier || !moduleId || !acquisId) {
-      return res.status(400).json({ message: "Identifiant, moduleId et acquisId requis" });
-    }
-
-    const [modules, user] = await Promise.all([
-      readPersistedCurriculumModules(),
-      User.findOne({ identifier }).select({ progress: 1 }).lean()
-    ]);
-
-    if (!user) {
-      return res.status(404).json({ message: "Etudiant introuvable" });
-    }
-
-    const resultsMap = extractSelfEvaluationResults(user);
-    const overview = buildSelfEvaluationOverview(modules, resultsMap);
-    const moduleOverview = overview.find((entry) => entry.moduleId === moduleId);
-    const acquisOverview = moduleOverview?.acquis.find((entry) => entry.acquisId === acquisId);
-
-    if (!acquisOverview) {
-      return res.status(404).json({ message: "Quiz introuvable" });
-    }
-
-    if (!acquisOverview.isUnlocked) {
-      return res.status(403).json({ message: "Quiz verrouille" });
-    }
-
-    const moduleDoc = modules.find((entry) => String(entry.id) === moduleId);
-    const acquisDoc = moduleDoc?.acquis.find((entry) => String(entry.id) === acquisId);
-    if (!moduleDoc || !acquisDoc) {
-      return res.status(404).json({ message: "Quiz introuvable" });
-    }
-
-    const quizQuestions = collectAcquisQuizQuestions(acquisDoc);
-    if (!quizQuestions.length) {
-      return res.status(404).json({ message: "Quiz introuvable" });
-    }
-
-    res.status(200).json({
-      moduleId,
-      acquisId,
-      moduleName: moduleDoc.name || moduleDoc.id,
-      acquisName: acquisDoc.name || acquisDoc.id,
-      quizQuestions: quizQuestions.map((question) => ({
-        prompt: question.prompt,
-        options: question.options,
-        correctOptionIndex: question.correctOptionIndex
-      })),
-      quizQuestionCount: quizQuestions.length,
-      passScore: SELF_EVALUATION_PASS_SCORE
-    });
-  } catch (error) {
-    console.error("Failed to load self-evaluation quiz:", error);
-    res.status(500).json({ message: "Impossible de charger le quiz" });
-  }
-});
-
-learningRouter.post("/api/student/self-evaluation/submit", requireAuth, async (req, res) => {
-  try {
-    const identifier = req.auth?.id ?? ""; // verified session identity, never a client-supplied value
-    const moduleId = typeof req.body?.moduleId === "string" ? req.body.moduleId.trim() : "";
-    const acquisId = typeof req.body?.acquisId === "string" ? req.body.acquisId.trim() : "";
-    const timeSpent = typeof req.body?.timeSpent === "number" ? req.body.timeSpent : 0;
-    const answers = Array.isArray(req.body?.answers)
-      ? req.body.answers.map((answer: unknown) =>
-          Number.isFinite(Number(answer)) ? Number(answer) : null
-        )
-      : [];
-
-    if (!identifier || !moduleId || !acquisId) {
-      return res.status(400).json({ message: "Identifiant, moduleId et acquisId requis" });
-    }
-
-    const [modules, user] = await Promise.all([
-      readPersistedCurriculumModules(),
-      User.findOne({ identifier })
-    ]);
-
-    if (!user) {
-      return res.status(404).json({ message: "Etudiant introuvable" });
-    }
-
-    const resultsMap = extractSelfEvaluationResults(user);
-    const overview = buildSelfEvaluationOverview(modules, resultsMap);
-    const moduleOverview = overview.find((entry) => entry.moduleId === moduleId);
-    const acquisOverview = moduleOverview?.acquis.find((entry) => entry.acquisId === acquisId);
-
-    if (!acquisOverview) {
-      return res.status(404).json({ message: "Quiz introuvable" });
-    }
-
-    if (!acquisOverview.isUnlocked) {
-      return res.status(403).json({ message: "Quiz verrouille" });
-    }
-
-    const moduleDoc = modules.find((entry) => String(entry.id) === moduleId);
-    const acquisDoc = moduleDoc?.acquis.find((entry) => String(entry.id) === acquisId);
-    if (!moduleDoc || !acquisDoc) {
-      return res.status(404).json({ message: "Quiz introuvable" });
-    }
-
-    const quizQuestions = collectAcquisQuizQuestions(acquisDoc);
-    if (!quizQuestions.length) {
-      return res.status(404).json({ message: "Quiz introuvable" });
-    }
-
-    const { score, correctCount, totalCount } = scoreSelfEvaluationQuestions(quizQuestions, answers);
-    const passed = score >= SELF_EVALUATION_PASS_SCORE;
-    const xpEarned = passed ? Math.floor(score + timeSpent) : 0;
-
-    const progress = user.progress || { xp: 0, completedLessonKeys: [], quizResults: [], selfEvaluationResults: [] };
-    progress.xp = (progress.xp || 0) + xpEarned;
-    const currentResults = Array.isArray(progress.selfEvaluationResults)
-      ? [...progress.selfEvaluationResults]
-      : [];
-
-    const existingIndex = currentResults.findIndex(
-      (entry) => entry.moduleId === moduleId && entry.acquisId === acquisId
-    );
-
-    const updatedEntry = {
-      moduleId,
-      acquisId,
-      score,
-      passed,
-      timeSpent,
-      xpEarned,
-      submittedAt: new Date()
-    };
-
-    if (existingIndex >= 0) {
-      currentResults[existingIndex] = updatedEntry;
-    } else {
-      currentResults.push(updatedEntry);
-    }
-
-    user.progress = {
-      ...progress,
-      selfEvaluationResults: currentResults
-    };
-
-    await user.save();
-
-    if (xpEarned > 0) {
-      await StudentProfile.updateOne({ identifier }, { $inc: { xp: xpEarned } });
-    }
-
-    res.status(200).json({
-      moduleId,
-      acquisId,
-      score,
-      passed,
-      correctCount,
-      totalCount,
-      passScore: SELF_EVALUATION_PASS_SCORE,
-      xpEarned,
-      totalXp: progress.xp
-    });
-  } catch (error) {
-    console.error("Failed to submit self-evaluation quiz:", error);
-    res.status(500).json({ message: "Impossible de soumettre le quiz" });
   }
 });
 
@@ -547,6 +343,7 @@ learningRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/subm
       validated,
       lastScore: score
     };
+    let xpEarned = 0;
 
     if (identifier) {
       const lessonKey = buildLessonKey(moduleId, subAcquisId);
@@ -621,6 +418,17 @@ learningRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/subm
         }
       );
 
+      // XP is awarded once per sous-acquis, on the attempt that first validates it.
+      // The `locked` guard above already rejects resubmitting a validated base
+      // quiz, but remediation retries are exempt from that lock, so the explicit
+      // `!priorState.validated` check is what stops a student re-earning XP by
+      // passing the same sous-acquis again through remediation.
+      if (validated && !priorState.validated) {
+        xpEarned = Math.floor(score);
+        await User.updateOne({ identifier }, { $inc: { "progress.xp": xpEarned } });
+        await StudentProfile.updateOne({ identifier }, { $inc: { xp: xpEarned } });
+      }
+
       const exhausted = newAttempts >= QUIZ_MAX_ATTEMPTS;
       attemptState = {
         attempts: newAttempts,
@@ -666,7 +474,8 @@ learningRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/subm
       wrongQuestionCount: wrongQuestionIndexes.length,
       wrongQuestionIndexes,
       review,
-      remediationTargets
+      remediationTargets,
+      xpEarned
     });
   } catch (error) {
     console.error("Failed to score quiz:", error);

@@ -242,14 +242,6 @@ function bindEvents() {
   dom.navItems.forEach((button) => {
     button.addEventListener("click", () => {
       const viewKey = button.dataset.view || "cours";
-      if (viewKey === "self-eval") {
-        window.location.href = "/student/self-evaluation.html";
-        return;
-      }
-      if (viewKey === "mission-apprenant") {
-        window.location.href = "/student/mission-apprenant";
-        return;
-      }
       switchView(viewKey);
     });
   });
@@ -536,16 +528,6 @@ function applyPreferredView() {
   const urlView = params.get("view");
   const urlModule = params.get("module");
   let preferredView = urlView;
-
-  if (preferredView === "self-eval") {
-    window.location.href = "/student/self-evaluation.html";
-    return;
-  }
-
-  if (preferredView === "mission-apprenant") {
-    window.location.href = "/student/mission-apprenant";
-    return;
-  }
 
   if (!preferredView) {
     try {
@@ -2471,10 +2453,10 @@ function renderLearningProfile() {
   const dom = VARK_DIMS[result.dominant];
   card.innerHTML = `
     <div class="lp-badges">
-      <a class="lp-badge" href="/student/mission-apprenant" title="${tr("dash.retakeVark", "Refaire le test")}" style="--lp-color:${dom.color}">
+      <div class="lp-badge" style="--lp-color:${dom.color}">
         <span class="lp-badge-emoji">${dom.emoji}</span>
         <span class="lp-badge-text"><span class="lp-badge-eyebrow">${tr("dash.learningProfile", "Ton profil d'apprentissage")}</span>${dom.pname()}</span>
-      </a>
+      </div>
     </div>
     <p class="lp-tip"><span class="lp-tip-label">${tr("dash.studyTip", "Conseil d'étude")}</span>${dom.rec()}</p>`;
   card.hidden = false;
