@@ -587,7 +587,7 @@
 
   function renderAdminSkeleton(container) {
     container.innerHTML =
-      '<div class="cdb-card"><h3 class="cdb-card-title">Vue globale — Toutes les classes</h3>' +
+      '<div class="cdb-card"><h3 class="cdb-card-title">Vue globale · Toutes les classes</h3>' +
       skeletonBlock("300px") + skeletonBlock("220px") + "</div>";
   }
 
@@ -696,8 +696,8 @@
       var user = state.user;
       var count = state.classes.length;
       var badgeText = user.role === "admin"
-        ? "Tous les étudiants — " + count + " classe" + (count > 1 ? "s" : "")
-        : "Vos classes — " + count + " classe" + (count > 1 ? "s" : "") + " assignée" + (count > 1 ? "s" : "");
+        ? "Tous les étudiants · " + count + " classe" + (count > 1 ? "s" : "")
+        : "Vos classes · " + count + " classe" + (count > 1 ? "s" : "") + " assignée" + (count > 1 ? "s" : "");
 
       return (
         '<div class="cdb-header">' +
@@ -851,7 +851,7 @@
       return (
         '<div class="cdb-card cdb-chart-card">' +
         '<h3 class="cdb-card-title">Répartition des étudiants</h3>' +
-        '<p class="cdb-chart-caption">Axe horizontal : score moyen aux quiz — axe vertical : taux de complétion</p>' +
+        '<p class="cdb-chart-caption">Axe horizontal : score moyen aux quiz · axe vertical : taux de complétion</p>' +
         '<div class="cdb-chart-wrapper" id="' + uid + '-cdb-chart-wrapper"><canvas id="' + uid + '-cdb-canvas"></canvas></div>' +
         '<div class="cdb-legend">' +
         legendChip("Avancés", CLUSTER_COLORS.A) + legendChip("En progression", CLUSTER_COLORS.B) + legendChip("En difficulté", CLUSTER_COLORS.C) +
@@ -1299,14 +1299,14 @@
 
       state.adminEl.innerHTML =
         '<div class="cdb-card">' +
-        '<h3 class="cdb-card-title">Vue globale — Toutes les classes</h3>' +
+        '<h3 class="cdb-card-title">Vue globale · Toutes les classes</h3>' +
         (failed.length > 0 ? '<p class="cdb-admin-warning">⚠️ ' + failed.length + " classe(s) n'ont pas pu être chargées.</p>" : "") +
         '<div class="cdb-chart-wrapper" id="' + state.uid + '-cdb-admin-chart-wrapper"><canvas id="' + state.uid + '-cdb-admin-canvas"></canvas></div>' +
         '<div class="cdb-legend">' +
         legendChip("Avancés", CLUSTER_COLORS.A) + legendChip("En progression", CLUSTER_COLORS.B) + legendChip("En difficulté", CLUSTER_COLORS.C) +
         "</div>" +
         '<div class="cdb-vark-admin">' +
-        '<h4 class="cdb-vark-admin-title">Styles d’apprentissage — toutes les classes</h4>' +
+        '<h4 class="cdb-vark-admin-title">Styles d’apprentissage · toutes les classes</h4>' +
         '<p class="cdb-vark-admin-sub">Répartition des styles VARK dominants sur l’ensemble des étudiants chargés.</p>' +
         renderVarkBar(aggregateVark(successful)) +
         "</div>" +

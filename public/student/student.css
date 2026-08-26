@@ -3529,8 +3529,10 @@ body.chatbot-open {
 }
 .sub-lesson-link:hover { color: #c41d38; }
 .sub-done .sub-lesson-link {
-  text-decoration: line-through;
-  color: #9ca3af;
+  /* The green tick already says "completed"; striking the title through as well
+     made finished sous-acquis genuinely hard to read. A slightly muted tone is
+     enough to let the eye skip them while scanning for what is left. */
+  color: #6b7280;
 }
 .sub-bloom {
   display: inline-block;

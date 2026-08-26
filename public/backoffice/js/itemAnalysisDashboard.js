@@ -27,7 +27,7 @@
     too_easy: { label: "Trop facile", color: "#f59e0b" },
     too_hard: { label: "Trop difficile", color: "#3266ad" },
     weak: { label: "Peu discriminante", color: "#f59e0b" },
-    misleading: { label: "Suspecte — à revoir", color: "#c41d38" },
+    misleading: { label: "Suspecte : à revoir", color: "#c41d38" },
     insufficient_data: { label: "Données insuffisantes", color: "#9ca3af" }
   };
 
@@ -114,7 +114,7 @@
 
         if (!s.nAttempts) {
           container.innerHTML =
-            head + '<p class="ia-empty">Aucune réponse enregistrée pour ce quiz — l\'analyse apparaîtra dès que des étudiants l\'auront passé.</p></div>';
+            head + '<p class="ia-empty">Aucune réponse enregistrée pour ce quiz : l\'analyse apparaîtra dès que des étudiants l\'auront passé.</p></div>';
           return;
         }
 

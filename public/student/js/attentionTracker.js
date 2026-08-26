@@ -102,11 +102,18 @@
     }
   }
 
+  // Webcam consent is per PERSON, never per browser. Stored under a shared key,
+  // one student's "allow" would silently authorise the camera for whoever signed
+  // in next on the same machine — the opposite of the consent gate this feature
+  // is built around.
+  function consentKey() {
+    return CONSENT_KEY + "_" + (getIdentifier() || "anon");
+  }
   function getConsent() {
-    try { return localStorage.getItem(CONSENT_KEY); } catch (_e) { return null; }
+    try { return localStorage.getItem(consentKey()); } catch (_e) { return null; }
   }
   function setConsent(value) {
-    try { localStorage.setItem(CONSENT_KEY, value); } catch (_e) { /* ignore */ }
+    try { localStorage.setItem(consentKey(), value); } catch (_e) { /* ignore */ }
   }
 
   function dist(a, b) {
@@ -191,9 +198,9 @@
       backdrop.className = "att-consent-backdrop";
       backdrop.innerHTML =
         '<div class="att-consent-modal" role="dialog" aria-modal="true" aria-label="Suivi d\'attention">' +
-        "<h2>Suivi d'attention — votre accord est nécessaire</h2>" +
+        "<h2>Suivi d'attention : votre accord est nécessaire</h2>" +
         "<p>Pour vous aider à mieux apprendre, NextLearn peut analyser votre niveau de concentration via votre caméra. " +
-        "Aucune vidéo n'est enregistrée ou envoyée — seul un score de focus calculé localement est conservé.</p>" +
+        "Aucune vidéo n'est enregistrée ou envoyée. Seul un score de focus calculé localement est conservé.</p>" +
         "<ul>" +
         "<li>✓ Traitement 100% local sur votre appareil</li>" +
         "<li>✓ Aucune vidéo stockée ou transmise</li>" +
@@ -203,16 +210,63 @@
         '<button type="button" class="att-btn att-btn-secondary" data-choice="denied">Non merci</button>' +
         '<button type="button" class="att-btn att-btn-primary" data-choice="granted">Activer le suivi</button>' +
         "</div></div>";
+      // The dialog declares aria-modal, but nothing moved focus into it: the
+      // caret stayed in whichever field was focused behind the overlay (usually
+      // the chatbot input, where it blinked through the dimmed backdrop), Tab
+      // walked the page underneath, and Escape did nothing.
+      var previouslyFocused = document.activeElement;
+
+      function buttons() {
+        return Array.prototype.slice.call(backdrop.querySelectorAll("button"));
+      }
+
+      function finish(choice) {
+        setConsent(choice);
+        document.removeEventListener("keydown", onKeydown, true);
+        backdrop.remove();
+        state.consentPromise = null;
+        if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+          try { previouslyFocused.focus(); } catch (_e) { /* element is gone */ }
+        }
+        resolve(choice);
+      }
+
+      function onKeydown(e) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          finish("denied"); // declining is the safe default for a consent prompt
+          return;
+        }
+        if (e.key !== "Tab") return;
+        var items = buttons();
+        if (!items.length) return;
+        var first = items[0];
+        var last = items[items.length - 1];
+        if (items.indexOf(document.activeElement) === -1) {
+          e.preventDefault(); first.focus();
+        } else if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        }
+      }
+
       backdrop.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-choice]");
         if (!btn) return;
-        var choice = btn.dataset.choice;
-        setConsent(choice);
-        backdrop.remove();
-        state.consentPromise = null;
-        resolve(choice);
+        finish(btn.dataset.choice);
       });
+
+      document.addEventListener("keydown", onKeydown, true);
       document.body.appendChild(backdrop);
+
+      // Focus the dialog itself rather than a button: arming "Activer le suivi"
+      // would let a stray Enter grant camera access.
+      var dialog = backdrop.querySelector(".att-consent-modal");
+      if (dialog) {
+        dialog.setAttribute("tabindex", "-1");
+        try { dialog.focus(); } catch (_e) { /* ignore */ }
+      }
     });
     return state.consentPromise;
   }
@@ -326,7 +380,7 @@
       if (brightness < BRIGHTNESS_MIN) {
         if (!state.lightingWarned) {
           state.lightingWarned = true;
-          showToast("Éclairage insuffisant — le suivi d'attention peut être imprécis", 3500);
+          showToast("Éclairage insuffisant : le suivi d'attention peut être imprécis", 3500);
         }
         return; // metrics null for this frame — not counted as distracted
       }
@@ -397,7 +451,7 @@
       if (state.widget && !state.widget.hidden) state.widget.classList.add("att-pulse");
       if (now - state.lastDistractToastTs > TOAST_COOLDOWN_MS) {
         state.lastDistractToastTs = now;
-        showToast("Vous semblez distrait — revenez au cours 👀", 3000);
+        showToast("Vous semblez distrait, revenez au cours 👀", 3000);
       }
     }
   }
@@ -705,7 +759,7 @@
 
       return setupPipeline()
         .catch(function () {
-          showToast("Le module de suivi d'attention n'a pas pu se charger — fonctionnalité désactivée pour cette session", 4500);
+          showToast("Le module de suivi d'attention n'a pas pu se charger : fonctionnalité désactivée pour cette session", 4500);
           return Promise.reject(new Error("mediapipe-load-failed"));
         })
         .then(function () {
@@ -744,8 +798,8 @@
             var denied = err && (err.name === "NotAllowedError" || err.name === "PermissionDeniedError" ||
               /permission|denied|dismissed/i.test(String(err && err.message)));
             showToast(denied
-              ? "Caméra refusée — autorisez la caméra dans les paramètres du navigateur (icône 🔒 dans la barre d'adresse) pour activer le suivi"
-              : "Impossible d'accéder à la caméra — suivi d'attention désactivé", 5000);
+              ? "Caméra refusée : autorisez la caméra dans les paramètres du navigateur (icône 🔒 dans la barre d'adresse) pour activer le suivi"
+              : "Impossible d'accéder à la caméra : suivi d'attention désactivé", 5000);
             return false;
           });
         })

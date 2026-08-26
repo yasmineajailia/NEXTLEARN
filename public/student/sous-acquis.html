@@ -9,7 +9,7 @@
     <script src="/shared/dom-utils.js"></script>
     <script src="/shared/vark.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
-    <title data-i18n="title.lesson">Sous-acquis — Espace Étudiant</title>
+    <title data-i18n="title.lesson">Sous-acquis · Espace Étudiant</title>
     <link rel="icon" type="image/png" href="/images/favicon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -144,6 +144,21 @@
       .crumbs .crumb-sep { color: #cbd0da; font-weight: 600; margin: 0 0.3rem; }
       .crumbs .crumb-current { color: #b21f2d; }
 
+      /* The breadcrumb's last crumb already shows the sous-acquis name, so the
+         <h1> is visually redundant on the happy path. It stays in the DOM
+         (screen-reader heading landmark, and its textContent names the lesson
+         for the chatbot) and becomes visible again for the error messages the
+         breadcrumb cannot carry. */
+      .title-line.is-duplicate {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
       .title-line {
         margin: 0 0 0.7rem;
         font-family: "Space Grotesk", sans-serif;
@@ -1537,7 +1552,7 @@
         varkReco.style.setProperty("--vark-soft", hexToRgba(style.color, 0.1));
         varkReco.style.setProperty("--vark-line", hexToRgba(style.color, 0.3));
         varkRecoBadge.textContent = style.letter;
-        varkRecoTitle.textContent = `Profil ${style.label} — ${info.rec}`;
+        varkRecoTitle.textContent = `Profil ${style.label} : ${info.rec}`;
         varkRecoText.textContent = style.blurb;
 
         // Only show an action button when it leads somewhere new (the quiz page).
@@ -1626,8 +1641,23 @@
       // ranking — so the chat history matching that scope keeps the two
       // consistent). Still isolated across different modules.
       const CHAT_HISTORY_TURNS = 6; // prior turns sent to the server for context
+
+      // Scoped to the STUDENT as well as the module. Keying on the module alone
+      // meant every student signing in on the same browser inherited (and could
+      // read) the previous one's conversation — their questions, and the weak
+      // areas those questions reveal.
+      const chatOwnerId = (() => {
+        try {
+          return String((JSON.parse(currentUserRaw || "{}") || {}).identifier || "anon");
+        } catch (_e) {
+          return "anon";
+        }
+      })();
+      // Distinct prefix from the `nextlearn_chat_*` panel-geometry keys below:
+      // those are device preferences that must survive a logout, while these
+      // hold conversation content that must not.
       const chatStorageKey = moduleId
-        ? `nextlearn_chat_${moduleId}`
+        ? `nextlearn_chatlog_${chatOwnerId}_${moduleId}`
         : "";
 
       function loadStoredChatHistory() {
@@ -1673,7 +1703,7 @@
         if (!s) return "";
         const id = s.subAcquisId ? `${s.moduleId}.${s.subAcquisId}` : String(s.moduleId || "");
         const name = s.subAcquisName || s.moduleName || "";
-        return name ? `${id} — ${name}` : id;
+        return name ? `${id} · ${name}` : id;
       }
 
       pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs";
@@ -2801,7 +2831,7 @@
           const bandLabel = data.band === "acquired"
             ? tr("explain.bandAcquired", "Très bonne couverture des notions de la leçon")
             : data.band === "partial"
-              ? tr("explain.bandPartial", "Couverture partielle — quelques notions restent à revoir")
+              ? tr("explain.bandPartial", "Couverture partielle : quelques notions restent à revoir")
               : tr("explain.bandGap", "Plusieurs notions clés manquent encore dans votre explication");
           const score = Math.max(0, Math.min(100, Number(data.score) || 0));
           const color = data.band === "acquired" ? "#1d9e75" : data.band === "partial" ? "#d97706" : "#c41d38";
@@ -2845,7 +2875,7 @@
             parts.push("</div></div>");
           }
           if (typeof data.method === "string" && data.method.startsWith("lexical")) {
-            parts.push(`<p class="explain-note">${esc(tr("explain.degraded", "Analyse approximative (comparaison de mots) — le score peut sous-estimer votre explication."))}</p>`);
+            parts.push(`<p class="explain-note">${esc(tr("explain.degraded", "Analyse approximative (comparaison de mots) : le score peut sous-estimer votre explication."))}</p>`);
           }
           result.hidden = false;
           result.className = `explain-result explain-band-${esc(data.band)}`;
@@ -2894,6 +2924,7 @@
       /* ── Load data ── */
       async function loadData() {
         if (!moduleId || !subAcquisId) {
+          title.classList.remove("is-duplicate");
           title.textContent = "Sous-acquis introuvable.";
           nextSubCta.hidden = true;
           quizCta.hidden = true;
@@ -2903,6 +2934,7 @@
         }
 
         quizCta.href = `/student/questionnaire.html?moduleId=${encodeURIComponent(moduleId)}&subAcquisId=${encodeURIComponent(subAcquisId)}`;
+        title.classList.remove("is-duplicate");
         title.textContent = `Module ${moduleId} – Sous-acquis ${subAcquisId}`;
         setMetaItems([{ text: "Chargement…" }]);
 
@@ -2922,6 +2954,7 @@
           const progress   = data.progress != null ? `${Math.round(data.progress)}%` : null;
 
           title.textContent = `${subName}`;
+          title.classList.add("is-duplicate"); // breadcrumb already shows it
           // Breadcrumb: module -> skill (acquis) -> sous-acquis. The skill crumb
           // is shown only when the curriculum provides an acquis name.
           const crumbModule = document.getElementById("crumb-module");
@@ -3034,6 +3067,7 @@
 
           refreshFocusTarget();
         } catch {
+          title.classList.remove("is-duplicate");
           title.textContent = "Impossible de charger ce sous-acquis.";
           setMetaItems([]);
           quizCta.hidden = true;

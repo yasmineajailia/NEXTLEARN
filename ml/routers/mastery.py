@@ -1,51 +1,45 @@
 """
 routers/mastery.py
 
-Per-skill mastery from the SAKT knowledge-tracing model, optionally smoothed
-over the curriculum prerequisite graph.
+Per-sous-acquis mastery for one student: a recency-weighted estimate from their
+own graded attempts, refined over the curriculum prerequisite graph.
 """
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from kt import skill_graph as kt_graph
+from mastery import skill_graph as mastery_graph
 import service_state as state
 
 router = APIRouter()
 
 
-class KTInteraction(BaseModel):
+class Interaction(BaseModel):
     skillId: str
     correct: bool
 
 
 class MasteryBody(BaseModel):
-    """A student's ordered attempt history + the skills to score.
+    """A student's ordered attempt history plus the notions to score.
 
-    history is oldest->newest; each skillId is a curriculum skill (a sous-acquis
-    id for the app, an OULAD assessment id for the shipped demo model)."""
-    history: list[KTInteraction] = []
+    history is oldest to newest; each skillId is a sous-acquis id."""
+    history: list[Interaction] = []
     targetSkillIds: list[str] = []
-    applyGraph: bool = True  # refine mastery over the prerequisite graph
+    applyGraph: bool = True  # refine over the prerequisite graph
 
 
 @router.post("/mastery")
 def mastery_endpoint(body: MasteryBody):
-    """Per-skill mastery from the SAKT knowledge-tracing model.
+    """Per-sous-acquis mastery.
 
-    Returns P(correct-next) for each requested skill, given the student's attempt
-    history. `source` per skill is "sakt" (neural estimate), "history" (recency
-    fallback for a skill outside the model's vocabulary) or "prior" (no attempts)."""
+    `source` is "history" (the student has attempted this notion), "prior" (no
+    attempt yet) or, after graph refinement, "graph" (inferred from evidenced
+    neighbours)."""
     history = [(it.skillId, it.correct) for it in body.history]
-    scores = state.KT_MODEL.mastery(history, body.targetSkillIds)
-    resp = {
-        "available": state.KT_MODEL.available,
-        "testAuc": round(getattr(state.KT_MODEL, "test_auc", 0.0), 4),
-        "mastery": scores,
-        "graphApplied": False,
-    }
+    scores = state.MASTERY_ESTIMATOR.mastery(history, body.targetSkillIds)
+    resp = {"mastery": scores, "graphApplied": False}
     if body.applyGraph:
-        graph = kt_graph.get_graph()
+        graph = mastery_graph.get_graph()
         if graph is not None:
             smoothed = graph.smooth(scores)
             resp["mastery"] = smoothed

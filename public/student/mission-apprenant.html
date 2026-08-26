@@ -9,7 +9,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="title.mission">Découvre ton profil — NextLearn</title>
+  <title data-i18n="title.mission">Découvre ton profil · NextLearn</title>
   <link rel="icon" type="image/png" href="/images/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -354,7 +354,7 @@ const tr = (key, fr, vars) => (window.I18N ? window.I18N.t(key, fr, vars) : fr);
 const IS_EN = !!(window.I18N && window.I18N.isEn);
 
 if (window.I18N) window.I18N.extend({
-  "title.mission": "Discover your profile — NextLearn",
+  "title.mission": "Discover your profile · NextLearn",
 
   /* Shell */
   "mission.hudTitle": "Discover your profile",
@@ -411,7 +411,7 @@ if (window.I18N) window.I18N.extend({
   "mission.v1.partial": "{n} of 4 differences spotted.",
 
   /* V2 — memorise the grid */
-  "mission.v2.hint": "Remember where each image is — you have <b>4 seconds</b>!",
+  "mission.v2.hint": "Remember where each image is, you have <b>4 seconds</b>!",
   "mission.v2.question": "<b>Question {n}/4:</b> which image was in the <b>{pos}</b> position?",
   "mission.v2.perfect": "Photographic memory confirmed!",
   "mission.v2.partial": "{n} correct answers out of 4.",
@@ -426,7 +426,7 @@ if (window.I18N) window.I18N.extend({
   "mission.pos.8": "bottom-right",
 
   /* L1 — hangman */
-  "mission.l1.hint": "Guess <b>3 words</b> letter by letter. 6 mistakes max per word — each mistake costs 5 pts.",
+  "mission.l1.hint": "Guess <b>3 words</b> letter by letter. 6 mistakes max per word: each mistake costs 5 pts.",
   "mission.l1.word": "Word {n} / 3",
   "mission.l1.perfect": "Flawless vocabulary, almost no mistakes!",
   "mission.l1.partial": "You landed {n} word(s).",
@@ -457,7 +457,7 @@ if (window.I18N) window.I18N.extend({
   "mission.a1.nextRound": "Nice! Next round…",
   "mission.a1.maxReached": "Maximum sequence reached!",
   "mission.a1.missed": "Missed!",
-  "mission.a1.perfect": "Every round cleared — outstanding sequence memory!",
+  "mission.a1.perfect": "Every round cleared, outstanding sequence memory!",
   "mission.a1.partial": "{n} correct signals before the slip.",
 
   /* A2 — rhythm */
@@ -480,7 +480,7 @@ if (window.I18N) window.I18N.extend({
   "mission.k1.poor": "The targets got away… keep practising!",
 
   /* K2 — build the journey */
-  "mission.k2.hint": "Scenario: <b>“Plan a trip”</b>. Drag the 5 right steps into order — watch out, 2 cards are traps! (−15 pts per mistake)",
+  "mission.k2.hint": "Scenario: <b>“Plan a trip”</b>. Drag the 5 right steps into order, and watch out: 2 cards are traps! (−15 pts per mistake)",
   "mission.k2.s1": "Choose the destination",
   "mission.k2.s2": "Book the tickets",
   "mission.k2.s3": "Pack your bag",
@@ -488,12 +488,12 @@ if (window.I18N) window.I18N.extend({
   "mission.k2.s5": "Enjoy the trip",
   "mission.k2.d1": "Buy a sofa",
   "mission.k2.d2": "Repaint the kitchen",
-  "mission.k2.perfect": "Perfect route first try — ready for takeoff!",
+  "mission.k2.perfect": "Perfect route first try, ready for takeoff!",
   "mission.k2.partial": "Journey completed with {n} detour(s).",
 
   /* Result */
   "mission.res.saved": "Your saved profile",
-  "mission.res.done": "8 games completed — here is your profile",
+  "mission.res.done": "8 games completed, here is your profile",
   "mission.res.strength": "Strength: {label}",
   "mission.res.strategy": "Your strategy on NextLearn",
   "mission.res.retake": "Retake the test",
@@ -767,7 +767,7 @@ function runV2(host, done) {
       <span class="g-name">🧠 ${tr("mission.v2.name", "Mémorise la grille")}</span>
       <div class="g-chips"><span class="chip" id="v2-timer">👀 4s</span></div>
     </div>
-    <p class="g-hint">${tr("mission.v2.hint", "Retiens la position de chaque image — tu as <b>4 secondes</b> !")}</p>
+    <p class="g-hint">${tr("mission.v2.hint", "Retiens la position de chaque image, tu as <b>4 secondes</b> !")}</p>
     <div class="mem9" id="v2-grid">
       ${photos.map((id) => `<div class="ph">${IMG(id, 200, 200)}</div>`).join("")}
     </div>
@@ -839,7 +839,7 @@ function runL1(host, done) {
       <span class="g-name">🪢 ${tr("mission.l1.name", "Le Pendu revisité")}</span>
       <div class="g-chips"><span class="chip" id="l1-score">0 pts</span></div>
     </div>
-    <p class="g-hint">${tr("mission.l1.hint", "Devine <b>3 mots</b> lettre par lettre. 6 erreurs max par mot — chaque erreur coûte 5 pts.")}</p>
+    <p class="g-hint">${tr("mission.l1.hint", "Devine <b>3 mots</b> lettre par lettre. 6 erreurs max par mot : chaque erreur coûte 5 pts.")}</p>
     <div id="l1-zone"></div>`;
 
   function startRound() {
@@ -1085,7 +1085,7 @@ function runA1(host, done) {
       ? tr("mission.a1.maxReached", "Séquence maximale atteinte !") + " 🎉"
       : tr("mission.a1.missed", "Raté !");
     done(raw, success
-      ? tr("mission.a1.perfect", "Toutes les manches réussies — mémoire sérielle hors norme !")
+      ? tr("mission.a1.perfect", "Toutes les manches réussies, mémoire sérielle hors norme !")
       : tr("mission.a1.partial", `${raw / 20} signaux corrects avant l'erreur.`, { n: raw / 20 }));
   }
 
@@ -1277,7 +1277,7 @@ function runK2(host, done) {
       <span class="g-name">🧭 ${tr("mission.k2.name", "Construis le parcours")}</span>
       <div class="g-chips"><span class="chip" id="k2-score">100 pts</span></div>
     </div>
-    <p class="g-hint">${tr("mission.k2.hint", "Scénario : <b>« Organiser un voyage »</b>. Glisse les 5 bonnes étapes dans l'ordre — attention, 2 cartes sont des pièges ! (−15 pts par erreur)")}</p>
+    <p class="g-hint">${tr("mission.k2.hint", "Scénario : <b>« Organiser un voyage »</b>. Glisse les 5 bonnes étapes dans l'ordre, et attention : 2 cartes sont des pièges ! (−15 pts par erreur)")}</p>
     <div class="tl" style="--gc:#d85a30">
       <span class="tl-end">🚀</span><span class="tl-arrow">→</span>
       ${[0,1,2,3,4].map((i) => `<div class="tl-slot" data-slot="${i}">${i + 1}</div><span class="tl-arrow">→</span>`).join("")}
@@ -1319,7 +1319,7 @@ function runK2(host, done) {
     const raw = score();
     totalPts += raw; syncHudScore();
     done(raw, wrongTries === 0
-      ? tr("mission.k2.perfect", "Parcours parfait du premier coup — départ imminent !")
+      ? tr("mission.k2.perfect", "Parcours parfait du premier coup, départ imminent !")
       : tr("mission.k2.partial", `Parcours bouclé avec ${wrongTries} détour${wrongTries > 1 ? "s" : ""}.`, { n: wrongTries }));
   }
 }
@@ -1451,7 +1451,7 @@ function renderProfileScreen(ds, dominant) {
     <div class="in">
       <div class="res-hero">
         <span class="res-emoji">${d.emoji}</span>
-        <div class="res-eyebrow">${tr("mission.res.done", "8 jeux terminés — voici ton profil")}</div>
+        <div class="res-eyebrow">${tr("mission.res.done", "8 jeux terminés, voici ton profil")}</div>
         <h2 class="res-name">${esc(d.pname)}</h2>
         <span class="res-badge">${tr("mission.res.strength", "Point fort : " + esc(d.label), { label: esc(d.label) })}</span>
       </div>
@@ -1597,9 +1597,26 @@ function showStoredResult(_stored) {
 }
 
 /* ── init ── */
+// The server is authoritative, not localStorage. The stored result is not scoped
+// to a user, so a different student signing in on the same browser would find a
+// stale profile here, be forwarded into the app, be bounced straight back by the
+// auth guard (which asks the server), and loop forever. Confirm with the server
+// before trusting a local result.
 const existing = window.getVarkResult();
 if (existing && existing.dominant && existing.scores) {
-  showStoredResult(existing);
+  fetch("/api/student/vark", { headers: { Accept: "application/json" } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      const vp = data && data.varkProfile;
+      if (vp && vp.dominant && vp.scores) {
+        showStoredResult(vp);
+      } else {
+        // Stale result from another account — drop it and let this student play.
+        try { localStorage.removeItem(STORAGE_KEY); } catch (_e) {}
+        showWelcome();
+      }
+    })
+    .catch(function () { showWelcome(); });
 } else {
   // No local profile — try to hydrate from the server (durable copy, e.g. after a
   // cache clear or on a new device). Falls back to the welcome screen otherwise.

@@ -22,7 +22,7 @@ type UserData = {
     /**
      * Append-only history of every quiz attempt, kept as a SEQUENCE (unlike
      * quizResults, which retains only the latest per lessonKey). This is the raw
-     * material for Knowledge Tracing (BKT) and item analysis (IRT): per-attempt
+     * material for mastery estimation and item analysis: per-attempt
      * pass/fail plus per-question responses. Capped to the most recent 200.
      */
     skillAttempts?: Array<{

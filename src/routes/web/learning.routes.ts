@@ -218,6 +218,50 @@ learningRouter.get<{ moduleId: string; subAcquisId: string }>("/api/programmatio
       remediationMeta.isRemediation
     );
 
+    // Persisted correction, so a student revisiting a finished quiz still sees
+    // which answers were right and which were wrong.
+    //
+    // Gated on `locked`: once the quiz is validated or its attempts are spent no
+    // further submission is accepted, so returning the answer key costs nothing.
+    // While an attempt remains — including any active remediation retry — this
+    // stays absent, because the payload would otherwise BE the answer key.
+    let quizReview:
+      | Array<{ selectedIndex: number; correctOptionIndex: number | null }>
+      | null = null;
+
+    if (identifier && quizState.locked && !remediationMeta.isRemediation) {
+      const reviewUser = await User.findOne({ identifier })
+        .select({ "progress.skillAttempts": 1 })
+        .lean();
+
+      const lessonKeyForReview = buildLessonKey(moduleId, subAcquisId);
+      const priorAttempts = ((reviewUser as {
+        progress?: { skillAttempts?: Array<{
+          lessonKey?: string;
+          submittedAt?: Date | string;
+          responses?: Array<{ questionIndex?: number; selectedIndex?: number }>;
+        }> };
+      } | null)?.progress?.skillAttempts ?? [])
+        .filter((attempt) => attempt?.lessonKey === lessonKeyForReview && Array.isArray(attempt.responses))
+        .sort(
+          (a, b) =>
+            new Date(a.submittedAt ?? 0).getTime() - new Date(b.submittedAt ?? 0).getTime()
+        );
+
+      const latest = priorAttempts[priorAttempts.length - 1];
+      if (latest) {
+        const selectedByIndex = new Map<number, number>();
+        for (const response of latest.responses ?? []) {
+          selectedByIndex.set(Number(response?.questionIndex), Number(response?.selectedIndex));
+        }
+        quizReview = resources.quizQuestions.map((question, index) => ({
+          selectedIndex: selectedByIndex.has(index) ? Number(selectedByIndex.get(index)) : -1,
+          correctOptionIndex:
+            typeof question.correctOptionIndex === "number" ? question.correctOptionIndex : null
+        }));
+      }
+    }
+
     res.status(200).json({
       moduleId,
       subAcquisId,
@@ -229,6 +273,7 @@ learningRouter.get<{ moduleId: string; subAcquisId: string }>("/api/programmatio
       quizQuestions: publicQuestions,
       quizQuestionCount: publicQuestions.length,
       quizState,
+      quizReview,
       ...remediationMeta
     });
   } catch (error) {
@@ -390,7 +435,7 @@ learningRouter.post("/api/programmation-c/sub-acquis/:moduleId/:subAcquisId/subm
               submittedAt: new Date()
             },
             // Append-only attempt history — the per-attempt SEQUENCE that
-            // Knowledge Tracing (BKT) and item analysis (IRT) need, and that
+            // mastery estimation and item analysis need, and that
             // quizResults throws away by $pull-ing the prior entry. Never
             // $pull-ed here; $slice caps it so the document stays bounded.
             // This data cannot be backfilled, so capture starts now.

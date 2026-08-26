@@ -28,36 +28,47 @@ MODEL_NAME = os.environ.get(
 MAX_PREMISE_TOKENS = 512
 
 _lock = threading.Lock()
-_state: dict = {"tried": False, "tokenizer": None, "model": None, "entail_idx": None}
+_state: dict = {"started": False, "tokenizer": None, "model": None, "entail_idx": None}
 
 
-def _load():
-    """One-shot lazy load (thread-safe). Failure is remembered so a missing
-    model/dependency costs one attempt, not one per request."""
+def _load_blocking():
+    """Actual one-shot load. Runs on a background thread, never on a request."""
+    try:
+        import torch  # noqa: F401 — presence check
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+        model.eval()
+        # Label order differs across NLI checkpoints — resolve from config.
+        id2label = {int(k): str(v).lower() for k, v in model.config.id2label.items()}
+        entail_idx = next((i for i, lab in id2label.items() if "entail" in lab), None)
+        if entail_idx is None:
+            raise RuntimeError(f"no entailment label in {id2label}")
+        _state.update(tokenizer=tokenizer, model=model, entail_idx=entail_idx)
+        print(f"[nli] loaded {MODEL_NAME} (entailment index {entail_idx})")
+    except Exception as exc:  # noqa: BLE001 — transformers/model absent
+        print(f"[nli] unavailable ({type(exc).__name__}: {exc}) — similarity-only mode")
+
+
+def _ensure_loading() -> None:
+    """Start the one-shot load in the background, once per process.
+
+    Loading mDeBERTa on a cold start takes far longer than the caller's HTTP
+    timeout, so doing it inline made the very first explain-check of a fresh
+    deployment abort mid-request. The load now happens off the request path;
+    until it completes, available() reports False and the pipeline uses the
+    coverage-only fallback it already degrades to when the model is absent.
+    """
     with _lock:
-        if _state["tried"]:
+        if _state["started"]:
             return
-        _state["tried"] = True
-        try:
-            import torch  # noqa: F401 — presence check
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-            tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-            model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
-            model.eval()
-            # Label order differs across NLI checkpoints — resolve from config.
-            id2label = {int(k): str(v).lower() for k, v in model.config.id2label.items()}
-            entail_idx = next((i for i, lab in id2label.items() if "entail" in lab), None)
-            if entail_idx is None:
-                raise RuntimeError(f"no entailment label in {id2label}")
-            _state.update(tokenizer=tokenizer, model=model, entail_idx=entail_idx)
-            print(f"[nli] loaded {MODEL_NAME} (entailment index {entail_idx})")
-        except Exception as exc:  # noqa: BLE001 — transformers/model absent
-            print(f"[nli] unavailable ({type(exc).__name__}: {exc}) — similarity-only mode")
+        _state["started"] = True
+    threading.Thread(target=_load_blocking, name="nli-load", daemon=True).start()
 
 
 def available() -> bool:
-    _load()
+    _ensure_loading()
     return _state["model"] is not None
 
 
@@ -87,3 +98,8 @@ def entail_probs(premise: str, hypotheses: list) -> list | None:
     except Exception as exc:  # noqa: BLE001 — inference failure -> similarity-only
         print(f"[nli] inference failed ({type(exc).__name__}: {exc})")
         return None
+
+
+# Warm the model as soon as the service imports this module, so a student who
+# submits an explanation minutes after boot finds it ready.
+_ensure_loading()

@@ -280,7 +280,7 @@
       ctx.fillRect(cx + r + 18, ly - 4, 9, 9);
       ctx.fillStyle = "#374151";
       var pct = Math.round((e.count / total) * 100);
-      ctx.fillText(reasonLabel(e.reason) + " — " + pct + "%", cx + r + 32, ly);
+      ctx.fillText(reasonLabel(e.reason) + " · " + pct + "%", cx + r + 32, ly);
       ly += 20;
     });
   }
@@ -444,7 +444,7 @@
   function renderHeatmap(container, students) {
     var card = document.createElement("div");
     card.className = "adb-card";
-    card.innerHTML = '<h4 class="adb-card-title">Heatmap — 10 dernières sessions</h4>';
+    card.innerHTML = '<h4 class="adb-card-title">Heatmap · 10 dernières sessions</h4>';
 
     var tracked = students.filter(function (s) { return (s.recentSessions || []).length > 0; });
     if (!tracked.length) {

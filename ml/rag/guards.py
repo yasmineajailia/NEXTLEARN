@@ -11,6 +11,14 @@ import unicodedata
 STOPWORDS = {
     "le", "la", "les", "de", "des", "du", "un", "une", "et", "ou", "dans", "sur",
     "pour", "avec", "que", "qui", "quoi", "est", "sous", "acquis", "module",
+    # Interrogatives carry no topic. Counting them inflates a question's token
+    # count while never matching course prose, which drags coverage below the
+    # grounding bar: "comment utiliser switch" matches a switch chunk on one
+    # token out of three (0.33) and is rejected by the >= 0.35 gate, even though
+    # the course does explain `switch`. Dropping them leaves the terms that
+    # actually select content.
+    "comment", "pourquoi", "quand", "quel", "quelle", "quels", "quelles",
+    "combien", "how", "why", "what", "when", "which", "where",
 }
 
 

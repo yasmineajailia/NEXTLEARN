@@ -192,6 +192,26 @@
               messageNode.style.display = 'block';
 
               if (data.user) {
+                // Per-student caches (VARK result, dismissed hints) are stored under
+                // fixed keys, so signing in as someone else on the same browser would
+                // otherwise inherit the previous student's state.
+                try {
+                  var prevRaw = localStorage.getItem('nextlearnCurrentUser');
+                  var prevId = prevRaw ? (JSON.parse(prevRaw) || {}).identifier : null;
+                  if (prevId !== (data.user.identifier || null)) {
+                    localStorage.removeItem('nextlearn_vark_result');
+                    localStorage.removeItem('nextlearn_vark_reco_dismissed');
+                    Object.keys(localStorage)
+                      .filter(function (k) {
+                        if (k.indexOf('nextlearn_chatlog_') === 0) return true;
+                        if (k.indexOf('nextlearn_chat_') !== 0) return false;
+                        // Legacy unscoped conversations, but keep the panel-geometry prefs.
+                        return !/^nextlearn_chat_(w|floating|fx|fy|fw|fh)$/.test(k);
+                      })
+                      .forEach(function (k) { localStorage.removeItem(k); });
+                  }
+                } catch (_e) { /* corrupt cache: nothing to preserve */ }
+
                 if (data.user.role === 'étudiant') {
                   localStorage.setItem('nextlearnCurrentUser', JSON.stringify(data.user));
                   localStorage.removeItem('nextlearnCurrentTeacher');

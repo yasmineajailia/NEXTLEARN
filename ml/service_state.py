@@ -6,9 +6,9 @@ the domain routers (ml/routers/*) can read the loaded models without
 re-loading them and without a circular import against shap_service.py itself.
 
 Everything below runs ONCE at import time: loading the joblib models, building
-the SHAP background sample + TreeExplainers, and loading the SAKT
-knowledge-tracing model. These must stay true singletons (one RandomForest,
-one SHAP background sample, one KT model) shared by every request — do not
+the SHAP background sample + TreeExplainers, and building the mastery
+mastery estimator. These must stay true singletons (one RandomForest,
+one SHAP background sample) shared by every request — do not
 re-load them in a router module.
 """
 
@@ -20,7 +20,7 @@ import shap
 from fastapi.responses import JSONResponse
 from joblib import load
 
-from kt import infer as kt_infer
+from mastery import estimator as mastery_estimator
 from features import FEATURES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -71,9 +71,8 @@ if os.path.exists(GRADE_MODEL_PATH):
         feature_perturbation="interventional",
     )
 
-# SAKT knowledge-tracing model (per-skill mastery). Loads once; when the weights
-# are absent it stays unavailable and /mastery serves the recency fallback only.
-KT_MODEL = kt_infer.KTModel()
+# Deterministic per-sous-acquis mastery estimator (no fitted model).
+MASTERY_ESTIMATOR = mastery_estimator.MasteryEstimator()
 
 
 def _class1_index() -> int:

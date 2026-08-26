@@ -356,7 +356,8 @@ const dom = {
   scheduleDateGrid: document.getElementById("schedule-date-grid"),
   scheduleDatePrev: document.getElementById("schedule-date-prev"),
   scheduleDateNext: document.getElementById("schedule-date-next"),
-  studentClassSelect: document.getElementById("student-class-select"),
+  studentClassInput: document.getElementById("student-class-input"),
+  studentClassFixedName: document.getElementById("student-class-fixed-name"),
   classTable: document.getElementById("class-table"),
   studentTable: document.getElementById("student-table"),
   classesCreateFormCard: document.querySelector(".classes-create-form-card"),
@@ -416,7 +417,7 @@ setupAiQuizPanel({
     if (dom.subEditQuizQuestions) {
       dom.subEditQuizQuestions.value = JSON.stringify(questions, null, 2);
     }
-    showToast(`${questions.length} question(s) prête(s) — enregistrez pour sauvegarder`);
+    showToast(`${questions.length} question(s) prête(s) : enregistrez pour sauvegarder`);
   }
 });
 initBackoffice();
@@ -499,7 +500,18 @@ function loadState() {
       return structuredClone(initialData);
     }
     const parsed = JSON.parse(raw);
-    return normalizeState(parsed);
+    // Owner-stamped envelope (see saveState). Anything else is either a cache
+    // written by a different account or a pre-stamp payload: discard both and
+    // start from the server rather than showing another teacher's roster.
+    if (!parsed || typeof parsed !== "object" || !("owner" in parsed)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return structuredClone(initialData);
+    }
+    if (parsed.owner !== backofficeCacheOwner()) {
+      localStorage.removeItem(STORAGE_KEY);
+      return structuredClone(initialData);
+    }
+    return normalizeState(parsed.state);
   } catch (_error) {
     return structuredClone(initialData);
   }
@@ -590,8 +602,18 @@ function normalizeState(value) {
   };
 }
 
+/** Identifier of the signed-in staff account, used to own the cached state. */
+function backofficeCacheOwner() {
+  const user = loadBackofficeUser();
+  return String(user?.identifier || user?.email || "anon");
+}
+
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  // Stamped with its owner: this cache holds a teacher's roster, classes and
+  // student list, and the backoffice has no logout hook to clear it. Without an
+  // owner check the next staff account signing in on the same browser is shown
+  // the previous one's data until the first server refresh lands.
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ owner: backofficeCacheOwner(), state }));
 
   if (curriculumSyncEnabled) {
     void saveCurriculumToApi();
@@ -816,7 +838,18 @@ function bindEvents() {
   dom.teacherTable?.addEventListener("click", onTeacherTableClick);
   dom.teacherCancelEdit?.addEventListener("click", resetTeacherFormMode);
   dom.classForm.addEventListener("submit", onAddClass);
-  dom.studentAddBtn?.addEventListener("click", () => openStudentModal("chooser"));
+  dom.studentAddBtn?.addEventListener("click", () => {
+    // The global student list has no class context, and the form no longer asks
+    // for one — send the teacher to pick a class first rather than opening a
+    // form that would submit an empty classId.
+    if (!selectedClassId) {
+      showToast("Ouvrez d'abord une classe pour y ajouter un étudiant");
+      switchView("classes-create");
+      return;
+    }
+    openStudentModal("chooser");
+    setStudentModalClass(selectedClassId);
+  });
   dom.studentModalClose?.addEventListener("click", closeStudentModal);
   dom.studentModal?.addEventListener("click", onStudentModalClick);
   dom.studentModalOpenSingle?.addEventListener("click", () => openStudentModal("single"));
@@ -834,9 +867,8 @@ function bindEvents() {
   dom.classDetailStudentTable?.addEventListener("click", onStudentTableClick);
   dom.classDetailAddBtn?.addEventListener("click", () => {
     openStudentModal("single");
-    if (selectedClassId && dom.studentClassSelect) {
-      dom.studentClassSelect.value = selectedClassId;
-    }
+    // Opened from a class's detail view — the class is already decided.
+    setStudentModalClass(selectedClassId);
   });
   dom.scheduleForm?.addEventListener("submit", onGenerateSchedule);
 
@@ -933,7 +965,8 @@ function switchView(viewKey) {
     },
     teachers: {
       eyebrow: boTr("bo.teacherMgmt", "Gestion des enseignants"),
-      title: boTr("bo.teacherMgmtTitle", "Les enseignants et leurs classes")
+      // Pas de titre : l'eyebrow suffit, comme pour les vues content/students.
+      title: ""
     },
     "classes-create": {
       eyebrow: boTr("bo.classMgmt", "Gestion des classes"),
@@ -1069,7 +1102,7 @@ async function initQuizQualityViewOnce() {
     modules.forEach((m) => {
       const subs = Array.isArray(m.subAcquis) ? m.subAcquis : [];
       subs.forEach((s) => {
-        const label = htmlEscape(String(s.id)) + " — " + htmlEscape(String(s.name || s.title || ""));
+        const label = htmlEscape(String(s.id)) + " · " + htmlEscape(String(s.name || s.title || ""));
         options.push(
           '<option value="' + htmlEscape(String(m.id)) + "::" + htmlEscape(String(s.id)) + '">' + label + "</option>"
         );
@@ -1115,6 +1148,22 @@ function openStudentModal(mode = "chooser") {
   showStudentModalPane(mode);
 }
 
+/**
+ * Carries the class into the student form without asking for it: a student is
+ * always added from within a class, so the value comes from context and is only
+ * echoed back as a readout.
+ */
+function setStudentModalClass(classId) {
+  const id = String(classId || "");
+  if (dom.studentClassInput) {
+    dom.studentClassInput.value = id;
+  }
+  if (dom.studentClassFixedName) {
+    const match = (state.classes || []).find((entry) => String(entry.id) === id);
+    dom.studentClassFixedName.textContent = match?.name || id || "—";
+  }
+}
+
 function closeStudentModal() {
   if (!dom.studentModal) {
     return;
@@ -1122,6 +1171,7 @@ function closeStudentModal() {
 
   dom.studentModal.hidden = true;
   showStudentModalPane("chooser");
+  setStudentModalClass(null); // next open decides again
   resetStudentFormMode();
 }
 
@@ -1487,7 +1537,8 @@ function populateTeacherSelects() {
 
 function populateClassSelects() {
   const classes = state.classes.map((room) => ({ id: room.id, name: room.name }));
-  setOptions(dom.studentClassSelect, classes);
+  // The student form no longer offers a class picker — the class comes from the
+  // context the modal was opened in. Only the JSON import still chooses one.
   setOptions(dom.importClassSelect, classes);
   syncScheduleFormDefaults();
 }
@@ -2961,7 +3012,7 @@ function syncQuizBuilderToTextarea() {
 
 function quizStatStripHtml(stat, loaded) {
   if (!loaded) return "";
-  if (!stat) return '<span class="qb-stat-muted">Nouvelle question — pas encore de données</span>';
+  if (!stat) return '<span class="qb-stat-muted">Nouvelle question : pas encore de données</span>';
   const f = QUIZ_BUILDER_FLAGS[stat.flag] || QUIZ_BUILDER_FLAGS.ok;
   const p = Math.round(Number(stat.difficulty) * 100);
   const disc = stat.discrimination == null ? "—" : Number(stat.discrimination).toFixed(2);
@@ -3590,7 +3641,7 @@ function startStudentEdit(studentId) {
   dom.studentForm.studentPassword.value = "";
   dom.studentForm.studentPassword.required = false;
   dom.studentForm.studentPassword.placeholder = "Laisser vide pour conserver le mot de passe";
-  dom.studentForm.classId.value = student.classId || "";
+  setStudentModalClass(student.classId);
 }
 
 async function onStudentTableClick(event) {

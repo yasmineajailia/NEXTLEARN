@@ -8,7 +8,7 @@
     <script src="/shared/i18n.js"></script>
     <script src="/shared/quiz-code.js"></script>
     <link rel="stylesheet" href="/shared/theme.css" />
-    <title data-i18n="title.quiz">Questionnaire — Espace Étudiant</title>
+    <title data-i18n="title.quiz">Questionnaire · Espace Étudiant</title>
     <link rel="icon" type="image/png" href="/images/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -392,7 +392,7 @@
     <script>
       const tr = (key, fr, vars) => (window.I18N ? window.I18N.t(key, fr, vars) : fr);
       if (window.I18N) window.I18N.extend({
-        "title.quiz": "Quiz — Student Area",
+        "title.quiz": "Quiz · Student Area",
         "qz.title": "Quiz",
         "common.loading2": "Loading…",
         "qz.backToSub": "Back to the sub-skill",
@@ -400,19 +400,19 @@
         "qz.retake": "Retake the quiz",
         "qz.recPassTitle": "Well done! Here is the next part of your path",
         "qz.recPassSub": "Continue with the next sub-skill in your path.",
-        "qz.recFailTitle": "Insufficient score after 2 attempts — review these prerequisites",
+        "qz.recFailTitle": "Insufficient score after 2 attempts: review these prerequisites",
         "qz.recFailSub": "Master these sub-skills first before retrying this one.",
         "qz.recNoneUnlock": "You have completed the last sub-skill of this module.",
         "qz.recNoPrereq": "No prerequisite found for this sub-skill.",
         "qz.alreadyValidated": "This quiz is already validated.",
         "qz.maxAttempts": "Maximum number of attempts reached.",
         "qz.gradeError": "Unable to grade this quiz right now.",
-        "qz.summary": "Result: {c}/{t} — Score {s}%",
+        "qz.summary": "Result: {c}/{t} · Score {s}%",
         "qz.allCorrect": "Bravo, every answer is correct!",
         "qz.validated": "Well done, you validated this sub-skill.",
-        "qz.insufficient": "Insufficient score — you have {n} attempt(s) left.",
+        "qz.insufficient": "Insufficient score: you have {n} attempt(s) left.",
         "qz.retryLast": "Try again (final attempt)",
-        "qz.exhausted": "No attempts left — here is how to progress.",
+        "qz.exhausted": "No attempts left: here is how to progress.",
         "qz.notFound": "Quiz not found",
         "qz.noSubSpecified": "No sub-skill was specified.",
         "qz.loading2": "Loading the quiz…",
@@ -581,7 +581,7 @@
           recPanelTitle.textContent    = tr("qz.recPassTitle", "Bien joué ! Voici la suite de votre parcours");
           recPanelSubtitle.textContent = tr("qz.recPassSub", "Continuez avec le prochain sous-acquis de votre parcours.");
         } else {
-          recPanelTitle.textContent    = tr("qz.recFailTitle", "Score insuffisant après 2 tentatives — révisez ces notions");
+          recPanelTitle.textContent    = tr("qz.recFailTitle", "Score insuffisant après 2 tentatives : révisez ces notions");
           recPanelSubtitle.textContent = responseDriven.size > 0
             ? tr("qz.recFailSubTargeted", "Ces sous-acquis correspondent aux questions que vous avez manquées.")
             : tr("qz.recFailSub", "Maîtrisez d'abord ces sous-acquis avant de retenter celui-ci.");
@@ -669,31 +669,12 @@
 
         const result = await response.json();
         lastRemediationTargets = Array.isArray(result.remediationTargets) ? result.remediationTargets : null;
-        const summary = tr("qz.summary", `Résultat : ${result.correct}/${result.total} — Score ${result.score}%`, { c: result.correct, t: result.total, s: result.score });
+        const summary = tr("qz.summary", `Résultat : ${result.correct}/${result.total} · Score ${result.score}%`, { c: result.correct, t: result.total, s: result.score });
 
         // colour the labels
-        if (Array.isArray(result.review)) {
-          questionBoxes.forEach((box, qi) => {
-            const review = result.review[qi];
-            if (!review) return;
-            const correctIndex = typeof review.correctOptionIndex === "number"
-              ? review.correctOptionIndex : null;
-            const selectedIndex = Number(review.selectedIndex);
-
-            Array.from(box.querySelectorAll("label")).forEach(label => {
-              const input = label.querySelector("input");
-              const optionIndex = input ? Number(input.value) : -1;
-              label.classList.remove("answer-correct", "answer-wrong");
-              if (correctIndex === null || !Number.isFinite(optionIndex)) return;
-
-              if (optionIndex === selectedIndex && selectedIndex === correctIndex) {
-                label.classList.add("answer-correct");
-              } else if (optionIndex === selectedIndex && selectedIndex !== correctIndex) {
-                label.classList.add("answer-wrong");
-              }
-            });
-          });
-        }
+        // Reveal the full answer key only once no attempt remains; otherwise the
+        // marking would hand the student the answers for their second try.
+        applyReview(result.review, Boolean(result.locked));
 
         // The server is the source of truth for attempts/validation.
         const isGood = Boolean(result.validated);
@@ -710,13 +691,13 @@
         } else if (!result.locked && attemptsLeft > 0) {
           // Failed this attempt but tries remain → offer the final attempt, no recommendations yet.
           quizResult.textContent =
-            `${summary}. ${tr("qz.insufficient", `Score insuffisant — il vous reste ${attemptsLeft} tentative${attemptsLeft > 1 ? "s" : ""}.`, { n: attemptsLeft })}`;
+            `${summary}. ${tr("qz.insufficient", `Score insuffisant : il vous reste ${attemptsLeft} tentative${attemptsLeft > 1 ? "s" : ""}.`, { n: attemptsLeft })}`;
           quizRetry.hidden = false;
           quizRetry.textContent = tr("qz.retryLast", "Réessayer (dernière tentative)");
           recPanel.style.display = "none";
         } else {
           // Failed both attempts → show the remediation recommendations.
-          quizResult.textContent = `${summary}. ${tr("qz.exhausted", "Tentatives épuisées — voici comment progresser.")}`;
+          quizResult.textContent = `${summary}. ${tr("qz.exhausted", "Tentatives épuisées : voici comment progresser.")}`;
           quizRetry.hidden = true;
           lockQuiz();
           await showRecommendations(false);
@@ -782,7 +763,7 @@
           title.textContent = subName;
           quizModule.textContent = moduleName;
           quizModule.hidden = false;
-          document.title = `Quiz — ${subName}`;
+          document.title = `Quiz · ${subName}`;
           quizForm.innerHTML = "";
           quizResult.textContent = "";
           quizRetry.hidden = true;
@@ -822,6 +803,9 @@
             meta.textContent = quizState.validated
               ? tr("qz.metaValidated", `${questions.length} question(s) · sous-acquis déjà validé`, { n: questions.length })
               : tr("qz.metaExhausted", `${questions.length} question(s) · tentatives épuisées`, { n: questions.length });
+            // Server only sends quizReview once the quiz is locked, so the full
+            // correction is safe to show here.
+            applyReview(data.quizReview, true);
             await applyLockedState(quizState.validated);
           } else {
             const remaining = Number.isFinite(quizState.attemptsRemaining)
@@ -838,6 +822,49 @@
 
       // Renders the terminal state for an already-locked quiz on page load:
       // disables the form and shows the appropriate recommendation panel.
+      /**
+       * Paints the correction onto the rendered questions.
+       *
+       * `review` entries are {selectedIndex, correctOptionIndex}. Used in two
+       * places: straight after a submission, and when loading a quiz that is
+       * already finished, so the marking survives leaving and coming back.
+       *
+       * `revealCorrect` decides how much is shown. While an attempt remains, only
+       * the student's own choice is marked (green if it was right, red if not) —
+       * highlighting the correct row would give away the retry. Once the quiz is
+       * locked, the correct option is marked too.
+       */
+      function applyReview(review, revealCorrect) {
+        if (!Array.isArray(review)) return;
+        const boxes = Array.from(quizForm.querySelectorAll(".question-box"));
+        boxes.forEach((box, qi) => {
+          const entry = review[qi];
+          if (!entry) return;
+          const correctIndex = typeof entry.correctOptionIndex === "number"
+            ? entry.correctOptionIndex : null;
+          const selectedIndex = Number(entry.selectedIndex);
+
+          Array.from(box.querySelectorAll("label")).forEach(label => {
+            const input = label.querySelector("input");
+            const optionIndex = input ? Number(input.value) : -1;
+            label.classList.remove("answer-correct", "answer-wrong");
+            if (!Number.isFinite(optionIndex)) return;
+
+            // Restore what the student actually picked.
+            if (input && optionIndex === selectedIndex) input.checked = true;
+            if (correctIndex === null) return;
+
+            if (optionIndex === selectedIndex && selectedIndex === correctIndex) {
+              label.classList.add("answer-correct");
+            } else if (optionIndex === selectedIndex) {
+              label.classList.add("answer-wrong");
+            } else if (revealCorrect && optionIndex === correctIndex) {
+              label.classList.add("answer-correct");
+            }
+          });
+        });
+      }
+
       async function applyLockedState(validated) {
         lockQuiz();
         quizRetry.hidden = true;

@@ -87,6 +87,20 @@
     const logoutBtn = document.getElementById("logout-btn");
     logoutBtn?.addEventListener("click", () => {
       localStorage.removeItem("nextlearnCurrentUser");
+      // Per-student caches are keyed globally; clear them so the next
+      // student on this browser does not inherit this one's profile.
+      localStorage.removeItem("nextlearn_vark_result");
+      localStorage.removeItem("nextlearn_vark_reco_dismissed");
+      // Chat histories are keyed per student AND module; sweep the prefix so
+      // nothing from this session is readable by the next student here.
+      Object.keys(localStorage)
+        .filter(function (k) {
+          if (k.indexOf("nextlearn_chatlog_") === 0) return true;
+          if (k.indexOf("nextlearn_chat_") !== 0) return false;
+          // Legacy unscoped conversations, but keep the panel-geometry prefs.
+          return !/^nextlearn_chat_(w|floating|fx|fy|fw|fh)$/.test(k);
+        })
+        .forEach(function (k) { localStorage.removeItem(k); });
       window.location.href = "/auth/sign-in.html";
     });
   }
@@ -95,6 +109,20 @@
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.identifier) {
       localStorage.removeItem("nextlearnCurrentUser");
+      // Per-student caches are keyed globally; clear them so the next
+      // student on this browser does not inherit this one's profile.
+      localStorage.removeItem("nextlearn_vark_result");
+      localStorage.removeItem("nextlearn_vark_reco_dismissed");
+      // Chat histories are keyed per student AND module; sweep the prefix so
+      // nothing from this session is readable by the next student here.
+      Object.keys(localStorage)
+        .filter(function (k) {
+          if (k.indexOf("nextlearn_chatlog_") === 0) return true;
+          if (k.indexOf("nextlearn_chat_") !== 0) return false;
+          // Legacy unscoped conversations, but keep the panel-geometry prefs.
+          return !/^nextlearn_chat_(w|floating|fx|fy|fw|fh)$/.test(k);
+        })
+        .forEach(function (k) { localStorage.removeItem(k); });
       window.location.href = "/sign-in";
       return;
     }

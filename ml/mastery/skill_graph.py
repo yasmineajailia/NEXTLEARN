@@ -2,7 +2,7 @@
 skill_graph.py — prerequisite-graph smoothing on top of per-skill mastery.
 
 Loads the C-course sous-acquis dependency graph (data/graph.json) and refines the
-raw mastery from the SAKT model / recency fallback in two deterministic passes:
+raw mastery from the recency-weighted estimator in two deterministic passes:
 
   1. Cold-start transfer — a skill with NO direct evidence borrows an estimate
      from its graph neighbours (depends_on / unlocks / related_to) that do have
@@ -25,7 +25,7 @@ from collections import deque
 # Blend weight for prerequisite gating (how hard a weak prerequisite pulls down).
 PREREQ_ALPHA = 0.5
 # source values that mean "the student has direct evidence on this skill".
-EVIDENCE_SOURCES = {"sakt", "history"}
+EVIDENCE_SOURCES = {"history"}
 WEAK_THRESHOLD = 0.6  # below this a skill is flagged as needing revision
 
 

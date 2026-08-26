@@ -620,78 +620,87 @@
           <div id="clustering-dashboard-root"></div>
         </section>
 
-        <div id="student-modal" class="modal-shell" hidden>
-          <div class="modal-backdrop" data-action="close-student-modal"></div>
-          <div class="modal-card">
-            <div class="editor-head">
-              <h3 id="student-modal-title">Ajouter un étudiant</h3>
-              <button type="button" id="student-modal-close" class="secondary-btn">Fermer</button>
-            </div>
-
-            <div id="student-modal-chooser" class="student-modal-chooser">
-              <button type="button" id="student-modal-open-single">Ajouter un étudiant</button>
-              <button type="button" id="student-modal-open-import" class="secondary-btn">Importer une classe (JSON)</button>
-            </div>
-
-            <section id="student-modal-single" hidden>
-              <article class="card modal-inner-card">
-                <h3 id="student-form-title">Ajouter un étudiant à la classe</h3>
-                <form id="student-form" class="stack-form">
-                  <label>
-                    Nom complet de l'étudiant
-                    <input type="text" name="studentName" required placeholder="Exemple: Leila B." />
-                  </label>
-                  <label>
-                    Email de l'étudiant (utilisé pour la connexion)
-                    <input type="email" name="studentEmail" required placeholder="Exemple: leila@nextlearn.tn" />
-                  </label>
-                  <label>
-                    Identifiant de l'étudiant
-                    <input type="text" name="studentIdentifier" required minlength="3" placeholder="Exemple: leila.b" />
-                  </label>
-                  <label>
-                    Mot de passe initial
-                    <input type="password" name="studentPassword" required minlength="6" placeholder="Minimum 6 caracteres" />
-                  </label>
-                  <label>
-                    Classe
-                    <select id="student-class-select" name="classId" required></select>
-                  </label>
-                  <div class="button-row">
-                    <button type="submit" id="student-submit-btn">Ajouter l'étudiant</button>
-                    <button type="button" id="student-cancel-edit" class="secondary-btn" hidden>Annuler modification</button>
-                  </div>
-                </form>
-              </article>
-            </section>
-
-            <section id="student-modal-import" hidden>
-              <article class="card modal-inner-card">
-                <h3>Importer une classe (JSON)</h3>
-                <form id="import-students-form" class="stack-form">
-                  <label>
-                    Classe cible
-                    <select id="import-class-select" name="classId" required></select>
-                  </label>
-                  <label>
-                    Fichier JSON (étudiants)
-                    <input type="file" id="import-students-file" name="studentsFile" accept=".json,application/json" required />
-                  </label>
-                  <p class="form-hint">Format JSON: [{"fullName":"...","email":"...","identifier":"...","password":"..."}]</p>
-                  <button type="submit">Importer les étudiants</button>
-                </form>
-              </article>
-            </section>
-          </div>
-        </div>
 
         <p id="toast" class="toast" role="status" aria-live="polite"></p>
       </main>
+    </div>
+
+    <!-- Direct child of body on purpose: .main-panel sets backdrop-filter,
+         which makes it the containing block for position:fixed descendants,
+         so a modal nested inside it anchors to the panel's scrollable box
+         instead of the viewport and lands off-screen when the list is scrolled. -->
+    <div id="student-modal" class="modal-shell" hidden>
+      <div class="modal-backdrop" data-action="close-student-modal"></div>
+      <div class="modal-card">
+        <div class="editor-head">
+          <h3 id="student-modal-title">Ajouter un étudiant</h3>
+          <button type="button" id="student-modal-close" class="secondary-btn">Fermer</button>
+        </div>
+
+        <div id="student-modal-chooser" class="student-modal-chooser">
+          <button type="button" id="student-modal-open-single">Ajouter un étudiant</button>
+          <button type="button" id="student-modal-open-import" class="secondary-btn">Importer une classe (JSON)</button>
+        </div>
+
+        <section id="student-modal-single" hidden>
+          <article class="card modal-inner-card">
+            <h3 id="student-form-title">Ajouter un étudiant à la classe</h3>
+            <form id="student-form" class="stack-form">
+              <label>
+                Nom complet de l'étudiant
+                <input type="text" name="studentName" required placeholder="Exemple: Leila B." />
+              </label>
+              <label>
+                Email de l'étudiant (utilisé pour la connexion)
+                <input type="email" name="studentEmail" required placeholder="Exemple: leila@nextlearn.tn" />
+              </label>
+              <label>
+                Identifiant de l'étudiant
+                <input type="text" name="studentIdentifier" required minlength="3" placeholder="Exemple: leila.b" />
+              </label>
+              <label>
+                Mot de passe initial
+                <input type="password" name="studentPassword" required minlength="6" placeholder="Minimum 6 caracteres" />
+              </label>
+              <!-- The class is never chosen here: a student is always added from
+                   within a class, so it is carried silently and shown as a readout.
+                   The hidden input keeps the field name the submit handlers read. -->
+              <input type="hidden" id="student-class-input" name="classId" />
+              <p id="student-class-fixed" class="field-readout">
+                Classe : <strong id="student-class-fixed-name"></strong>
+              </p>
+              <div class="button-row">
+                <button type="submit" id="student-submit-btn">Ajouter l'étudiant</button>
+                <button type="button" id="student-cancel-edit" class="secondary-btn" hidden>Annuler modification</button>
+              </div>
+            </form>
+          </article>
+        </section>
+
+        <section id="student-modal-import" hidden>
+          <article class="card modal-inner-card">
+            <h3>Importer une classe (JSON)</h3>
+            <form id="import-students-form" class="stack-form">
+              <label>
+                Classe cible
+                <select id="import-class-select" name="classId" required></select>
+              </label>
+              <label>
+                Fichier JSON (étudiants)
+                <input type="file" id="import-students-file" name="studentsFile" accept=".json,application/json" required />
+              </label>
+              <p class="form-hint">Format JSON: [{"fullName":"...","email":"...","identifier":"...","password":"..."}]</p>
+              <button type="submit">Importer les étudiants</button>
+            </form>
+          </article>
+        </section>
+      </div>
     </div>
 
     <script src="/backoffice/js/clusteringDashboard.js"></script>
     <script src="/backoffice/js/attentionDashboard.js"></script>
     <script src="/backoffice/js/itemAnalysisDashboard.js"></script>
     <script src="/backoffice/backoffice.js"></script>
+
   </body>
 </html>

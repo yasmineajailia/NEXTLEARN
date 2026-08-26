@@ -27,7 +27,10 @@
     if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;
     var css =
       "code.nl-qc-inline{font-family:ui-monospace,'Cascadia Code','SF Mono',Consolas,'Liberation Mono',monospace;" +
-      "font-size:.86em;background:#eef1f7;border:1px solid #dde3ee;border-radius:6px;padding:.08em .4em;color:#b21f2d;white-space:nowrap;}" +
+      "font-size:.86em;background:#eef1f7;border:1px solid #dde3ee;border-radius:6px;padding:.08em .4em;color:#b21f2d;" +
+      // pre-wrap, not nowrap: internal spacing still matters in code, but a long
+      // single-statement option must wrap inside its row rather than overflow it.
+      "white-space:pre-wrap;overflow-wrap:break-word;}" +
       "pre.nl-qc-block{margin:.5rem 0;padding:.75rem .9rem;background:#1e2430;border-radius:10px;overflow-x:auto;}" +
       "pre.nl-qc-block code{font-family:ui-monospace,'Cascadia Code','SF Mono',Consolas,'Liberation Mono',monospace;" +
       "font-size:.85rem;color:#e6e9f0;white-space:pre;}";
@@ -106,8 +109,13 @@
       var reg = regions[r];
       out += escapeHtml(src.slice(last, reg.start));
       var code = src.slice(reg.start, reg.end);
-      // A multi-statement / braced / multi-line region reads best as a block.
-      var asBlock = /\n/.test(code) || /[{}]/.test(code) || (code.match(/;/g) || []).length >= 2;
+      // A genuinely multi-line or multi-statement region reads best as a block.
+      // Braces alone are NOT enough: an array initialiser such as
+      //   char tab[] = {"a", "b", "c"};
+      // is a single statement, and blocking it makes one quiz option tower over
+      // its siblings. Real snippets that deserve a block (a loop body, a struct)
+      // carry a newline or several statements anyway.
+      var asBlock = /\n/.test(code) || (code.match(/;/g) || []).length >= 2;
       code = code.replace(/^`+|`+$/g, ""); // drop backtick markers if present
       out += asBlock
         ? '<pre class="nl-qc-block"><code>' + escapeHtml(code) + "</code></pre>"

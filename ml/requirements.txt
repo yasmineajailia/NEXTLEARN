@@ -13,7 +13,7 @@ chromadb>=1.5
 pypdf>=6.0
 python-docx>=1.1
 python-pptx>=1.0
-# Knowledge tracing (SAKT) + NLI entailment verifier (answer-gap pipeline).
+# NLI entailment verifier (answer-gap pipeline).
 # Plain `pip install` pulls the CUDA-bundled torch wheel (~2-3GB). On a
 # CPU-only server install it from PyTorch's CPU index instead — Dockerfile.ml
 # does this automatically; for a manual/venv setup run this BEFORE the file:

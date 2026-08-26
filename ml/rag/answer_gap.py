@@ -268,10 +268,37 @@ def _band(score: int) -> str:
     return "gap"
 
 
+_CODE_SPAN = re.compile(
+    r"`[^`]*`"                    # spans de backticks
+    r"|[A-Za-z_]\w*\s*\([^()]*\)"  # appels de fonction : strcpy(tab[0], "x")
+    r"|[A-Za-z_]\w*(?:\[[^\]]*\])+"  # indexations : tab[3][20]
+    r"|\{[^{}]*\}"                 # blocs entre accolades
+    r"|\"[^\"]*\""                  # litteraux chaine
+    r"|="                          # affectation
+)
+
+
+def _prose_only(sentence: str) -> str:
+    """The same sentence with code spans removed.
+
+    A student who explains *well* writes code, and a half-code sentence embeds
+    far from a clean French concept label: "On peut l'initialiser dès la
+    déclaration : char tab[3][20] = {...}" scored below threshold against
+    "Initialisation d'un tableau de chaînes de caractères" even though it is a
+    textbook answer. Stripping the code leaves the explanatory clause, which
+    embeds where it should. Added alongside the original, never instead of it,
+    so this can only raise a similarity, never lower one."""
+    return normalize_whitespace(_CODE_SPAN.sub(" ", sentence or ""))
+
+
 def _embedding_coverage(student_text: str, concepts: list) -> list:
     """Best cosine similarity of each concept against the student's sentences
-    and the whole answer. One embedding batch for everything."""
+    (raw and code-stripped) and the whole answer. One embedding batch."""
     student_units = _sentences(student_text)[:MAX_STUDENT_SENTENCES]
+    for sentence in list(student_units):
+        stripped = _prose_only(sentence)
+        if stripped and stripped != sentence and len(stripped.split()) >= 4:
+            student_units.append(stripped)
     if student_text not in student_units:
         student_units.append(student_text)  # whole answer as one more unit
     vectors = embedder.embed(student_units + concepts)

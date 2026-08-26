@@ -7,7 +7,7 @@ ml/train.py). There is no JS<->Python mirror anymore — one scikit-learn model
 per task is trained, served and explained here.
 
 Endpoints are grouped by domain into ml/routers/* (risk/grade SHAP, clustering,
-attention analytics, RAG/chatbot, knowledge-tracing mastery, quiz tooling) and
+attention analytics, RAG/chatbot, mastery estimation, quiz tooling) and
 mounted below. This file owns app setup, the singleton model state
 (ml/service_state.py, loaded once and imported by every router) and /health:
 
@@ -18,7 +18,7 @@ mounted below. This file owns app setup, the singleton model state
   POST /attention-analytics    focus trend + top distraction per student
   POST /rag/reindex, GET /rag/stats, POST /rag/retrieve, /rag/answer, /rag/stream
   POST /nlp/answer-gap          semantic lesson-explanation gap analysis
-  POST /mastery                 SAKT knowledge-tracing per-skill mastery
+  POST /mastery                 per-sous-acquis mastery (recency + graph)
   POST /generate-quiz           LLM quiz generation
   POST /item-analysis           classical item analysis (difficulty/discrimination)
 

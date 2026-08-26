@@ -2,7 +2,7 @@
  * Student mastery + revision route.
  *
  * Ties the KT model to the recommender: it builds the student's attempt SEQUENCE
- * from progress.skillAttempts, asks the Python SAKT + graph model for per-skill
+ * from progress.skillAttempts, asks the Python estimator + graph for per-skill
  * mastery, then feeds that continuous mastery INTO the existing `Recommender`
  * (as sous-acquis scores) so revision recommendations are driven by dynamic
  * mastery instead of a binary pass/fail on the last quiz.
@@ -99,7 +99,7 @@ masteryRouter.get("/api/student/mastery", requireAuth, async (req, res) => {
     // wins — passing the MCQ doesn't cancel a failed explanation, and vice versa.
     const scoreBySub = new Map<string, number>();
     for (const [subSkillId, entry] of Object.entries(mastery.mastery)) {
-      if (entry.source === "sakt" || entry.source === "history") {
+      if (entry.source === "history") {
         scoreBySub.set(subSkillId, Math.round(entry.mastery * 100));
       }
     }
@@ -130,8 +130,6 @@ masteryRouter.get("/api/student/mastery", requireAuth, async (req, res) => {
     }));
 
     return res.status(200).json({
-      ktAvailable: mastery.available,
-      testAuc: mastery.testAuc,
       graphApplied: mastery.graphApplied,
       attempts: history.length,
       revise

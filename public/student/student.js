@@ -15,6 +15,20 @@ try {
 
 if (!currentUser || !currentUser.identifier) {
   localStorage.removeItem("nextlearnCurrentUser");
+      // Per-student caches are keyed globally; clear them so the next
+      // student on this browser does not inherit this one's profile.
+      localStorage.removeItem("nextlearn_vark_result");
+      localStorage.removeItem("nextlearn_vark_reco_dismissed");
+      // Chat histories are keyed per student AND module; sweep the prefix so
+      // nothing from this session is readable by the next student here.
+      Object.keys(localStorage)
+        .filter(function (k) {
+          if (k.indexOf("nextlearn_chatlog_") === 0) return true;
+          if (k.indexOf("nextlearn_chat_") !== 0) return false;
+          // Legacy unscoped conversations, but keep the panel-geometry prefs.
+          return !/^nextlearn_chat_(w|floating|fx|fy|fw|fh)$/.test(k);
+        })
+        .forEach(function (k) { localStorage.removeItem(k); });
   window.location.href = "/sign-in";
 }
 
@@ -37,8 +51,8 @@ if (window.I18N) {
     "view.messagesTitle": "Notifications",
     "dash.helloName": "Hello, {name}!",
     "dash.heroLessons": "Dashboard • {n} lessons",
-    "dash.quoteHigh": "Great work — you are on track to succeed.",
-    "dash.quoteMid": "Keep up the effort — every lesson counts to catch up.",
+    "dash.quoteHigh": "Great work, you are on track to succeed.",
+    "dash.quoteMid": "Keep up the effort, every lesson counts to catch up.",
     "dash.quoteLow": "Don't give up: talk to your teacher to get help.",
     "dash.actionIncomplete": "Sub-skill not completed yet",
     "dash.allDone": "Everything is completed.",
@@ -47,9 +61,9 @@ if (window.I18N) {
     "pred.mid": "Extra effort is recommended.",
     "pred.low": "Risk of falling behind detected. Talk to your teacher.",
     "pred.grade": "Predicted exam grade <strong>{grade}/20</strong>",
-    "pred.badgeHigh": "You are on the right track — high probability of success!",
+    "pred.badgeHigh": "You are on the right track, high probability of success!",
     "pred.badgeMid": "Extra effort is recommended to catch up.",
-    "pred.badgeLow": "Risk of dropping behind detected — talk to your teacher.",
+    "pred.badgeLow": "Risk of dropping behind detected: talk to your teacher.",
     "chat.greeting": "Hello, I am the NextLearn assistant. Ask me about a course concept, a resource or your learning path: I answer from your module content.",
     "chat.allModules": "All modules",
     "chat.subAcquis": "Sub-skill",
@@ -76,7 +90,7 @@ if (window.I18N) {
     "mod.notStarted": "Not started",
     "next.timeLeft": "Time remaining: {mins} min",
     "next.timeUnknown": "Estimated time: —",
-    "next.nothingPending": "No pending lessons — congratulations!",
+    "next.nothingPending": "No pending lessons, congratulations!",
     "chart.lessonsPct": "Lessons completed (%)",
     "chart.quizPct": "Quizzes passed (%)",
     "dash.keyStats": "Key stats",
@@ -248,6 +262,20 @@ function bindEvents() {
 
   dom.logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("nextlearnCurrentUser");
+      // Per-student caches are keyed globally; clear them so the next
+      // student on this browser does not inherit this one's profile.
+      localStorage.removeItem("nextlearn_vark_result");
+      localStorage.removeItem("nextlearn_vark_reco_dismissed");
+      // Chat histories are keyed per student AND module; sweep the prefix so
+      // nothing from this session is readable by the next student here.
+      Object.keys(localStorage)
+        .filter(function (k) {
+          if (k.indexOf("nextlearn_chatlog_") === 0) return true;
+          if (k.indexOf("nextlearn_chat_") !== 0) return false;
+          // Legacy unscoped conversations, but keep the panel-geometry prefs.
+          return !/^nextlearn_chat_(w|floating|fx|fy|fw|fh)$/.test(k);
+        })
+        .forEach(function (k) { localStorage.removeItem(k); });
     window.location.href = "/auth/sign-in.html";
   });
 
@@ -994,13 +1022,13 @@ async function fetchAndRenderPrediction() {
 
     let label, colorClass;
     if (pct >= 70) {
-      label = tr("pred.badgeHigh", "Vous êtes sur la bonne voie — forte probabilité de réussite !");
+      label = tr("pred.badgeHigh", "Vous êtes sur la bonne voie, forte probabilité de réussite !");
       colorClass = "is-high";
     } else if (pct >= 40) {
       label = tr("pred.badgeMid", "Des efforts supplémentaires sont recommandés pour rattraper votre niveau.");
       colorClass = "is-mid";
     } else {
-      label = tr("pred.badgeLow", "Risque de décrochage détecté — consultez votre enseignant.");
+      label = tr("pred.badgeLow", "Risque de décrochage détecté : consultez votre enseignant.");
       colorClass = "is-low";
     }
 
@@ -1684,7 +1712,7 @@ function renderNextStep(modules = [], stats = null) {
     for (const sub of subItems) {
       const key = `${moduleId}::${sub.id}`;
       if (!completedSet.has(key)) {
-        dom.nextStepModule.textContent = `${moduleData.name || `Module ${moduleId}`} — ${sub.name || sub.id}`;
+        dom.nextStepModule.textContent = `${moduleData.name || `Module ${moduleId}`} · ${sub.name || sub.id}`;
         const mins = sub.durationMinutes || sub.duration || null;
         dom.nextStepMeta.textContent = mins ? tr("next.timeLeft", `Temps restant: ${mins} min`, { mins }) : tr("next.timeUnknown", "Temps estimé: —");
         dom.nextStepCta.onclick = () => {
@@ -1695,7 +1723,7 @@ function renderNextStep(modules = [], stats = null) {
     }
   }
 
-  dom.nextStepModule.textContent = tr("next.nothingPending", "Aucun cours en attente — félicitations !");
+  dom.nextStepModule.textContent = tr("next.nothingPending", "Aucun cours en attente, félicitations !");
   dom.nextStepMeta.textContent = tr("dash.allDoneSub", "Vous avez complété tous les sous-acquis disponibles.");
   dom.nextStepCta.onclick = () => { switchView("cours"); };
 }
@@ -1801,7 +1829,7 @@ function renderNewDashboard(data) {
   if (dom.dashHeroQuote) {
     const pct = prediction?.probabilityPct || 0;
     if (pct >= 70) dom.dashHeroQuote.textContent = tr("dash.quoteHigh", "Excellent travail, vous êtes sur la bonne voie pour réussir.");
-    else if (pct >= 40) dom.dashHeroQuote.textContent = tr("dash.quoteMid", "Continuez vos efforts — chaque leçon compte pour rattraper.");
+    else if (pct >= 40) dom.dashHeroQuote.textContent = tr("dash.quoteMid", "Continuez vos efforts, chaque leçon compte pour rattraper.");
     else dom.dashHeroQuote.textContent = tr("dash.quoteLow", "N'abandonnez pas : parlez à votre enseignant pour obtenir de l'aide.");
   }
 
@@ -1811,7 +1839,7 @@ function renderNewDashboard(data) {
   // ── Next Action ──
   if (dom.dashActionModule) {
     if (nextStep) {
-      dom.dashActionModule.textContent = `${nextStep.moduleName} — ${nextStep.subAcquisName}`;
+      dom.dashActionModule.textContent = `${nextStep.moduleName} · ${nextStep.subAcquisName}`;
       if (dom.dashActionSub) dom.dashActionSub.textContent = tr("dash.actionIncomplete", "Sous-acquis non complété");
       if (dom.dashActionCta) {
         dom.dashActionCta.onclick = () => {
@@ -2445,7 +2473,7 @@ function renderLearningProfile() {
           <span class="lp-badge-text">${tr("dash.discoverProfile", "Découvre ton profil d'apprentissage")}</span>
         </a>
       </div>
-      <p class="lp-tip">${tr("dash.discoverProfileTip", "Réponds à quelques questions pour identifier <b>comment tu apprends le mieux</b> — NextLearn adaptera ensuite ses conseils à ton style.")}</p>`;
+      <p class="lp-tip">${tr("dash.discoverProfileTip", "Réponds à quelques questions pour identifier <b>comment tu apprends le mieux</b>. NextLearn adaptera ensuite ses conseils à ton style.")}</p>`;
     card.hidden = false;
     return;
   }

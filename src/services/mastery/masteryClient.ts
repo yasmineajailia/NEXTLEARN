@@ -1,8 +1,8 @@
 /**
  * masteryClient.ts
  *
- * Thin client for the Python ML service's `/mastery` endpoint (the SAKT
- * knowledge-tracing model + prerequisite-graph smoothing). Node owns the student
+ * Thin client for the Python ML service's `/mastery` endpoint (recency-weighted
+ * estimate + prerequisite-graph smoothing). Node owns the student
  * data (attempt history, curriculum) and passes it in; Python returns the
  * per-skill mastery, which the recommendation layer then consumes.
  */
@@ -13,8 +13,6 @@ export type MasteryInteraction = { skillId: string; correct: boolean };
 export type MasteryEntry = { mastery: number; rawMastery?: number; source: string };
 
 export type MasteryResponse = {
-  available: boolean;
-  testAuc: number;
   graphApplied: boolean;
   mastery: Record<string, MasteryEntry>;
   revisionOrder?: Array<{ skillId: string; mastery: number; blockedBy: string[] }>;
@@ -43,8 +41,6 @@ export async function fetchMastery(params: {
     if (!res.ok) throw new Error(`ML service /mastery -> ${res.status}`);
     const data = (await res.json()) as Partial<MasteryResponse>;
     return {
-      available: Boolean(data.available),
-      testAuc: Number(data.testAuc || 0),
       graphApplied: Boolean(data.graphApplied),
       mastery: (data.mastery as Record<string, MasteryEntry>) || {},
       revisionOrder: Array.isArray(data.revisionOrder) ? data.revisionOrder : []
