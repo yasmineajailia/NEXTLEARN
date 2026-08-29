@@ -46,7 +46,6 @@
           <button data-view="classes-access" class="nav-item" type="button" data-i18n="bo.accessMgmt">Date de démarrage des cours</button>
           <button data-view="clustering" class="nav-item" type="button" data-i18n="bo.clustering">Profils d'apprentissage</button>
           <button data-view="attention" class="nav-item" type="button" data-i18n="bo.attention">Suivi d'attention</button>
-          <button data-view="quiz-quality" class="nav-item" type="button" data-i18n="bo.quizQuality">Qualité des quiz</button>
         </nav>
 
         <!-- Pinned footer: display settings + home link, separated from navigation. -->
@@ -580,22 +579,6 @@
           </div>
         </section>
 
-        <section class="view" id="view-students">
-          <article class="card">
-            <div class="student-list-head">
-              <h3>Liste des étudiants</h3>
-              <button type="button" id="student-add-btn">Ajouter</button>
-            </div>
-            <div class="student-list-tools">
-              <label>
-                Rechercher un étudiant
-                <input type="search" id="student-search-input" placeholder="Nom, identifiant, email ou classe" />
-              </label>
-            </div>
-            <div id="student-table" class="table-wrap"></div>
-          </article>
-        </section>
-
         <section class="view" id="view-attention">
           <div class="filters">
             <label>
@@ -604,16 +587,6 @@
             </label>
           </div>
           <div id="attention-dashboard-root"></div>
-        </section>
-
-        <section class="view" id="view-quiz-quality">
-          <div class="filters">
-            <label>
-              Sous-acquis
-              <select id="quiz-quality-select"></select>
-            </label>
-          </div>
-          <div id="quiz-quality-root"></div>
         </section>
 
         <section class="view" id="view-clustering">
@@ -697,9 +670,50 @@
       </div>
     </div>
 
+    <!-- Direct child of body, like #student-modal above: .main-panel sets
+         backdrop-filter, which makes it the containing block for
+         position:fixed descendants, so a modal nested inside it anchors to
+         the panel's scrollable box instead of the viewport. -->
+    <div id="student-profile-modal" class="modal-shell" hidden>
+      <div class="modal-backdrop" data-action="close-student-profile-modal"></div>
+      <div class="modal-card">
+        <div class="editor-head">
+          <h3 id="student-profile-name">Détails de l'étudiant</h3>
+          <button type="button" id="student-profile-close" class="secondary-btn">Fermer</button>
+        </div>
+
+        <p id="student-profile-meta" class="form-hint"></p>
+        <p id="student-profile-loading">Chargement…</p>
+        <p id="student-profile-error" class="form-hint" hidden></p>
+
+        <div id="student-profile-body" hidden>
+          <div class="student-profile-kpis">
+            <div class="student-profile-kpi">
+              <span class="student-profile-kpi-label">Maîtrise globale</span>
+              <span id="student-profile-mastery" class="student-profile-kpi-value">—</span>
+            </div>
+            <div class="student-profile-kpi">
+              <span class="student-profile-kpi-label">Attention moyenne</span>
+              <span id="student-profile-attention" class="student-profile-kpi-value">—</span>
+            </div>
+            <div class="student-profile-kpi">
+              <span class="student-profile-kpi-label">Note prévue</span>
+              <span id="student-profile-grade" class="student-profile-kpi-value">—</span>
+            </div>
+            <div class="student-profile-kpi">
+              <span class="student-profile-kpi-label">Risque de décrochage</span>
+              <span id="student-profile-risk" class="student-profile-kpi-value">—</span>
+            </div>
+          </div>
+
+          <h4>Sous-acquis à revoir</h4>
+          <div id="student-profile-revise" class="student-profile-revise"></div>
+        </div>
+      </div>
+    </div>
+
     <script src="/backoffice/js/clusteringDashboard.js"></script>
     <script src="/backoffice/js/attentionDashboard.js"></script>
-    <script src="/backoffice/js/itemAnalysisDashboard.js"></script>
     <script src="/backoffice/backoffice.js"></script>
 
   </body>

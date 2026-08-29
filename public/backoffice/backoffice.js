@@ -225,7 +225,6 @@ let teacherEditState = {
 let studentEditState = {
   studentId: ""
 };
-let studentSearchTerm = "";
 let selectedClassId = "";
 let subEditorPendingDeleteIds = new Set();
 let backofficeUser = null;
@@ -248,10 +247,8 @@ const dom = {
     teachers: document.getElementById("view-teachers"),
     "classes-create": document.getElementById("view-classes-create"),
     "classes-access": document.getElementById("view-classes-access"),
-    students: document.getElementById("view-students"),
     clustering: document.getElementById("view-clustering"),
     attention: document.getElementById("view-attention"),
-    "quiz-quality": document.getElementById("view-quiz-quality"),
     "classes-detail": document.getElementById("view-class-detail"),
     "sub-add": document.getElementById("view-sub-add"),
     "sub-editor": document.getElementById("view-sub-editor")
@@ -333,7 +330,6 @@ const dom = {
   studentFormTitle: document.getElementById("student-form-title"),
   studentSubmitBtn: document.getElementById("student-submit-btn"),
   studentCancelEdit: document.getElementById("student-cancel-edit"),
-  studentAddBtn: document.getElementById("student-add-btn"),
   studentModal: document.getElementById("student-modal"),
   studentModalTitle: document.getElementById("student-modal-title"),
   studentModalClose: document.getElementById("student-modal-close"),
@@ -342,7 +338,18 @@ const dom = {
   studentModalImport: document.getElementById("student-modal-import"),
   studentModalOpenSingle: document.getElementById("student-modal-open-single"),
   studentModalOpenImport: document.getElementById("student-modal-open-import"),
-  studentSearchInput: document.getElementById("student-search-input"),
+  studentProfileModal: document.getElementById("student-profile-modal"),
+  studentProfileClose: document.getElementById("student-profile-close"),
+  studentProfileName: document.getElementById("student-profile-name"),
+  studentProfileMeta: document.getElementById("student-profile-meta"),
+  studentProfileLoading: document.getElementById("student-profile-loading"),
+  studentProfileError: document.getElementById("student-profile-error"),
+  studentProfileBody: document.getElementById("student-profile-body"),
+  studentProfileMastery: document.getElementById("student-profile-mastery"),
+  studentProfileAttention: document.getElementById("student-profile-attention"),
+  studentProfileGrade: document.getElementById("student-profile-grade"),
+  studentProfileRisk: document.getElementById("student-profile-risk"),
+  studentProfileRevise: document.getElementById("student-profile-revise"),
   importStudentsForm: document.getElementById("import-students-form"),
   importClassSelect: document.getElementById("import-class-select"),
   importStudentsFile: document.getElementById("import-students-file"),
@@ -359,7 +366,6 @@ const dom = {
   studentClassInput: document.getElementById("student-class-input"),
   studentClassFixedName: document.getElementById("student-class-fixed-name"),
   classTable: document.getElementById("class-table"),
-  studentTable: document.getElementById("student-table"),
   classesCreateFormCard: document.querySelector(".classes-create-form-card"),
   classDetailName: document.getElementById("class-detail-name"),
   classDetailTeacher: document.getElementById("class-detail-teacher"),
@@ -838,26 +844,16 @@ function bindEvents() {
   dom.teacherTable?.addEventListener("click", onTeacherTableClick);
   dom.teacherCancelEdit?.addEventListener("click", resetTeacherFormMode);
   dom.classForm.addEventListener("submit", onAddClass);
-  dom.studentAddBtn?.addEventListener("click", () => {
-    // The global student list has no class context, and the form no longer asks
-    // for one — send the teacher to pick a class first rather than opening a
-    // form that would submit an empty classId.
-    if (!selectedClassId) {
-      showToast("Ouvrez d'abord une classe pour y ajouter un étudiant");
-      switchView("classes-create");
-      return;
-    }
-    openStudentModal("chooser");
-    setStudentModalClass(selectedClassId);
-  });
   dom.studentModalClose?.addEventListener("click", closeStudentModal);
   dom.studentModal?.addEventListener("click", onStudentModalClick);
+  dom.studentProfileClose?.addEventListener("click", closeStudentProfile);
+  dom.studentProfileModal?.addEventListener("click", (event) => {
+    if (event.target?.dataset?.action === "close-student-profile-modal") closeStudentProfile();
+  });
   dom.studentModalOpenSingle?.addEventListener("click", () => openStudentModal("single"));
   dom.studentModalOpenImport?.addEventListener("click", () => openStudentModal("import"));
   dom.studentForm.addEventListener("submit", onAddStudent);
-  dom.studentTable?.addEventListener("click", onStudentTableClick);
   dom.studentCancelEdit?.addEventListener("click", resetStudentFormMode);
-  dom.studentSearchInput?.addEventListener("input", onStudentSearchInput);
   dom.importStudentsForm.addEventListener("submit", onImportStudents);
   dom.classTable?.addEventListener("click", onClassTableClick);
   dom.classDetailBack?.addEventListener("click", () => {
@@ -942,7 +938,6 @@ function refreshAll() {
   renderContentManagementWorkspace();
   renderTeachersTable();
   renderClassesTable();
-  renderStudentsTable();
   renderClassDetailStudents();
   renderPendingSubQuizDraft();
 }
@@ -976,10 +971,6 @@ function switchView(viewKey) {
       eyebrow: boTr("bo.accessMgmt", "Date de démarrage des cours"),
       title: boTr("bo.accessMgmtTitle", "Calendrier des cours")
     },
-    students: {
-      eyebrow: boTr("bo.studentMgmt", "Gestion des étudiants"),
-      title: ""
-    },
     clustering: {
       eyebrow: boTr("bo.clustering", "Profils d'apprentissage"),
       title: ""
@@ -987,10 +978,6 @@ function switchView(viewKey) {
     attention: {
       eyebrow: boTr("bo.attention", "Suivi d'attention"),
       title: boTr("bo.attentionTitle", "Concentration des étudiants")
-    },
-    "quiz-quality": {
-      eyebrow: boTr("bo.quizQuality", "Qualité des quiz"),
-      title: boTr("bo.quizQualityTitle", "Analyse des questions par les réponses des étudiants")
     },
     "sub-add": {
       eyebrow: boTr("bo.moduleMgmt", "Gestion des modules"),
@@ -1017,14 +1004,10 @@ function switchView(viewKey) {
     } else {
       setModuleWorkspaceMode("list");
     }
-  } else if (viewKey === "students") {
-    closeStudentModal();
   } else if (viewKey === "clustering") {
     initClusteringViewOnce();
   } else if (viewKey === "attention") {
     initAttentionViewOnce();
-  } else if (viewKey === "quiz-quality") {
-    initQuizQualityViewOnce();
   }
 }
 
@@ -1072,58 +1055,6 @@ async function initAttentionViewOnce() {
   } catch (error) {
     console.error("Failed to initialize attention view:", error);
     root.innerHTML = '<p style="color:#676c77">Impossible de charger les classes.</p>';
-  }
-}
-
-let quizQualityViewInitialized = false;
-
-/**
- * First-visit setup of the quiz-quality view: fills the sous-acquis selector from
- * the curriculum overview and renders the item analysis for the first one.
- */
-async function initQuizQualityViewOnce() {
-  if (quizQualityViewInitialized) return;
-  if (typeof window.renderItemAnalysis !== "function") {
-    console.error("renderItemAnalysis is not available — check that itemAnalysisDashboard.js loaded correctly.");
-    return;
-  }
-  quizQualityViewInitialized = true;
-
-  const select = document.getElementById("quiz-quality-select");
-  const root = document.getElementById("quiz-quality-root");
-  if (!select || !root) return;
-
-  try {
-    const res = await fetch("/api/programmation-c/overview");
-    const data = res.ok ? await res.json() : null;
-    const modules = Array.isArray(data && data.modules) ? data.modules : [];
-
-    const options = [];
-    modules.forEach((m) => {
-      const subs = Array.isArray(m.subAcquis) ? m.subAcquis : [];
-      subs.forEach((s) => {
-        const label = htmlEscape(String(s.id)) + " · " + htmlEscape(String(s.name || s.title || ""));
-        options.push(
-          '<option value="' + htmlEscape(String(m.id)) + "::" + htmlEscape(String(s.id)) + '">' + label + "</option>"
-        );
-      });
-    });
-
-    if (!options.length) {
-      root.innerHTML = '<p style="color:#676c77">Aucun sous-acquis disponible.</p>';
-      return;
-    }
-
-    select.innerHTML = options.join("");
-    const renderSelected = () => {
-      const parts = String(select.value).split("::");
-      window.renderItemAnalysis("quiz-quality-root", parts[0], parts[1]);
-    };
-    select.addEventListener("change", renderSelected);
-    renderSelected();
-  } catch (error) {
-    console.error("Failed to initialize quiz-quality view:", error);
-    root.innerHTML = '<p style="color:#676c77">Impossible de charger les sous-acquis.</p>';
   }
 }
 
@@ -3533,6 +3464,7 @@ function renderClassDetailStudents() {
     htmlEscape(student.identifier || "Non défini"),
     htmlEscape(student.email || "Non renseigné"),
     `<span class="module-manage-actions">
+      <button type="button" class="secondary-btn" data-action="view-student-profile" data-student-id="${escapeAttr(student.id)}">Détails</button>
       <button type="button" class="secondary-btn" data-action="edit-student" data-student-id="${escapeAttr(student.id)}">Modifier</button>
       <button type="button" class="danger-btn" data-action="delete-student" data-student-id="${escapeAttr(student.id)}">Supprimer</button>
     </span>`
@@ -3541,58 +3473,6 @@ function renderClassDetailStudents() {
     ["Étudiant", "Identifiant", "Email", "Actions"],
     rows
   );
-}
-
-function renderStudentsTable() {
-  const normalizedSearch = String(studentSearchTerm || "").trim().toLowerCase();
-
-  const rows = state.students
-    .filter((student) => {
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      const room = state.classes.find((item) => item.id === student.classId);
-      const haystack = [
-        student.fullName,
-        student.identifier,
-        student.email,
-        room?.name,
-        room ? getTeacherNameByClass(room) : ""
-      ]
-        .map((value) => String(value || "").toLowerCase())
-        .join(" ");
-
-      return haystack.includes(normalizedSearch);
-    })
-    .map((student) => {
-    const room = state.classes.find((item) => item.id === student.classId);
-    return [
-      htmlEscape(student.fullName),
-      htmlEscape(student.identifier || "Non defini"),
-        htmlEscape(student.email || "Non renseigne"),
-      htmlEscape(room ? room.name : "Aucune classe"),
-        htmlEscape(room ? getTeacherNameByClass(room) : "Enseignant non assigné"),
-        `<span class="module-manage-actions">
-          <button type="button" class="secondary-btn" data-action="edit-student" data-student-id="${escapeAttr(
-            student.id
-          )}">Modifier</button>
-          <button type="button" class="danger-btn" data-action="delete-student" data-student-id="${escapeAttr(
-            student.id
-          )}">Supprimer</button>
-        </span>`
-      ];
-    });
-
-  dom.studentTable.innerHTML = buildTable(
-    ["Étudiant", "Identifiant", "Email", "Classe", "Enseignant", "Actions"],
-    rows
-  );
-}
-
-function onStudentSearchInput(event) {
-  studentSearchTerm = String(event.target?.value || "");
-  renderStudentsTable();
 }
 
 function resetStudentFormMode() {
@@ -3644,6 +3524,90 @@ function startStudentEdit(studentId) {
   setStudentModalClass(student.classId);
 }
 
+/**
+ * Per-student detail panel for a teacher: mastery, attention, predicted
+ * grade and risk, fetched from GET /api/backoffice/students/:id/profile
+ * (services/mastery/masterySummary.ts + the same batch prediction the
+ * roster overview uses). Opens immediately with a loading state, since the
+ * mastery computation touches the ML service and is not instant.
+ */
+function closeStudentProfile() {
+  if (dom.studentProfileModal) dom.studentProfileModal.hidden = true;
+}
+
+function renderStudentProfilePct(el, value, suffix) {
+  if (!el) return;
+  el.textContent = typeof value === "number" && Number.isFinite(value) ? `${Math.round(value)}${suffix || ""}` : "—";
+}
+
+function renderStudentProfile(profile) {
+  if (dom.studentProfileName) {
+    dom.studentProfileName.textContent = profile.fullName || profile.identifier || "Étudiant";
+  }
+  if (dom.studentProfileMeta) {
+    dom.studentProfileMeta.textContent = [
+      profile.identifier ? `Id : ${profile.identifier}` : "",
+      profile.className ? `Classe : ${profile.className}` : "Aucune classe"
+    ].filter(Boolean).join(" · ");
+  }
+
+  renderStudentProfilePct(dom.studentProfileMastery, profile.mastery?.overallPct, "%");
+  renderStudentProfilePct(dom.studentProfileAttention, profile.attention?.avgFocusScore, "%");
+  // predictedGrade is already on the platform's usual /20 scale (same value
+  // the student dashboard's own prediction panel shows) — no conversion.
+  if (dom.studentProfileGrade) {
+    dom.studentProfileGrade.textContent =
+      typeof profile.predictedGrade === "number" ? `${profile.predictedGrade.toFixed(1)}/20` : "—";
+  }
+  renderStudentProfilePct(
+    dom.studentProfileRisk,
+    typeof profile.catchupProbability === "number" ? (1 - profile.catchupProbability) * 100 : null,
+    "%"
+  );
+
+  const items = Array.isArray(profile.mastery?.revise) ? profile.mastery.revise : [];
+  if (dom.studentProfileRevise) {
+    dom.studentProfileRevise.innerHTML = items.length
+      ? items.map((entry) => {
+          const blocked = Array.isArray(entry.blockedBy) && entry.blockedBy.length
+            ? `Bloqué par : ${entry.blockedBy.map((b) => htmlEscape(b.title)).join(", ")}`
+            : "";
+          return `<div class="student-profile-revise-item">
+            <div class="sri-title">${htmlEscape(entry.title || entry.id)}</div>
+            <div class="sri-meta">${Math.round(entry.masteryPct)}% de maîtrise${blocked ? " · " + blocked : ""}</div>
+          </div>`;
+        }).join("")
+      : `<p class="student-profile-revise-empty">Aucun sous-acquis faible identifié pour le moment.</p>`;
+  }
+}
+
+async function openStudentProfile(studentId) {
+  if (!dom.studentProfileModal) return;
+  dom.studentProfileModal.hidden = false;
+  if (dom.studentProfileName) dom.studentProfileName.textContent = "Détails de l'étudiant";
+  if (dom.studentProfileMeta) dom.studentProfileMeta.textContent = "";
+  if (dom.studentProfileLoading) dom.studentProfileLoading.hidden = false;
+  if (dom.studentProfileError) dom.studentProfileError.hidden = true;
+  if (dom.studentProfileBody) dom.studentProfileBody.hidden = true;
+
+  try {
+    const response = await fetch(`/api/backoffice/students/${encodeURIComponent(studentId)}/profile`);
+    if (!response.ok) {
+      throw new Error(await parseApiError(response, "Impossible de charger le profil de cet étudiant"));
+    }
+    const profile = await response.json();
+    if (dom.studentProfileLoading) dom.studentProfileLoading.hidden = true;
+    if (dom.studentProfileBody) dom.studentProfileBody.hidden = false;
+    renderStudentProfile(profile);
+  } catch (error) {
+    if (dom.studentProfileLoading) dom.studentProfileLoading.hidden = true;
+    if (dom.studentProfileError) {
+      dom.studentProfileError.hidden = false;
+      dom.studentProfileError.textContent = error?.message || "Connexion serveur indisponible";
+    }
+  }
+}
+
 async function onStudentTableClick(event) {
   const button = event.target.closest("button[data-action][data-student-id]");
   if (!button) {
@@ -3658,6 +3622,11 @@ async function onStudentTableClick(event) {
 
   if (action === "edit-student") {
     startStudentEdit(studentId);
+    return;
+  }
+
+  if (action === "view-student-profile") {
+    openStudentProfile(studentId);
     return;
   }
 

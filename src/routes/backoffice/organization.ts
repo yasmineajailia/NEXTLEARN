@@ -13,6 +13,8 @@ import { hashPassword } from "../../utils/password";
 import { MLPredictorService } from "../../services/MLPredictorService";
 import { extractMLFeatures } from "../../services/prediction/features";
 import { computeModuleQuizScores, computeStudentProgress } from "../../services/studentProgress";
+import { computeStudentMasterySummary } from "../../services/mastery/masterySummary";
+import { computeAttentionAnalytics } from "../../services/attention/attentionClient";
 import {
   buildScheduleBySubAcquis,
   encodeScheduleStorageKey,
@@ -110,6 +112,7 @@ organizationRouter.get("/api/backoffice/organization", async (req, res) => {
       quizzesTaken: r.stats?.quizzesPassed ?? Number(r.student.quizzesTaken || 0),
       averageQuizGrade: r.stats?.averageQuizScoreOn20 ?? Number(r.student.averageQuizGrade || 0),
       catchupProbability: predictions[i].catchupProbability,
+      predictedGrade: predictions[i].predictedGrade,
       lastLoginDate: (r.prof as any)?.lastLoginDate ? new Date((r.prof as any).lastLoginDate).toISOString() : null,
       quizScoresByModule: computeModuleQuizScores((r.user as any)?.progress?.quizResults)
     }));
@@ -757,6 +760,114 @@ organizationRouter.post("/api/backoffice/classes/schedule-all", requireRole("adm
   } catch (error) {
     console.error("Failed to generate global class schedule:", error);
     res.status(500).json({ message: "Impossible de generer le calendrier global" });
+  }
+});
+
+/**
+ * GET /api/backoffice/students/:studentId/profile
+ *
+ * Combined per-student detail view for a teacher: the same mastery summary
+ * the student sees on their own dashboard (overall %, weak sous-acquis with
+ * their blocking prerequisite), an attention summary (average focus, trend
+ * across sessions), and the same early-warning prediction (catch-up
+ * probability, predicted grade) already computed for the roster overview.
+ *
+ * Scoped like every other single-student route here: an admin can look up
+ * anyone, a teacher only a student in one of their own classes — never by
+ * student id alone, which would let one teacher read another's roster.
+ */
+organizationRouter.get("/api/backoffice/students/:studentId/profile", async (req, res) => {
+  try {
+    const studentId = String(req.params.studentId || "").trim();
+    if (!mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ message: "Identifiant etudiant invalide" });
+    }
+
+    const student = await StudentProfile.findById(studentId).lean();
+    if (!student) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const classRoom = student.classId ? await ClassRoom.findById(student.classId).lean() : null;
+    if (req.auth?.role !== "admin") {
+      if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
+        return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
+      }
+    }
+
+    const identifier = String((student as any).identifier || "").trim();
+    if (!identifier) {
+      return res.status(404).json({ message: "Etudiant sans identifiant de connexion" });
+    }
+
+    const user = await User.findOne({ identifier })
+      .select({ progress: 1 })
+      .lean();
+
+    const [orgTotalSubAcquis, masterySummary] = await Promise.all([
+      resolveTotalSubAcquisCount(),
+      computeStudentMasterySummary(identifier)
+    ]);
+
+    const features = extractMLFeatures({
+      progress: (user as any)?.progress,
+      profile: student as any,
+      totalSubAcquis: orgTotalSubAcquis,
+      scheduleStartDate: (classRoom as any)?.scheduleStartDate || null
+    });
+    const [prediction] = await MLPredictorService.predictBatch([features]);
+
+    // Attention analytics is a batch endpoint on the Python side; called here
+    // with a single-student array, same as the class-wide dashboard does with
+    // the whole roster (routes/backoffice/attention.ts).
+    const sessions = Array.isArray((user as any)?.progress?.attentionSessions)
+      ? [...(user as any).progress.attentionSessions].sort(
+          (a: any, b: any) => new Date(a.completedAt || 0).getTime() - new Date(b.completedAt || 0).getTime()
+        )
+      : [];
+    let attention: { avgFocusScore: number | null; trend: string | null; totalSessions: number } = {
+      avgFocusScore: null,
+      trend: null,
+      totalSessions: 0
+    };
+    if (sessions.length > 0) {
+      try {
+        const [analytics] = await computeAttentionAnalytics([
+          {
+            avgScores: sessions.map((s: any) => Number(s.avgFocusScore) || 0),
+            distractions: sessions
+              .flatMap((s: any) => (Array.isArray(s.distractionEvents) ? s.distractionEvents : []))
+              .map((e: any) => String(e?.reason || ""))
+              .filter(Boolean)
+          }
+        ]);
+        attention = {
+          avgFocusScore: Number((user as any)?.progress?.avgFocusScore ?? null),
+          trend: (analytics as any)?.trend ?? null,
+          totalSessions: sessions.length
+        };
+      } catch (attentionError) {
+        // Attention is a supplementary signal — its own service being down
+        // should not take out the rest of the profile panel.
+        console.error("Attention analytics unavailable for student profile:", attentionError);
+      }
+    }
+
+    res.status(200).json({
+      id: String(student._id),
+      fullName: (student as any).fullName || identifier,
+      identifier,
+      className: classRoom ? (classRoom as any).name : null,
+      mastery: masterySummary
+        ? { overallPct: masterySummary.overallMasteryPct, revise: masterySummary.revise }
+        : null,
+      attention,
+      catchupProbability: prediction.catchupProbability,
+      predictedGrade: prediction.predictedGrade
+    });
+  } catch (error) {
+    console.error("Failed to build student profile:", error);
+    res.status(500).json({ message: "Impossible de charger le profil de cet étudiant" });
   }
 });
 

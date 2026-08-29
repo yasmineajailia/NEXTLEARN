@@ -2547,3 +2547,71 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── student profile modal (per-student mastery / attention / prediction) ── */
+.student-profile-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 1rem 0 1.4rem;
+}
+
+.student-profile-kpi {
+  background: #fff;
+  border: 1px solid #e8e8e6;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+}
+
+.student-profile-kpi-label {
+  display: block;
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.student-profile-kpi-value {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.35rem;
+  color: #0d1117;
+}
+
+.student-profile-revise {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.student-profile-revise-item {
+  background: #fff;
+  border: 1px solid #e8e8e6;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+}
+
+.student-profile-revise-item .sri-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #0d1117;
+}
+
+.student-profile-revise-item .sri-meta {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.student-profile-revise-empty {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+@media (max-width: 720px) {
+  .student-profile-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
