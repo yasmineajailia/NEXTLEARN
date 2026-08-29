@@ -35,13 +35,14 @@
       "depends_on": [],
       "unlocks": []
     },
+
     "1.5": {
       "id": "1.5",
       "title": "Pratiquer les fonctions d’entrées / sorties ",
       "related_to": ["1.3", "5.2"],
-      "depends_on": ["1.3"],
-      "unlocks": ["5.2"]
+      "depends_on": ["1.3"]
     },
+
     "1.6": {
       "id": "1.6",
       "title": "Utiliser les opérateurs arithmétiques et logiques",
@@ -56,19 +57,18 @@
       "depends_on": ["1.6"],
       "unlocks": []
     },
+
     "2.1": {
       "id": "2.1",
       "title": "Appliquer la structure if else ",
       "related_to": ["1.6", "2.3"],
-      "depends_on": ["1.6"],
-      "unlocks": ["2.3"]
+      "depends_on": ["1.6"]
     },
     "2.2": {
       "id": "2.2",
       "title": "Appliquer la structures switch ",
       "related_to": ["1.6", "2.3"],
-      "depends_on": ["1.6"],
-      "unlocks": ["2.3"]
+      "depends_on": ["1.6"]
     },
     "2.3": {
       "id": "2.3",
