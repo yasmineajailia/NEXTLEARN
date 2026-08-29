@@ -701,13 +701,49 @@
               <span id="student-profile-grade" class="student-profile-kpi-value">—</span>
             </div>
             <div class="student-profile-kpi">
-              <span class="student-profile-kpi-label">Risque de décrochage</span>
+              <span class="student-profile-kpi-label">Probabilité de réussite</span>
               <span id="student-profile-risk" class="student-profile-kpi-value">—</span>
             </div>
           </div>
 
+          <h4>Facteurs de la prédiction</h4>
+          <p class="form-hint">Contributions SHAP exactes du modèle à la probabilité de réussite ci-dessus.</p>
+          <div id="student-profile-factors" class="student-profile-factors"></div>
+
           <h4>Sous-acquis à revoir</h4>
           <div id="student-profile-revise" class="student-profile-revise"></div>
+
+          <div class="student-profile-meetings-head">
+            <h4>Rendez-vous</h4>
+            <button type="button" id="student-profile-schedule-btn" class="secondary-btn">Planifier un rendez-vous</button>
+          </div>
+          <div id="student-profile-meetings" class="student-profile-meetings"></div>
+
+          <form id="student-meeting-form" class="stack-form" hidden>
+            <label>
+              Date et heure
+              <input type="datetime-local" id="meeting-datetime" required />
+            </label>
+            <label>
+              Mode
+              <select id="meeting-mode">
+                <option value="online">En ligne</option>
+                <option value="in-person">En personne</option>
+              </select>
+            </label>
+            <label>
+              <span id="meeting-location-label">Lien de la réunion</span>
+              <input type="text" id="meeting-location" placeholder="https://meet.google.com/..." required />
+            </label>
+            <label>
+              Note (optionnel)
+              <textarea id="meeting-note" rows="2" placeholder="Objet du rendez-vous"></textarea>
+            </label>
+            <div class="button-row">
+              <button type="submit">Confirmer le rendez-vous</button>
+              <button type="button" id="meeting-cancel-form" class="secondary-btn">Annuler</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

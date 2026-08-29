@@ -17,6 +17,7 @@ import { PDFParse } from "pdf-parse";
 import JSZip from "jszip";
 import { authRouter } from "../auth";
 import { User } from "../../models/User";
+import { Meeting } from "../../models/Meeting";
 import { Teacher } from "../../models/Teacher";
 import { ClassRoom } from "../../models/ClassRoom";
 import { StudentProfile } from "../../models/StudentProfile";
@@ -303,6 +304,41 @@ learningRouter.get("/api/student/calendar", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Failed to build student calendar:", error);
     res.status(500).json({ message: "Impossible de charger le calendrier" });
+  }
+});
+
+// A student's own upcoming, non-cancelled meetings — teacher-scheduled,
+// shown on the calendar page alongside the unlock schedule (a separate
+// section, not merged into that grid: unlock dates and meetings are
+// different kinds of thing and the grid was never built to mix them).
+learningRouter.get("/api/student/meetings", requireAuth, async (req, res) => {
+  try {
+    const identifier = req.auth?.id ?? "";
+    if (!identifier) {
+      return res.status(400).json({ message: "Identifiant requis" });
+    }
+
+    const meetings = await Meeting.find({
+      studentIdentifier: identifier,
+      status: "scheduled",
+      scheduledAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // include "today", drop older
+    })
+      .sort({ scheduledAt: 1 })
+      .lean();
+
+    res.status(200).json({
+      meetings: meetings.map((m: any) => ({
+        id: String(m._id),
+        scheduledAt: m.scheduledAt,
+        mode: m.mode,
+        location: m.location,
+        note: m.note || null,
+        teacherName: m.teacherName
+      }))
+    });
+  } catch (error) {
+    console.error("Failed to load student meetings:", error);
+    res.status(500).json({ message: "Impossible de charger les rendez-vous" });
   }
 });
 

@@ -183,6 +183,7 @@
     "stats.quizAverage": "Quiz average",
     "modules.loading": "Loading modules…",
     "modules.back": "← Back to modules",
+    "meetings.title": "Meetings",
     "calendar.title": "Activity calendar",
     "cal.legend.unlocked": "Available",
     "cal.legend.locked": "Locked",

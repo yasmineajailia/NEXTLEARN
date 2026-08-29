@@ -84,6 +84,10 @@ if (window.I18N) {
     "notif.autoUpdate": "Automatic update",
     "notif.quizSubject": "Quiz results",
     "notif.quizBody": "You passed {n} quizzes, with an average of {avg}.",
+    "notif.meetingSubject": "Meeting scheduled",
+    "notif.meetingBody": "{teacher} scheduled a {mode} meeting on {date} at {time}.",
+    "notif.unlocksSubject": "New sous-acquis this week",
+    "notif.unlocksBody": "{n} sous-acquis are unlocking this week: {names}.",
     "quiz.notTaken": "Quiz not taken",
     "mod.done": "Completed",
     "mod.inProgress": "In progress",
@@ -138,6 +142,7 @@ function buildDom() {
     moduleDetailBack: document.getElementById("module-detail-back"),
     courseEmbedContent: document.getElementById("course-embed-content"),
     calendarList: document.getElementById("calendar-list"),
+    meetingsList: document.getElementById("meetings-list"),
     messagesList: document.getElementById("messages-list"),
     lessonsCompleted: document.getElementById("stat-lessons-completed"),
     quizzesPassed: document.getElementById("stat-quizzes-passed"),
@@ -940,7 +945,21 @@ function buildSubAcquisUrl(moduleId, subAcquisId) {
 // in this file don't need to change.
 const htmlEscape = window.escapeHtml;
 
-function renderMessages(stats, modules = []) {
+// Monday 00:00 -> next Monday 00:00, in the browser's local time. A separate
+// copy of the same week math renderCalendar() already uses internally — kept
+// standalone rather than shared, since that one is a closure private to a
+// different function and this needs to run from renderMessages() too.
+function currentWeekBounds(now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = start.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + mondayOffset);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return { start, end };
+}
+
+function renderMessages(stats, modules = [], meetings = [], calendarEntries = []) {
   const totalLessons = Array.isArray(modules)
     ? modules.reduce((sum, moduleData) => sum + Number(moduleData.subAcquisCount || 0), 0)
     : 0;
@@ -967,6 +986,51 @@ function renderMessages(stats, modules = []) {
       date: tr("notif.autoUpdate", "Mise à jour automatique")
     }
   ];
+
+  // One notification per scheduled meeting. Teacher-entered fields (location,
+  // note) are escaped — unlike the two system messages above, which are
+  // entirely internally generated, this is free text coming from another
+  // user's input and gets inserted into innerHTML below.
+  (Array.isArray(meetings) ? meetings : []).forEach((meeting) => {
+    const date = new Date(meeting.scheduledAt);
+    if (Number.isNaN(date.getTime())) return;
+    const dateLabel = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "long" });
+    const timeLabel = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const modeLabel = meeting.mode === "online" ? "en ligne" : "en personne";
+    systemMessages.push({
+      subject: htmlEscape(tr("notif.meetingSubject", "Rendez-vous planifié")),
+      body: htmlEscape(
+        tr(
+          "notif.meetingBody",
+          `${meeting.teacherName || "Votre enseignant"} a planifié un rendez-vous ${modeLabel} le ${dateLabel} à ${timeLabel}.`,
+          { teacher: meeting.teacherName || "Votre enseignant", mode: modeLabel, date: dateLabel, time: timeLabel }
+        )
+      ),
+      date: tr("notif.autoUpdate", "Mise à jour automatique")
+    });
+  });
+
+  // One notification summarising the sous-acquis unlocking this calendar
+  // week (Monday-Sunday) — reuses the same calendar data already fetched for
+  // the Calendrier page, no separate call.
+  const { start: weekStart, end: weekEnd } = currentWeekBounds();
+  const unlockingThisWeek = (Array.isArray(calendarEntries) ? calendarEntries : []).filter((entry) => {
+    if (!entry?.unlockAt) return false;
+    const unlockDate = new Date(entry.unlockAt);
+    return !Number.isNaN(unlockDate.getTime()) && unlockDate >= weekStart && unlockDate < weekEnd;
+  });
+  if (unlockingThisWeek.length) {
+    const names = unlockingThisWeek.map((e) => htmlEscape(e.subAcquisName || e.subAcquisId)).join(", ");
+    systemMessages.push({
+      subject: tr("notif.unlocksSubject", "Nouveaux sous-acquis cette semaine"),
+      body: tr(
+        "notif.unlocksBody",
+        `${unlockingThisWeek.length} sous-acquis se débloquent cette semaine : ${names}.`,
+        { n: unlockingThisWeek.length, names }
+      ),
+      date: tr("notif.autoUpdate", "Mise à jour automatique")
+    });
+  }
 
   dom.messagesList.innerHTML = systemMessages
     .map(
@@ -1366,6 +1430,46 @@ async function fetchStudentCalendar() {
   } catch (_error) {
     return { calendar: [], startDate: null };
   }
+}
+
+// Teacher-scheduled meetings — a separate list from the unlock calendar
+// above (different kind of thing: a specific date+time with a teacher,
+// not a course-content availability date).
+async function fetchStudentMeetings() {
+  try {
+    const response = await fetch("/api/student/meetings");
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data?.meetings) ? data.meetings : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+function renderMeetings(meetings = []) {
+  if (!dom.meetingsList) return;
+  if (!Array.isArray(meetings) || meetings.length === 0) {
+    dom.meetingsList.innerHTML = '<p class="meetings-empty">Aucun rendez-vous planifié.</p>';
+    return;
+  }
+  dom.meetingsList.innerHTML = meetings.map((meeting) => {
+    const date = new Date(meeting.scheduledAt);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = date.toLocaleString("fr-FR", { month: "short" });
+    const time = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const modeLabel = meeting.mode === "online" ? "En ligne" : "En personne";
+    const locationHtml = meeting.mode === "online" && /^https?:\/\//i.test(String(meeting.location || ""))
+      ? `<a href="${htmlEscape(meeting.location)}" target="_blank" rel="noopener">${htmlEscape(meeting.location)}</a>`
+      : htmlEscape(meeting.location || "");
+    return `<div class="meeting-item">
+      <div class="meeting-date"><span class="meeting-day">${day}</span><span class="meeting-month">${htmlEscape(month)}</span></div>
+      <div class="meeting-info">
+        <p class="meeting-mode">${modeLabel} · ${time} · ${htmlEscape(meeting.teacherName || "Enseignant")}</p>
+        <p class="meeting-location">${locationHtml}</p>
+        ${meeting.note ? `<p class="meeting-note">${htmlEscape(meeting.note)}</p>` : ""}
+      </div>
+    </div>`;
+  }).join("");
 }
 
 function toPercent(part, total) {
@@ -2517,15 +2621,17 @@ function renderMostAttentive(mac) {
 
 async function loadDashboardData() {
   renderLearningProfile();
-  const [modules, stats, overview, calendarPayload] = await Promise.all([
+  const [modules, stats, overview, calendarPayload, meetings] = await Promise.all([
     fetchModules(),
     fetchProgressStats(),
     fetchOverview(),
-    fetchStudentCalendar()
+    fetchStudentCalendar(),
+    fetchStudentMeetings()
   ]);
 
   renderCalendar(calendarPayload.calendar, calendarPayload.startDate);
-  renderMessages(stats, modules);
+  renderMeetings(meetings);
+  renderMessages(stats, modules, meetings, calendarPayload.calendar);
   renderStats(stats);
 
   const normalizedOverview = Array.isArray(overview) && overview.length > 0

@@ -349,7 +349,17 @@ const dom = {
   studentProfileAttention: document.getElementById("student-profile-attention"),
   studentProfileGrade: document.getElementById("student-profile-grade"),
   studentProfileRisk: document.getElementById("student-profile-risk"),
+  studentProfileFactors: document.getElementById("student-profile-factors"),
   studentProfileRevise: document.getElementById("student-profile-revise"),
+  studentProfileScheduleBtn: document.getElementById("student-profile-schedule-btn"),
+  studentProfileMeetings: document.getElementById("student-profile-meetings"),
+  studentMeetingForm: document.getElementById("student-meeting-form"),
+  meetingDatetime: document.getElementById("meeting-datetime"),
+  meetingMode: document.getElementById("meeting-mode"),
+  meetingLocationLabel: document.getElementById("meeting-location-label"),
+  meetingLocation: document.getElementById("meeting-location"),
+  meetingNote: document.getElementById("meeting-note"),
+  meetingCancelForm: document.getElementById("meeting-cancel-form"),
   importStudentsForm: document.getElementById("import-students-form"),
   importClassSelect: document.getElementById("import-class-select"),
   importStudentsFile: document.getElementById("import-students-file"),
@@ -849,6 +859,18 @@ function bindEvents() {
   dom.studentProfileClose?.addEventListener("click", closeStudentProfile);
   dom.studentProfileModal?.addEventListener("click", (event) => {
     if (event.target?.dataset?.action === "close-student-profile-modal") closeStudentProfile();
+  });
+  dom.studentProfileScheduleBtn?.addEventListener("click", () => {
+    if (dom.studentMeetingForm) dom.studentMeetingForm.hidden = false;
+  });
+  dom.meetingCancelForm?.addEventListener("click", hideMeetingForm);
+  dom.meetingMode?.addEventListener("change", onMeetingModeChange);
+  dom.studentMeetingForm?.addEventListener("submit", onScheduleMeetingSubmit);
+  dom.studentProfileMeetings?.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action='cancel-meeting']");
+    if (!button) return;
+    const meetingId = String(button.dataset.meetingId || "");
+    if (meetingId) onCancelMeeting(meetingId);
   });
   dom.studentModalOpenSingle?.addEventListener("click", () => openStudentModal("single"));
   dom.studentModalOpenImport?.addEventListener("click", () => openStudentModal("import"));
@@ -3531,8 +3553,109 @@ function startStudentEdit(studentId) {
  * roster overview uses). Opens immediately with a loading state, since the
  * mastery computation touches the ML service and is not instant.
  */
+let studentProfileCurrentId = "";
+
 function closeStudentProfile() {
   if (dom.studentProfileModal) dom.studentProfileModal.hidden = true;
+  studentProfileCurrentId = "";
+  hideMeetingForm();
+}
+
+function hideMeetingForm() {
+  if (dom.studentMeetingForm) dom.studentMeetingForm.hidden = true;
+  if (dom.studentMeetingForm) dom.studentMeetingForm.reset();
+}
+
+function onMeetingModeChange() {
+  const isOnline = dom.meetingMode?.value === "online";
+  if (dom.meetingLocationLabel) {
+    dom.meetingLocationLabel.textContent = isOnline ? "Lien de la réunion" : "Lieu";
+  }
+  if (dom.meetingLocation) {
+    dom.meetingLocation.placeholder = isOnline ? "https://meet.google.com/..." : "Bureau 204, bâtiment B";
+  }
+}
+
+async function loadStudentMeetings(studentId) {
+  if (!dom.studentProfileMeetings) return;
+  try {
+    const response = await fetch(`/api/backoffice/students/${encodeURIComponent(studentId)}/meetings`);
+    if (!response.ok) throw new Error(await parseApiError(response, "Impossible de charger les rendez-vous"));
+    const data = await response.json();
+    renderStudentMeetings(Array.isArray(data.meetings) ? data.meetings : []);
+  } catch (error) {
+    dom.studentProfileMeetings.innerHTML = `<p class="student-profile-meetings-empty">${htmlEscape(error?.message || "Rendez-vous indisponibles")}</p>`;
+  }
+}
+
+function renderStudentMeetings(meetings) {
+  if (!dom.studentProfileMeetings) return;
+  if (!meetings.length) {
+    dom.studentProfileMeetings.innerHTML = `<p class="student-profile-meetings-empty">Aucun rendez-vous planifié.</p>`;
+    return;
+  }
+  dom.studentProfileMeetings.innerHTML = meetings.map((meeting) => {
+    const date = new Date(meeting.scheduledAt);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = date.toLocaleString("fr-FR", { month: "short" });
+    const time = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const modeLabel = meeting.mode === "online" ? "En ligne" : "En personne";
+    return `<div class="student-profile-meeting-item">
+      <div class="spm-date"><span class="spm-day">${day}</span><span class="spm-month">${htmlEscape(month)}</span></div>
+      <div class="spm-info">
+        <div class="spm-mode">${modeLabel} · ${time}</div>
+        <div class="spm-location">${htmlEscape(meeting.location)}</div>
+        ${meeting.note ? `<div class="spm-note">${htmlEscape(meeting.note)}</div>` : ""}
+      </div>
+      <button type="button" class="danger-btn" data-action="cancel-meeting" data-meeting-id="${escapeAttr(meeting.id)}">Annuler</button>
+    </div>`;
+  }).join("");
+}
+
+async function onScheduleMeetingSubmit(event) {
+  event.preventDefault();
+  if (!studentProfileCurrentId) return;
+
+  const scheduledAt = dom.meetingDatetime?.value || "";
+  const mode = dom.meetingMode?.value || "";
+  const location = dom.meetingLocation?.value.trim() || "";
+  const note = dom.meetingNote?.value.trim() || "";
+
+  if (!scheduledAt || !location) {
+    showToast("Date et lieu/lien sont requis");
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/backoffice/students/${encodeURIComponent(studentProfileCurrentId)}/meetings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledAt, mode, location, note })
+    });
+    if (!response.ok) {
+      showToast(await parseApiError(response, "Impossible de planifier le rendez-vous"));
+      return;
+    }
+    showToast("Rendez-vous planifié");
+    hideMeetingForm();
+    loadStudentMeetings(studentProfileCurrentId);
+  } catch (_error) {
+    showToast("Connexion serveur indisponible");
+  }
+}
+
+async function onCancelMeeting(meetingId) {
+  if (!window.confirm("Annuler ce rendez-vous ?")) return;
+  try {
+    const response = await fetch(`/api/backoffice/meetings/${encodeURIComponent(meetingId)}`, { method: "DELETE" });
+    if (!response.ok) {
+      showToast(await parseApiError(response, "Impossible d'annuler le rendez-vous"));
+      return;
+    }
+    if (studentProfileCurrentId) loadStudentMeetings(studentProfileCurrentId);
+  } catch (_error) {
+    showToast("Connexion serveur indisponible");
+  }
 }
 
 function renderStudentProfilePct(el, value, suffix) {
@@ -3559,11 +3682,29 @@ function renderStudentProfile(profile) {
     dom.studentProfileGrade.textContent =
       typeof profile.predictedGrade === "number" ? `${profile.predictedGrade.toFixed(1)}/20` : "—";
   }
+  // Shown as-is (the model's own P(catch up)), not inverted into a "risk" —
+  // matches exactly what the student's own dashboard calls this same number.
   renderStudentProfilePct(
     dom.studentProfileRisk,
-    typeof profile.catchupProbability === "number" ? (1 - profile.catchupProbability) * 100 : null,
+    typeof profile.catchupProbability === "number" ? profile.catchupProbability * 100 : null,
     "%"
   );
+
+  const factors = Array.isArray(profile.riskFactors) ? profile.riskFactors : [];
+  if (dom.studentProfileFactors) {
+    dom.studentProfileFactors.innerHTML = factors.length
+      ? factors.map((factor) => {
+          const level = factor.level === "high" ? "pred-factor-high"
+            : factor.level === "good" ? "pred-factor-good" : "pred-factor-medium";
+          let impact = "";
+          if (typeof factor.impact === "number" && Math.abs(factor.impact) >= 0.005) {
+            const pts = Math.round(factor.impact * 100);
+            impact = `<span class="pred-factor-impact">${pts > 0 ? "+" : ""}${pts}%</span>`;
+          }
+          return `<div class="pred-factor ${level}"><span class="pred-factor-dot"></span><span class="pred-factor-label">${htmlEscape(factor.label || "")}</span>${impact}</div>`;
+        }).join("")
+      : `<p class="student-profile-factors-empty">Explication indisponible pour le moment.</p>`;
+  }
 
   const items = Array.isArray(profile.mastery?.revise) ? profile.mastery.revise : [];
   if (dom.studentProfileRevise) {
@@ -3584,6 +3725,8 @@ function renderStudentProfile(profile) {
 async function openStudentProfile(studentId) {
   if (!dom.studentProfileModal) return;
   dom.studentProfileModal.hidden = false;
+  studentProfileCurrentId = studentId;
+  hideMeetingForm();
   if (dom.studentProfileName) dom.studentProfileName.textContent = "Détails de l'étudiant";
   if (dom.studentProfileMeta) dom.studentProfileMeta.textContent = "";
   if (dom.studentProfileLoading) dom.studentProfileLoading.hidden = false;
@@ -3599,6 +3742,7 @@ async function openStudentProfile(studentId) {
     if (dom.studentProfileLoading) dom.studentProfileLoading.hidden = true;
     if (dom.studentProfileBody) dom.studentProfileBody.hidden = false;
     renderStudentProfile(profile);
+    loadStudentMeetings(studentId);
   } catch (error) {
     if (dom.studentProfileLoading) dom.studentProfileLoading.hidden = true;
     if (dom.studentProfileError) {

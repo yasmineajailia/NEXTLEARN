@@ -3581,3 +3581,81 @@ body.chatbot-open {
   .sub-lesson-link { font-size: 0.82rem; }
   .sub-actions { gap: 0.25rem; }
 }
+
+/* ── meetings (teacher-scheduled, separate list from the unlock grid) ── */
+.meetings-list {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.meeting-item {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #e7cad0;
+  background: #fff;
+}
+
+.meeting-date {
+  flex-shrink: 0;
+  text-align: center;
+  min-width: 44px;
+}
+
+.meeting-day {
+  display: block;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.meeting-month {
+  display: block;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.meeting-info { flex: 1; min-width: 0; }
+
+.meeting-mode {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.meeting-location {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow-wrap: break-word;
+}
+
+.meeting-location a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.meeting-note {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.meetings-empty {
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  border: 1px dashed #e7cad0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

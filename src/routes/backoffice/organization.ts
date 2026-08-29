@@ -11,10 +11,12 @@ import { ClassRoom } from "../../models/ClassRoom";
 import { StudentProfile } from "../../models/StudentProfile";
 import { hashPassword } from "../../utils/password";
 import { MLPredictorService } from "../../services/MLPredictorService";
+import { resolveRiskExplanation, type RiskExplanation } from "../../services/prediction/explain";
 import { extractMLFeatures } from "../../services/prediction/features";
 import { computeModuleQuizScores, computeStudentProgress } from "../../services/studentProgress";
 import { computeStudentMasterySummary } from "../../services/mastery/masterySummary";
 import { computeAttentionAnalytics } from "../../services/attention/attentionClient";
+import { Meeting } from "../../models/Meeting";
 import {
   buildScheduleBySubAcquis,
   encodeScheduleStorageKey,
@@ -815,7 +817,16 @@ organizationRouter.get("/api/backoffice/students/:studentId/profile", async (req
       totalSubAcquis: orgTotalSubAcquis,
       scheduleStartDate: (classRoom as any)?.scheduleStartDate || null
     });
-    const [prediction] = await MLPredictorService.predictBatch([features]);
+    // The roster overview uses the cheaper predictBatch (no SHAP) since it
+    // scores a whole class at once; this single-student panel can afford the
+    // real /explain call, which is what gives a teacher the factors behind
+    // the number instead of a bare probability.
+    let explanation: RiskExplanation | null = null;
+    try {
+      explanation = await resolveRiskExplanation(features);
+    } catch (predictionError) {
+      console.error("Prediction/explanation unavailable for student profile:", predictionError);
+    }
 
     // Attention analytics is a batch endpoint on the Python side; called here
     // with a single-student array, same as the class-wide dashboard does with
@@ -862,12 +873,167 @@ organizationRouter.get("/api/backoffice/students/:studentId/profile", async (req
         ? { overallPct: masterySummary.overallMasteryPct, revise: masterySummary.revise }
         : null,
       attention,
-      catchupProbability: prediction.catchupProbability,
-      predictedGrade: prediction.predictedGrade
+      catchupProbability: explanation?.catchupProbability ?? null,
+      predictedGrade: explanation?.predictedGrade ?? null,
+      riskFactors: explanation?.riskFactors ?? [],
+      gradeFactors: explanation?.gradeFactors ?? []
     });
   } catch (error) {
     console.error("Failed to build student profile:", error);
     res.status(500).json({ message: "Impossible de charger le profil de cet étudiant" });
+  }
+});
+
+/**
+ * GET /api/backoffice/students/:studentId/meetings
+ *
+ * A teacher's scheduled (non-cancelled) meetings with one student, most
+ * recent first — shown on the profile panel so a teacher can see what is
+ * already booked before scheduling another one.
+ */
+organizationRouter.get("/api/backoffice/students/:studentId/meetings", async (req, res) => {
+  try {
+    const studentId = String(req.params.studentId || "").trim();
+    if (!mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ message: "Identifiant etudiant invalide" });
+    }
+
+    const student = await StudentProfile.findById(studentId).lean();
+    if (!student) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const classRoom = student.classId ? await ClassRoom.findById(student.classId).lean() : null;
+    if (req.auth?.role !== "admin") {
+      if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
+        return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
+      }
+    }
+
+    const meetings = await Meeting.find({
+      studentIdentifier: (student as any).identifier,
+      status: "scheduled",
+      // Same cutoff as the student's own list (routes/web/learning.routes.ts):
+      // without this a meeting that already happened, but was never marked
+      // cancelled, would sit here forever looking like it's still upcoming.
+      scheduledAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    })
+      .sort({ scheduledAt: 1 })
+      .lean();
+
+    res.status(200).json({
+      meetings: meetings.map((m: any) => ({
+        id: String(m._id),
+        scheduledAt: m.scheduledAt,
+        mode: m.mode,
+        location: m.location,
+        note: m.note || null,
+        teacherName: m.teacherName
+      }))
+    });
+  } catch (error) {
+    console.error("Failed to list student meetings:", error);
+    res.status(500).json({ message: "Impossible de charger les rendez-vous" });
+  }
+});
+
+/**
+ * POST /api/backoffice/students/:studentId/meetings
+ *
+ * Schedules a meeting with one student. Deliberately minimal: no
+ * accept/decline, no reminders — the student simply sees it appear on
+ * their calendar.
+ */
+organizationRouter.post("/api/backoffice/students/:studentId/meetings", async (req, res) => {
+  try {
+    const studentId = String(req.params.studentId || "").trim();
+    if (!mongoose.isValidObjectId(studentId)) {
+      return res.status(400).json({ message: "Identifiant etudiant invalide" });
+    }
+
+    const scheduledAtRaw = typeof req.body?.scheduledAt === "string" ? req.body.scheduledAt.trim() : "";
+    const mode = req.body?.mode === "online" || req.body?.mode === "in-person" ? req.body.mode : "";
+    const location = typeof req.body?.location === "string" ? req.body.location.trim() : "";
+    const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+
+    if (!scheduledAtRaw || !mode || !location) {
+      return res.status(400).json({ message: "Date, mode et lieu/lien sont requis" });
+    }
+
+    const scheduledAt = new Date(scheduledAtRaw);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      return res.status(400).json({ message: "Date invalide" });
+    }
+
+    const student = await StudentProfile.findById(studentId).lean();
+    if (!student) {
+      return res.status(404).json({ message: "Etudiant introuvable" });
+    }
+
+    const classRoom = student.classId ? await ClassRoom.findById(student.classId).lean() : null;
+    if (req.auth?.role !== "admin") {
+      if (!classRoom || !isOwnedByCaller((classRoom as any).teacherId, req.auth)) {
+        return res.status(403).json({ message: "Accès non autorisé à cet étudiant" });
+      }
+    }
+
+    const callerTeacherId = req.auth?.id ?? "";
+    const teacher = await Teacher.findById(callerTeacherId).select({ name: 1 }).lean();
+
+    const meeting = await Meeting.create({
+      studentIdentifier: (student as any).identifier,
+      teacherId: callerTeacherId,
+      teacherName: teacher?.name || "Enseignant",
+      scheduledAt,
+      mode,
+      location,
+      note: note || null,
+      status: "scheduled"
+    });
+
+    res.status(201).json({
+      id: String(meeting._id),
+      scheduledAt: meeting.scheduledAt,
+      mode: meeting.mode,
+      location: meeting.location,
+      note: meeting.note,
+      teacherName: meeting.teacherName
+    });
+  } catch (error) {
+    console.error("Failed to schedule meeting:", error);
+    res.status(500).json({ message: "Impossible de planifier le rendez-vous" });
+  }
+});
+
+/**
+ * DELETE /api/backoffice/meetings/:meetingId
+ *
+ * Cancels a meeting (soft delete — kept as status: "cancelled" rather than
+ * removed, so it drops off both calendars without losing the record).
+ */
+organizationRouter.delete("/api/backoffice/meetings/:meetingId", async (req, res) => {
+  try {
+    const meetingId = String(req.params.meetingId || "").trim();
+    if (!mongoose.isValidObjectId(meetingId)) {
+      return res.status(400).json({ message: "Identifiant de rendez-vous invalide" });
+    }
+
+    const meeting = await Meeting.findById(meetingId);
+    if (!meeting) {
+      return res.status(404).json({ message: "Rendez-vous introuvable" });
+    }
+
+    if (req.auth?.role !== "admin" && String(meeting.teacherId) !== String(req.auth?.id ?? "")) {
+      return res.status(403).json({ message: "Accès non autorisé à ce rendez-vous" });
+    }
+
+    meeting.status = "cancelled";
+    await meeting.save();
+
+    res.status(200).json({ id: String(meeting._id), status: meeting.status });
+  } catch (error) {
+    console.error("Failed to cancel meeting:", error);
+    res.status(500).json({ message: "Impossible d'annuler le rendez-vous" });
   }
 });
 

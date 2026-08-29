@@ -2615,3 +2615,149 @@ th {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── SHAP factor list, ported from student.css (.pred-factor) so the same
+   prediction reads identically here and on the student's own dashboard ── */
+.student-profile-factors {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.6rem 0 1.4rem;
+}
+
+.pred-factor {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  border: 1px solid transparent;
+}
+
+.pred-factor-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.pred-factor-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.pred-factor-impact {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.pred-factor-high {
+  background: rgba(196, 29, 56, 0.08);
+  border-color: rgba(196, 29, 56, 0.2);
+  color: #a3172b;
+}
+
+.pred-factor-medium {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.22);
+  color: #92600a;
+}
+
+.pred-factor-good {
+  background: rgba(29, 158, 117, 0.1);
+  border-color: rgba(29, 158, 117, 0.22);
+  color: #0f7a55;
+}
+
+.student-profile-factors-empty {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* ── meetings ── */
+.student-profile-meetings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+.student-profile-meetings-head h4 {
+  margin: 0;
+}
+
+.student-profile-meetings {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.6rem 0;
+}
+
+.student-profile-meeting-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  border: 1px solid #e8e8e6;
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+}
+
+.spm-date {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 3.2rem;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.spm-day {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0d1117;
+  line-height: 1;
+}
+
+.spm-month {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.spm-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.spm-mode {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0d1117;
+}
+
+.spm-location {
+  font-size: 0.78rem;
+  color: #6b7280;
+  overflow-wrap: break-word;
+}
+
+.spm-note {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.student-profile-meetings-empty {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
