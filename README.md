@@ -8,7 +8,7 @@ The backend uses Node.js / TypeScript / Express, the frontend is built with nati
 
 * Node.js 20+
 * A MongoDB database (local or Atlas)
-* Python 3.10+ — **required**: Node automatically starts the Python service, and the chatbot/predictions depend on it.
+* Python 3.10+ **required**: Node automatically starts the Python service, and the chatbot/predictions depend on it.
 * LibreOffice
 
 ## Installation
