@@ -2563,10 +2563,29 @@ function readVarkResult() {
   return null;
 }
 
-function renderLearningProfile() {
+// The local key is unscoped and gets wiped on logout / cache-clear / a new
+// device, while the server copy is durable. When localStorage has nothing, pull
+// the server profile (same {dominant,scores,completedAt} shape) and re-cache it,
+// so the dashboard doesn't show the "take the test" CTA to a student who already
+// took it. Mirrors the hydration in mission-apprenant.html and auth-guard.js.
+async function hydrateVarkFromServer() {
+  try {
+    const res = await fetch("/api/student/vark", { headers: { Accept: "application/json" } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const vp = data && data.varkProfile;
+    if (vp && vp.dominant && vp.scores && VARK_DIMS[vp.dominant]) {
+      try { localStorage.setItem(VARK_STORAGE_KEY, JSON.stringify(vp)); } catch (_e) {}
+      return vp;
+    }
+  } catch (_e) { /* offline: fall through to the CTA */ }
+  return null;
+}
+
+async function renderLearningProfile() {
   const card = document.getElementById("dash-learning-profile");
   if (!card) return;
-  const result = readVarkResult();
+  const result = readVarkResult() || await hydrateVarkFromServer();
 
   if (!result) {
     // Not taken yet — prompt to play the Mission Apprenant game + why it helps.
@@ -2592,6 +2611,11 @@ function renderLearningProfile() {
     </div>
     <p class="lp-tip"><span class="lp-tip-label">${tr("dash.studyTip", "Conseil d'étude")}</span>${dom.rec()}</p>`;
   card.hidden = false;
+
+  // If the dashboard payload already rendered the "most attentive" badge while we
+  // were awaiting the server, our innerHTML rewrite above dropped it — re-add it
+  // (renderMostAttentive de-dupes, so this is safe when it wasn't dropped).
+  if (dashData && dashData.mostAttentiveContent) renderMostAttentive(dashData.mostAttentiveContent);
 }
 
 // Behavioural complement to VARK: the content type the student's attention data

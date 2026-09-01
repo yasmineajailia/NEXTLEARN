@@ -16,7 +16,9 @@ router = APIRouter()
 
 class Interaction(BaseModel):
     skillId: str
-    correct: bool
+    # Fraction of the quiz answered correctly on this attempt (0..1). A bool is
+    # coerced by pydantic (True -> 1.0) so a legacy pass/fail payload still works.
+    score: float = 0.0
 
 
 class MasteryBody(BaseModel):
@@ -35,7 +37,7 @@ def mastery_endpoint(body: MasteryBody):
     `source` is "history" (the student has attempted this notion), "prior" (no
     attempt yet) or, after graph refinement, "graph" (inferred from evidenced
     neighbours)."""
-    history = [(it.skillId, it.correct) for it in body.history]
+    history = [(it.skillId, it.score) for it in body.history]
     scores = state.MASTERY_ESTIMATOR.mastery(history, body.targetSkillIds)
     resp = {"mastery": scores, "graphApplied": False}
     if body.applyGraph:

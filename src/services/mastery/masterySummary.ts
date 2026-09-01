@@ -8,16 +8,17 @@
  * looking up one of their students: there was no way to ask "what does THIS
  * student's mastery look like" for anyone but yourself.
  *
- * Behaviour is unchanged from the original: quiz-based and free-text
- * evidence merged by the conservative minimum rule (Section~sec:mastery of
- * the report), recency-weighted, refined across the prerequisite graph.
+ * Quiz-based and free-text evidence are merged by the conservative minimum
+ * rule (Section~sec:mastery of the report), recency-weighted, refined across
+ * the prerequisite graph. The recency-weighted estimate now runs on each
+ * attempt's actual quiz score (0..1), not a pass/fail bit.
  */
 import { User } from "../../models/User";
 import { fetchMastery, type MasteryInteraction } from "./masteryClient";
 import { Recommender } from "../recommendation/skill-recommender";
 import { loadRecommendationGraph } from "../../routes/web/shared";
 
-type StoredAttempt = { subAcquisId?: string; moduleId?: string; correct?: boolean; submittedAt?: Date | string };
+type StoredAttempt = { subAcquisId?: string; moduleId?: string; correct?: boolean; score?: number; submittedAt?: Date | string };
 type StoredTextSignal = { subAcquisId?: string; moduleId?: string; score?: number; submittedAt?: Date | string };
 
 export type MasteryRevisionEntry = {
@@ -61,7 +62,12 @@ export async function computeStudentMasterySummary(identifier: string): Promise<
     .sort((a, b) => new Date(a.submittedAt ?? 0).getTime() - new Date(b.submittedAt ?? 0).getTime());
   const history: MasteryInteraction[] = attempts.map((a) => ({
     skillId: String(a.subAcquisId),
-    correct: Boolean(a.correct)
+    // Actual quiz score as a 0..1 fraction (already computed over gradable
+    // questions only in learning.routes.ts). Legacy rows written before score
+    // capture fall back to the pass/fail bit.
+    score: typeof a.score === "number"
+      ? Math.max(0, Math.min(1, a.score / 100))
+      : (a.correct ? 1 : 0)
   }));
 
   const targetSkillIds = Object.keys(graph);

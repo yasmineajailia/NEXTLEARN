@@ -8,7 +8,9 @@
  */
 import { SHAP_SERVICE_URL } from "../prediction/explain";
 
-export type MasteryInteraction = { skillId: string; correct: boolean };
+// `score` is the fraction of the quiz answered correctly on that attempt (0..1),
+// not a pass/fail bit — the estimator does a recency-weighted mean of these.
+export type MasteryInteraction = { skillId: string; score: number };
 
 export type MasteryEntry = { mastery: number; rawMastery?: number; source: string };
 
