@@ -1,140 +1,114 @@
 # NextLearn
 
-Plateforme e-learning pour le cours de programmation en C (ESPRIT). Les étudiants suivent
-les modules (supports PDF, vidéos, quiz par sous-acquis), et la plateforme ajoute une
-couche d'intelligence par-dessus : prédiction du risque de rattrapage et de la note
-d'examen avec explications SHAP, chatbot ancré dans le contenu du cours (RAG),
-recommandations selon le style d'apprentissage (VARK), et suivi d'attention par webcam
-traité entièrement dans le navigateur.
+An e-learning platform for the C programming course at ESPRIT. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
 
-Backend Node.js / TypeScript / Express, frontend en JavaScript natif, MongoDB, plus un
-service Python (FastAPI) qui héberge les prédictions ML + SHAP, le RAG du chatbot,
-le clustering VARK.
+The backend uses Node.js / TypeScript / Express, the frontend is built with native JavaScript, and MongoDB is used for the database. There is also a Python service (FastAPI) that handles the ML predictions + SHAP, the chatbot RAG, and VARK clustering.
 
-## Prérequis
+## Prerequisites
 
-- Node.js 20+
-- Une base MongoDB (locale ou Atlas)
-- Python 3.10+ — **requis** : Node démarre automatiquement le service
-  Python et le chatbot/les prédictions en dépendent entièrement.
-- LibreOffice
+* Node.js 20+
+* A MongoDB database (local or Atlas)
+* Python 3.10+ — **required**: Node automatically starts the Python service, and the chatbot/predictions depend on it.
+* LibreOffice
 
 ## Installation
 
 ```bash
 npm install
-npm run shap:install   # dépendances Python (une seule fois)
+npm run shap:install   # Python dependencies (only needed once)
 ```
 
-Créer un fichier `.env` à la racine :
+Create a `.env` file at the root of the project:
 
 ```
 MONGODB_URI=mongodb://...
-AUTH_SECRET=...               # signe les sessions JWT ; obligatoire en production
-APP_BASE_URL=http://localhost:3000   # URL PUBLIQUE (liens de réinitialisation de mot de passe)
-# INTERNAL_BASE_URL=http://app:3000  # seulement si le service Python tourne sur un autre hôte
-                                     # (en Docker : le nom du service, pas le domaine public)
+AUTH_SECRET=...               # used to sign JWT sessions; required in production
+APP_BASE_URL=http://localhost:3000   # PUBLIC URL (used in password reset links)
+# INTERNAL_BASE_URL=http://app:3000  # only if the Python service runs on another host
+                                     # (in Docker: the service name, not the public domain)
 
-# Fournisseur LLM/embeddings : Gemini est utilisé en priorité si sa clé est présente,
-# sinon on retombe sur les variables OPENAI_* (compatibles OpenRouter).
+# LLM/embedding provider: Gemini is used first if its key is available,
+# otherwise it falls back to the OPENAI_* variables (compatible with OpenRouter).
 GEMINI_API_KEY=...
-OPENAI_API_KEY=...            # clé OpenRouter (ou OpenAI)
+OPENAI_API_KEY=...            # OpenRouter (or OpenAI) key
 OPENAI_CHAT_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_CHAT_MODEL=meta-llama/llama-3.3-70b-instruct
 OPENAI_EMBEDDING_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_EMBEDDING_MODEL=openai/text-embedding-3-small
 
-SMTP_HOST=...                 # pour la réinitialisation de mot de passe
+SMTP_HOST=...                 # used for password reset
 SMTP_USER=...
 SMTP_PASS=...
 ```
 
-
-## Lancer
+## Running
 
 ```bash
 npm run dev
 ```
 
-Le serveur écoute sur http://localhost:3000. Il démarre lui-même le service Python
-(`ml/shap_service.py`, port 8000) en arrière-plan via `shapSupervisor.ts` — pas besoin
-de le lancer à la main pour le développement courant. Ce service héberge, sous une
-seule appli FastAPI : les modèles Random Forest (`ml/models/rf-risk.joblib`,
-`rf-grade.joblib`), les explications SHAP, le RAG du chatbot (`ml/rag/`, index vectoriel
-ChromaDB), le clustering VARK, l'attention et le suivi de maîtrise (SAKT).
+The server runs on http://localhost:3000. It automatically starts the Python service (`ml/shap_service.py`, port 8000) in the background through `shapSupervisor.ts`, so there is normally no need to start it manually during development. This service contains, under one FastAPI application, the Random Forest models (`ml/models/rf-risk.joblib`, `rf-grade.joblib`), SHAP explanations, the chatbot RAG (`ml/rag/`, ChromaDB vector index), VARK clustering, attention tracking, and mastery tracking (SAKT).
 
-Pour l'itérer séparément (sans redémarrer Node à chaque changement Python) :
+If you want to work on the Python part separately, without having to restart Node every time you make a change:
 
 ```bash
-npm run shap:serve     # FastAPI sur :8000
+npm run shap:serve     # FastAPI on :8000
 ```
 
-Node détecte une instance déjà démarrée et l'adopte plutôt que d'en relancer une
-seconde.
+Node detects an already running instance and uses it instead of starting another one.
 
-Le contenu des leçons (PDF/PPTX) doit être indexé pour que le chatbot ait de la matière :
-un `POST /rag/reindex` est déclenché automatiquement à chaque sauvegarde de curriculum
-côté back-office, mais on peut le forcer manuellement :
+The lesson content (PDF/PPTX) needs to be indexed for the chatbot to have something to work with. A `POST /rag/reindex` is automatically triggered whenever the curriculum is saved from the back-office, but it can also be forced manually:
 
 ```bash
-npm run reindex:rag            # incrémental
-npm run reindex:rag -- --reset # reconstruit l'index vectoriel depuis zéro
+npm run reindex:rag            # incremental
+npm run reindex:rag -- --reset # rebuilds the vector index from scratch
 ```
 
-## Déploiement
+## Deployment
 
 ```bash
 docker compose up --build
 ```
 
-Trois conteneurs : `mongo`, `ml` (FastAPI) et `app` (Node). Les secrets viennent
-du `.env` local (jamais commité) ; le fichier compose fixe lui-même le câblage
-réseau entre conteneurs. Deux volumes persistent les données : `mongo-data`
-(base + fichiers de cours en GridFS) et `chroma-store` (index du chatbot).
+There are three containers: `mongo`, `ml` (FastAPI), and `app` (Node). Secrets come from the local `.env` file (never commit it); the compose file handles the network configuration between the containers itself. Two volumes are used to persist the data: `mongo-data` (database + course files stored in GridFS) and `chroma-store` (chatbot index).
 
-À vérifier avant une mise en production :
+Before deploying to production, check the following:
 
-- `AUTH_SECRET` doit être défini le serveur refuse de démarrer sans lui.
-- `APP_BASE_URL` doit être le domaine public (il part dans les emails de
-  réinitialisation). En Docker, `INTERNAL_BASE_URL` est déjà réglé sur
-  `http://app:3000` : c'est par là que le service Python relit les fichiers de
-  cours pour construire l'index.
-- Mettre un reverse proxy HTTPS devant : les cookies de session sont émis avec
-  `secure` en production et ne seront pas acceptés en HTTP simple.
-- `mongo-data` contient **tous** les fichiers déposés par les enseignants —
-  prévoir une sauvegarde régulière du volume.
+* `AUTH_SECRET` must be defined; the server refuses to start without it.
+* `APP_BASE_URL` must be the public domain since it is used in password reset emails. In Docker, `INTERNAL_BASE_URL` is already set to `http://app:3000`; this is how the Python service accesses the course files to build the index.
+* Put an HTTPS reverse proxy in front of the application: session cookies are issued with `secure` in production and will not work over plain HTTP.
+* `mongo-data` contains **all** files uploaded by teachers, so make sure to regularly back up the volume.
 
-## Scripts utiles
+## Useful Scripts
 
-| Commande | Rôle |
-|---|---|
-| `npm run dev` | Serveur de développement (tsx watch), démarre aussi le service Python |
-| `npm test` | Tests unitaires (Vitest) |
-| `npx tsc --noEmit` | Vérification TypeScript |
-| `npm run build` / `npm start` | Build de production puis lancement (`dist/`) |
-| `npm run train:model` | Réentraîne les modèles Random Forest (risque + note) |
-| `npm run reindex:rag` | (Re)construit l'index vectoriel du chatbot depuis le curriculum persisté |
-| `npm run resync:quizzes` | Pousse les quiz `data/*.normalized.json` vers Mongo (avec sauvegarde) |
-| `npm run seed:login-users` / `seed:modules` / `seed:demo-classes` / `seed:clustering-demo` | Comptes et données de démo |
+| Command                                                                                    | Purpose                                                           |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| `npm run dev`                                                                              | Development server (tsx watch), also starts the Python service    |
+| `npm test`                                                                                 | Unit tests (Vitest)                                               |
+| `npx tsc --noEmit`                                                                         | TypeScript check                                                  |
+| `npm run build` / `npm start`                                                              | Production build and launch (`dist/`)                             |
+| `npm run train:model`                                                                      | Retrains the Random Forest models (risk + grade)                  |
+| `npm run reindex:rag`                                                                      | (Re)builds the chatbot vector index from the persisted curriculum |
+| `npm run resync:quizzes`                                                                   | Pushes `data/*.normalized.json` quizzes to Mongo (with backup)    |
+| `npm run seed:login-users` / `seed:modules` / `seed:demo-classes` / `seed:clustering-demo` | Demo accounts and data                                            |
 
-## Organisation du code
+## Code Structure
 
-```
+```text
 src/
-  server.ts            démarrage Express, montage des routeurs, lance shapSupervisor
-  routes/               auth, pages, web/ (curriculum, quiz, media, prédiction...),
+  server.ts            Express startup, mounts the routers, starts shapSupervisor
+  routes/               auth, pages, web/ (curriculum, quiz, media, prediction...),
                         student/ (chatbot, attention), backoffice/
-  services/             prédiction + SHAP, chatbot (learnerProfile, ragClient),
-                        extraction de contenu, accès aux classes, clustering
-  models/               schémas Mongoose
+  services/             prediction + SHAP, chatbot (learnerProfile, ragClient),
+                        content extraction, class access, clustering
+  models/               Mongoose schemas
 ml/
-  shap_service.py       appli FastAPI unique : monte tous les routers ci-dessous
+  shap_service.py       single FastAPI application: mounts all the routers below
   routers/               risk, clustering, attention, rag_routes, mastery, quiz
-  rag/                   RAG du chatbot : retrieve/generate (LLM), embed, extraction
-                        de contenu (PDF/PPTX/DOCX), store (ChromaDB, sur disque)
-  models/                modèles entraînés (.joblib, SAKT .pt)
-scripts/               entraînement, reindex RAG, seed, resync
-public/                pages étudiant / back-office / auth, thèmes, i18n FR-EN
-data/                  quiz normalisés, calendrier, jeux de données d'entraînement
+  rag/                   chatbot RAG: retrieve/generate (LLM), embed, content
+                         extraction (PDF/PPTX/DOCX), store (ChromaDB, on disk)
+  models/                trained models (.joblib, SAKT .pt)
+scripts/               training, RAG reindexing, seed, resync
+public/                student / back-office / auth pages, themes, i18n FR-EN
+data/                  normalized quizzes, calendar, training datasets
 ```
-
