@@ -9,16 +9,15 @@ traité entièrement dans le navigateur.
 
 Backend Node.js / TypeScript / Express, frontend en JavaScript natif, MongoDB, plus un
 service Python (FastAPI) qui héberge les prédictions ML + SHAP, le RAG du chatbot,
-le clustering VARK, l'analyse d'attention et le suivi de maîtrise (SAKT).
+le clustering VARK.
 
 ## Prérequis
 
 - Node.js 20+
 - Une base MongoDB (locale ou Atlas)
-- Python 3.10+ — **requis**, pas optionnel : Node démarre automatiquement le service
-  Python (voir plus bas) et le chatbot/les prédictions en dépendent entièrement, il
-  n'y a plus de repli en JavaScript pur.
-- LibreOffice (uniquement pour la conversion PPTX vers PDF côté back-office, optionnel)
+- Python 3.10+ — **requis** : Node démarre automatiquement le service
+  Python et le chatbot/les prédictions en dépendent entièrement.
+- LibreOffice
 
 ## Installation
 
@@ -50,10 +49,6 @@ SMTP_USER=...
 SMTP_PASS=...
 ```
 
-Sans clé LLM, le chatbot retombe sur des réponses déterministes construites depuis le
-contenu indexé, et la génération de quiz par IA est indisponible. Le reste fonctionne.
-`AUTH_SECRET` a une valeur de secours en développement (avec un avertissement) mais le
-serveur refuse de démarrer sans elle en production.
 
 ## Lancer
 
@@ -99,7 +94,7 @@ réseau entre conteneurs. Deux volumes persistent les données : `mongo-data`
 
 À vérifier avant une mise en production :
 
-- `AUTH_SECRET` doit être défini — le serveur refuse de démarrer sans lui.
+- `AUTH_SECRET` doit être défini le serveur refuse de démarrer sans lui.
 - `APP_BASE_URL` doit être le domaine public (il part dans les emails de
   réinitialisation). En Docker, `INTERNAL_BASE_URL` est déjà réglé sur
   `http://app:3000` : c'est par là que le service Python relit les fichiers de
@@ -143,14 +138,3 @@ public/                pages étudiant / back-office / auth, thèmes, i18n FR-EN
 data/                  quiz normalisés, calendrier, jeux de données d'entraînement
 ```
 
-## Quelques choix à connaître
-
-- Le suivi d'attention (MediaPipe FaceMesh) tourne à 100 % dans le navigateur : aucune
-  image ne quitte la machine de l'étudiant, seuls des scores dérivés sont envoyés,
-  et uniquement après consentement explicite.
-- Les métriques ML annoncées sont mesurées sur données de test, pas d'entraînement :
-  environ 72-76 % d'exactitude (AUC 0,81-0,84) pour le classifieur de risque, et une
-  erreur moyenne d'environ 0,95 point sur 20 pour la note prédite.
-- L'interface est en français par défaut, avec bascule anglais (bouton FR/EN dans la
-  barre latérale), mode sombre et palette adaptée au daltonisme.
-- Comptes de démonstration : voir les scripts de seed dans `scripts/`.
