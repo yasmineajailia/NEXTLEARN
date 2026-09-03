@@ -126,16 +126,31 @@ authRouter.post("/api/sign-in", loginLimiter, async (req: Request, res: Response
       return res.status(400).json({ error: "Format d'email invalide" });
     }
 
-    const teacherLoginRequested = requestedRole === "enseignant" || requestedRole === "admin";
-    const studentLoginRequested = requestedRole === "étudiant";
+    let accountInfo: { type: "teacher"; account: any } | { type: "student"; account: any } | null = null;
 
-    if (teacherLoginRequested) {
+    if (requestedRole === "enseignant" || requestedRole === "admin") {
       const teacher = await Teacher.findOne({ email });
-
-      if (!teacher) {
-        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      if (teacher) accountInfo = { type: "teacher", account: teacher };
+    } else if (requestedRole === "étudiant") {
+      const user = await User.findOne({ email });
+      if (user) accountInfo = { type: "student", account: user };
+    } else {
+      // requestedRole === "unknown" fallback
+      const teacher = await Teacher.findOne({ email });
+      if (teacher) {
+        accountInfo = { type: "teacher", account: teacher };
+      } else {
+        const user = await User.findOne({ email });
+        if (user) accountInfo = { type: "student", account: user };
       }
+    }
 
+    if (!accountInfo) {
+      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+    }
+
+    if (accountInfo.type === "teacher") {
+      const teacher = accountInfo.account;
       const isPasswordValid = await comparePassword(password, teacher.password);
       if (!isPasswordValid) {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
@@ -143,13 +158,12 @@ authRouter.post("/api/sign-in", loginLimiter, async (req: Request, res: Response
 
       const teacherRole = normalizeRole(teacher.role) === "admin" ? "admin" : "enseignant";
 
-      // The admin tab is admin-only: a regular teacher must use the Enseignant tab.
-      // The reverse is fine — an admin may also sign in via the Enseignant tab.
+      // Enforce admin strictness if explicitly requested
       if (requestedRole === "admin" && teacherRole !== "admin") {
         return res.status(403).json({ error: "Ce compte n'est pas administrateur. Utilisez l'onglet Enseignant." });
       }
 
-      issueSession(res, { id: String(teacher._id), role: teacherRole === "admin" ? "admin" : "enseignant" });
+      issueSession(res, { id: String(teacher._id), role: teacherRole });
       return res.status(200).json({
         message: "Connexion réussie",
         user: {
@@ -160,20 +174,14 @@ authRouter.post("/api/sign-in", loginLimiter, async (req: Request, res: Response
           phone: teacher.phone
         }
       });
-    }
-
-    if (studentLoginRequested) {
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
-      }
-
+    } else {
+      const user = accountInfo.account;
       const isPasswordValid = await user.comparePassword(password);
       if (!isPasswordValid) {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
 
-      // Track login count and last login date for ML features
+      // Track login metrics async
       void StudentProfile.findOneAndUpdate(
         { identifier: user.identifier },
         { $inc: { loginCount: 1 }, $set: { lastLoginDate: new Date() } }
@@ -188,61 +196,10 @@ authRouter.post("/api/sign-in", loginLimiter, async (req: Request, res: Response
           fullName: user.fullName || user.identifier,
           identifier: user.identifier,
           email: user.email,
-          // First-login gate: the client redirects here instead of the dashboard
-          // until the one-shot VARK mini-game has been completed.
           varkCompleted: Boolean(user.varkProfile?.completedAt)
         }
       });
     }
-
-    const teacher = await Teacher.findOne({ email });
-    if (teacher) {
-      const isPasswordValid = await comparePassword(password, teacher.password);
-      if (!isPasswordValid) {
-        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
-      }
-
-      const fallbackTeacherRole = normalizeRole(teacher.role) === "admin" ? "admin" : "enseignant";
-      issueSession(res, { id: String(teacher._id), role: fallbackTeacherRole });
-      return res.status(200).json({
-        message: "Connexion réussie",
-        user: {
-          id: teacher._id,
-          role: fallbackTeacherRole,
-          fullName: teacher.name,
-          email: teacher.email,
-          phone: teacher.phone
-        }
-      });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
-    }
-
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: "Email ou mot de passe incorrect" });
-    }
-
-    // Track login count and last login date for ML features
-    void StudentProfile.findOneAndUpdate(
-      { identifier: user.identifier },
-      { $inc: { loginCount: 1 }, $set: { lastLoginDate: new Date() } }
-    ).catch(() => {});
-
-    issueSession(res, { id: user.identifier, role: "student" });
-    return res.status(200).json({
-      message: "Connexion réussie",
-      user: {
-        id: user._id,
-        role: "étudiant",
-        fullName: user.fullName || user.identifier,
-        identifier: user.identifier,
-        email: user.email
-      }
-    });
   } catch (error) {
     console.error("Sign-in error:", error);
     res.status(500).json({ error: "Erreur lors de la connexion" });
