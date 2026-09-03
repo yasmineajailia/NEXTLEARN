@@ -2,7 +2,7 @@
   <img src="public/images/dark-mode-nextlearn-logo.png" alt="NextLearn Logo" width="300"/>
 </p>
 
-<h3 align="center">AI-Powered Competency-Based Learning Platform</h3>
+<h3 align="center">AI-Powered Learning Platform</h3>
 
 ---
 
