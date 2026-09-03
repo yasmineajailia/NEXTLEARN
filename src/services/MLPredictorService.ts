@@ -1,11 +1,7 @@
 /**
  * MLPredictorService.ts
  *
- * Thin async client for the Python ML service (ml/shap_service.py). Every risk /
- * grade prediction is computed by scikit-learn there and fetched over HTTP —
- * there is NO in-process JS model anymore (the old ml-random-forest path and the
- * js_forest tree mirror were removed). The service is auto-started and kept alive
- * by shapSupervisor.ts, so "not reachable" is an error, not a silent fallback.
+ * Client for the Python ML service (ml/shap_service.py) that computes risk/grade predictions.
  *
  * Features (see PREDICTION_FEATURE_KEYS in prediction/features.ts):
  *   delayWeeks, averageScore, loginFrequency, gapDepth,
@@ -49,9 +45,7 @@ async function postJson<T>(pathname: string, body: unknown): Promise<T> {
 
 class MLPredictorServiceImpl {
   /**
-   * Confirms the Python service is reachable and was trained on the feature list
-   * this code sends. The supervisor is what actually starts the service; this is
-   * a non-fatal health check (predictions still require the service to be up).
+   * Confirms the Python service is reachable and its features match our schema.
    */
   async initialize(): Promise<void> {
     try {
@@ -83,7 +77,6 @@ class MLPredictorServiceImpl {
 
   /**
    * Batch predict: one HTTP round trip for many students. Order is preserved.
-   * Throws if the service is unavailable — callers surface that as a 5xx.
    */
   async predictBatch(list: PredictionFeatures[]): Promise<MlPrediction[]> {
     if (!list.length) return [];
@@ -113,8 +106,7 @@ class MLPredictorServiceImpl {
     return p.predictedGrade;
   }
 
-  /** Live readiness = the shared circuit breaker isn't tripped (kept current by
-   *  the supervisor's health monitor and by every predict/explain call). */
+  /** Live readiness based on SHAP service health */
   isReady(): boolean {
     return !isShapServiceDown();
   }
