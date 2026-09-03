@@ -1,10 +1,13 @@
 # NextLearn 
+
 <img width="878" height="284" alt="NextLearn_LOGO" src="https://github.com/user-attachments/assets/3c619ee7-38e3-43c8-af65-2e882c14b651" />
 
 An e-learning platform for the C programming course at Esprit. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
 
 
 The backend uses Node.js / TypeScript / Express, the frontend is built with native JavaScript, and MongoDB is used for the database. There is also a python service (FastAPI) that handles the AI stuff.
+
+
 <img width="1565" height="821" alt="nextlearn architecture" src="https://github.com/user-attachments/assets/474e1ef2-4942-4e6a-a957-2becfb79bc68" />
 
 
