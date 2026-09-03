@@ -1,7 +1,12 @@
-# NextLearn
-An e-learning platform for the C programming course at ESPRIT. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
+# NextLearn 
+<img width="878" height="284" alt="NextLearn_LOGO" src="https://github.com/user-attachments/assets/3c619ee7-38e3-43c8-af65-2e882c14b651" />
 
-The backend uses Node.js / TypeScript / Express, the frontend is built with native JavaScript, and MongoDB is used for the database. There is also a Python service (FastAPI) that handles the ML predictions + SHAP, the chatbot RAG, and VARK clustering.
+An e-learning platform for the C programming course at Esprit. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
+
+
+The backend uses Node.js / TypeScript / Express, the frontend is built with native JavaScript, and MongoDB is used for the database. There is also a python service (FastAPI) that handles the AI stuff.
+<img width="1565" height="821" alt="nextlearn architecture" src="https://github.com/user-attachments/assets/474e1ef2-4942-4e6a-a957-2becfb79bc68" />
+
 
 ## Prerequisites
 
@@ -29,13 +34,13 @@ APP_BASE_URL=http://localhost:3000   # PUBLIC URL (used in password reset links)
 # LLM/embedding provider: Gemini is used first if its key is available,
 # otherwise it falls back to the OPENAI_* variables (compatible with OpenRouter).
 GEMINI_API_KEY=...
-OPENAI_API_KEY=...            # OpenRouter (or OpenAI) key
+OPENAI_API_KEY=...            #openRouter (or OpenAI) key
 OPENAI_CHAT_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_CHAT_MODEL=meta-llama/llama-3.3-70b-instruct
 OPENAI_EMBEDDING_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_EMBEDDING_MODEL=openai/text-embedding-3-small
 
-SMTP_HOST=...                 # used for password reset
+SMTP_HOST=...                 #email stuff used for password reset
 SMTP_USER=...
 SMTP_PASS=...
 ```
@@ -46,7 +51,7 @@ SMTP_PASS=...
 npm run dev
 ```
 
-The server runs on http://localhost:3000. It automatically starts the Python service (`ml/shap_service.py`, port 8000) in the background through `shapSupervisor.ts`, so there is normally no need to start it manually during development. This service contains, under one FastAPI application, the Random Forest models (`ml/models/rf-risk.joblib`, `rf-grade.joblib`), SHAP explanations, the chatbot RAG (`ml/rag/`, ChromaDB vector index), VARK clustering, attention tracking, and mastery tracking (SAKT).
+The server runs on http://localhost:3000. It automatically starts the Python service (`ml/shap_service.py`, port 8000) in the background through `shapSupervisor.ts`, so there is normally no need to start it manually during development. This service contains, under one FastAPI application, the Random Forest models (`ml/models/rf-risk.joblib`, `rf-grade.joblib`), SHAP explanations, the chatbot RAG (`ml/rag/`, ChromaDB vector index), VARK clustering and attention tracking.
 
 If you want to work on the Python part separately, without having to restart Node every time you make a change:
 
@@ -69,7 +74,7 @@ npm run reindex:rag -- --reset # rebuilds the vector index from scratch
 docker compose up --build
 ```
 
-There are three containers: `mongo`, `ml` (FastAPI), and `app` (Node). Secrets come from the local `.env` file (never commit it); the compose file handles the network configuration between the containers itself. Two volumes are used to persist the data: `mongo-data` (database + course files stored in GridFS) and `chroma-store` (chatbot index).
+There are three containers: `mongo`, `ml` (FastAPI), and `app` (Node). the compose file handles the network configuration between the containers itself. Two volumes are used to persist the data: `mongo-data` (database + course files stored in GridFS) and `chroma-store` (chatbot index).
 
 Before deploying to production, check the following:
 
@@ -88,8 +93,6 @@ Before deploying to production, check the following:
 | `npm run build` / `npm start`                                                              | Production build and launch (`dist/`)                             |
 | `npm run train:model`                                                                      | Retrains the Random Forest models (risk + grade)                  |
 | `npm run reindex:rag`                                                                      | (Re)builds the chatbot vector index from the persisted curriculum |
-| `npm run resync:quizzes`                                                                   | Pushes `data/*.normalized.json` quizzes to Mongo (with backup)    |
-| `npm run seed:login-users` / `seed:modules` / `seed:demo-classes` / `seed:clustering-demo` | Demo accounts and data                                            |
 
 ## Code Structure
 
