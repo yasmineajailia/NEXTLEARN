@@ -1,5 +1,4 @@
 # NextLearn
-
 An e-learning platform for the C programming course at ESPRIT. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
 
 The backend uses Node.js / TypeScript / Express, the frontend is built with native JavaScript, and MongoDB is used for the database. There is also a Python service (FastAPI) that handles the ML predictions + SHAP, the chatbot RAG, and VARK clustering.
