@@ -36,86 +36,7 @@ let dom = null;
 let dashCharts = { overall: null, modules: null, quizzes: null };
 let dashData = null;
 
-// i18n: tr(key, frenchFallback, vars) — English via shared/i18n.js, French inline.
-const tr = (key, fr, vars) => (window.I18N ? window.I18N.t(key, fr, vars) : fr);
-const NUM_LOCALE = window.I18N && window.I18N.isEn ? "en-US" : "fr-FR";
-if (window.I18N) {
-  window.I18N.extend({
-    "view.dashboardEyebrow": "Dashboard",
-    "view.dashboardTitle": "My progress",
-    "view.coursEyebrow": "Courses",
-    "view.coursTitle": "My available courses",
-    "view.calendarEyebrow": "Calendar",
-    "view.calendarTitle": "Activity calendar",
-    "view.messagesEyebrow": "Notifications",
-    "view.messagesTitle": "Notifications",
-    "dash.helloName": "Hello, {name}!",
-    "dash.heroLessons": "Dashboard • {n} lessons",
-    "dash.quoteHigh": "Great work, you are on track to succeed.",
-    "dash.quoteMid": "Keep up the effort, every lesson counts to catch up.",
-    "dash.quoteLow": "Don't give up: talk to your teacher to get help.",
-    "dash.actionIncomplete": "Sub-skill not completed yet",
-    "dash.allDone": "Everything is completed.",
-    "dash.allDoneSub": "You have finished every sub-skill.",
-    "pred.high": "High probability of success. Keep going!",
-    "pred.mid": "Extra effort is recommended.",
-    "pred.low": "Risk of falling behind detected. Talk to your teacher.",
-    "pred.grade": "Predicted exam grade <strong>{grade}/20</strong>",
-    "pred.badgeHigh": "You are on the right track, high probability of success!",
-    "pred.badgeMid": "Extra effort is recommended to catch up.",
-    "pred.badgeLow": "Risk of dropping behind detected: talk to your teacher.",
-    "chat.greeting": "Hello, I am the NextLearn assistant. Ask me about a course concept, a resource or your learning path: I answer from your module content.",
-    "chat.allModules": "All modules",
-    "chat.subAcquis": "Sub-skill",
-    "chat.switchToModules": "Switch to all available modules",
-    "chat.backToSub": "Back to sub-skill {id}",
-    "chat.shrink": "Shrink the assistant",
-    "chat.expand": "Expand the assistant",
-    "chat.cannotProcess": "I could not process your question.",
-    "chat.noAnswer": "I could not find a relevant answer.",
-    "chat.networkError": "A network error occurred. Please try again in a moment.",
-    "sidebar.expand": "Expand the sidebar",
-    "sidebar.collapse2": "Collapse the sidebar",
-    "cal.beforeStart": "Before start",
-    "cal.week": "Week {n}",
-    "notif.progressSubject": "Course progress",
-    "notif.progressBody": "You have completed {done} of {total} lessons ({pct}%).",
-    "notif.progressBodyShort": "You have completed {done} lesson(s) so far.",
-    "notif.autoUpdate": "Automatic update",
-    "notif.quizSubject": "Quiz results",
-    "notif.quizBody": "You passed {n} quizzes, with an average of {avg}.",
-    "notif.meetingSubject": "Meeting scheduled",
-    "notif.meetingBody": "{teacher} scheduled a {mode} meeting on {date} at {time}.",
-    "notif.unlocksSubject": "New sous-acquis this week",
-    "notif.unlocksBody": "{n} sous-acquis are unlocking this week: {names}.",
-    "quiz.notTaken": "Quiz not taken",
-    "mod.done": "Completed",
-    "mod.inProgress": "In progress",
-    "mod.notStarted": "Not started",
-    "next.timeLeft": "Time remaining: {mins} min",
-    "next.timeUnknown": "Estimated time: —",
-    "next.nothingPending": "No pending lessons, congratulations!",
-    "chart.lessonsPct": "Lessons completed (%)",
-    "chart.quizPct": "Quizzes passed (%)",
-    "dash.keyStats": "Key stats",
-    "dash.quizTrend": "Quiz score trend",
-    "dash.weeklyActivity": "Weekly activity",
-    "dash.deadlines": "Upcoming deadlines",
-    "dash.achievements": "Achievements",
-    "dash.noQuizYet": "Take your first quiz to see your progress here.",
-    "dash.scorePct": "Score (%)",
-    "dash.weekTip": "Week of {week}: {q} quizzes, {l} lessons",
-    "ins.perWeek": "wk",
-    "ins.quizAttempts": "Quizzes attempted",
-    "ins.avgScore": "Average score",
-    "ins.pace": "Pace",
-    "ins.logins": "Logins",
-    "dash.less": "Less",
-    "dash.more": "More",
-    "dash.completed": "Completed",
-    "dash.lessonsWord": "lessons completed"
-  });
-}
+// i18n is now handled in modules/i18n.js
 
 function buildDom() {
   return {
@@ -199,48 +120,13 @@ const dashboardCharts = {
 };
 
 let dashboardRefreshTimer = null;
-let chatbotBootstrapped = false;
-let chatbotExpanded = false;
-let chatbotFullscreen = false;
-let chatbotFilteredMode = false;
-let chatbotFilterModuleId = null;
-let chatbotFilterSubAcquisId = null;
-
-function syncChatbotFilterButton() {
-  if (!dom.chatbotFilterBtn) {
-    return;
-  }
-
-  dom.chatbotFilterBtn.setAttribute("aria-pressed", String(chatbotFilteredMode));
-  dom.chatbotFilterBtn.textContent = chatbotFilteredMode ? tr("chat.allModules", "Tous les modules") : tr("chat.subAcquis", "Sous-acquis");
-  dom.chatbotFilterBtn.title = chatbotFilteredMode
-    ? tr("chat.switchToModules", "Passer aux modules disponibles")
-    : tr("chat.backToSub", `Revenir au sous-acquis ${chatbotFilterSubAcquisId || "actuel"}`, { id: chatbotFilterSubAcquisId || "" });
-}
-
-function detectChatbotContext() {
-  const params = new URLSearchParams(window.location.search);
-  const moduleId = params.get("moduleId");
-  const subAcquisId = params.get("subAcquisId");
-  
-  if (moduleId && subAcquisId) {
-    chatbotFilteredMode = true;
-    chatbotFilterModuleId = moduleId;
-    chatbotFilterSubAcquisId = subAcquisId;
-    
-    // Show filter button if it exists
-    if (dom.chatbotFilterBtn) {
-      dom.chatbotFilterBtn.removeAttribute("hidden");
-    }
-
-    syncChatbotFilterButton();
-  }
-}
+// Chatbot state logic moved to modules/chatbot.js
 
 function initStudentApp() {
   dom = buildDom();
+  if (window.initI18n) window.initI18n();
   renderProfile();
-  detectChatbotContext();
+  if (window.detectChatbotContext) window.detectChatbotContext();
   restoreSidebarPreference();
   loadDashboardData();
   void renderModuleList();
@@ -591,134 +477,7 @@ function applyPreferredView() {
   }
 }
 
-function appendChatMessage(role, text) {
-  if (!dom.chatbotThread) {
-    return;
-  }
-
-  const bubble = document.createElement("article");
-  bubble.className = `chatbot-bubble ${role === "user" ? "user" : "bot"}`;
-  bubble.textContent = String(text || "").trim();
-  dom.chatbotThread.appendChild(bubble);
-  dom.chatbotThread.scrollTop = dom.chatbotThread.scrollHeight;
-}
-
-function openChatbotPanel(options = {}) {
-  if (!dom.chatbotPanel) {
-    return;
-  }
-
-  const fullscreen = Boolean(options.fullscreen);
-
-  dom.chatbotPanel.removeAttribute("hidden");
-  dom.chatbotLauncher?.setAttribute("aria-expanded", "true");
-  setChatbotFullscreen(fullscreen);
-  ensureChatbotWelcome();
-  document.body.classList.add("chatbot-open");
-
-  window.requestAnimationFrame(() => {
-    dom.chatbotInput?.focus();
-  });
-}
-
-function closeChatbotPanel() {
-  if (!dom.chatbotPanel) {
-    return;
-  }
-
-  dom.chatbotPanel.setAttribute("hidden", "true");
-  dom.chatbotLauncher?.setAttribute("aria-expanded", "false");
-  setChatbotFullscreen(false);
-  document.body.classList.remove("chatbot-open");
-}
-
-function setChatbotFullscreen(expanded) {
-  chatbotFullscreen = Boolean(expanded);
-  chatbotExpanded = chatbotFullscreen;
-
-  dom.chatbotPanel?.classList.toggle("is-expanded", chatbotExpanded);
-  dom.chatbotPanel?.classList.toggle("is-fullscreen", chatbotFullscreen);
-
-  if (dom.chatbotExpandBtn) {
-    dom.chatbotExpandBtn.textContent = chatbotExpanded ? "⤡" : "⤢";
-    dom.chatbotExpandBtn.setAttribute(
-      "aria-label",
-      chatbotExpanded ? tr("chat.shrink", "Réduire l'assistant") : tr("chat.expand", "Agrandir l'assistant")
-    );
-  }
-}
-
-function toggleChatbotFilterMode() {
-  chatbotFilteredMode = !chatbotFilteredMode;
-
-  syncChatbotFilterButton();
-}
-
-function ensureChatbotWelcome() {
-  if (chatbotBootstrapped || !dom.chatbotThread) {
-    return;
-  }
-
-  appendChatMessage("bot", tr("chat.greeting", "Bonjour, je suis l'assistant NextLearn. Posez-moi une question sur un concept du cours, une ressource ou votre parcours : je vous réponds à partir du contenu de vos modules."));
-
-  chatbotBootstrapped = true;
-}
-
-async function submitChatbotQuestion() {
-  const question = String(dom.chatbotInput?.value || "").trim();
-  if (!question) {
-    return;
-  }
-
-  ensureChatbotWelcome();
-  appendChatMessage("user", question);
-
-  if (dom.chatbotInput) {
-    dom.chatbotInput.value = "";
-  }
-
-  if (dom.chatbotSendBtn instanceof HTMLButtonElement) {
-    dom.chatbotSendBtn.disabled = true;
-  }
-
-  try {
-    const body = {
-      identifier: currentUser?.identifier || "",
-      message: question,
-      lang: window.I18N ? window.I18N.lang : "fr"
-    };
-    
-    if (chatbotFilteredMode && chatbotFilterModuleId && chatbotFilterSubAcquisId) {
-      body.filterToModuleId = chatbotFilterModuleId;
-      body.filterToSubAcquisId = chatbotFilterSubAcquisId;
-    }
-
-    const response = await fetch("/api/student/chatbot", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-
-    const payload = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      appendChatMessage("bot", String(payload?.message || tr("chat.cannotProcess", "Je n'ai pas pu traiter votre question.")));
-      return;
-    }
-
-    appendChatMessage("bot", String(payload?.answer || tr("chat.noAnswer", "Je n'ai pas trouvé de réponse pertinente.")));
-
-    // Keep the conversation focused on the answer; sources remain available in API payload if needed.
-  } catch (_error) {
-    appendChatMessage("bot", tr("chat.networkError", "Une erreur réseau est survenue. Réessayez dans un instant."));
-  } finally {
-    if (dom.chatbotSendBtn instanceof HTMLButtonElement) {
-      dom.chatbotSendBtn.disabled = false;
-    }
-  }
-}
+// Chatbot logic moved to modules/chatbot.js
 
 function renderCalendar(calendarEntries = [], scheduleStartDate = null) {
   if (!Array.isArray(calendarEntries) || calendarEntries.length === 0) {
