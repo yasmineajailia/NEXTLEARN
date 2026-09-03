@@ -2,119 +2,297 @@
   <img src="public/images/dark-mode-nextlearn-logo.png" alt="NextLearn Logo" width="300"/>
 </p>
 
+<h3 align="center">AI-Powered Competency-Based Learning Platform</h3>
 
-An e-learning platform for the C programming course at Esprit. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
+---
 
+## Overview
 
-The backend uses Node.js / TypeScript / Express, the frontend is built with native JavaScript, and MongoDB is used for the database. There is also a python service (FastAPI) that handles the AI stuff.
+**NextLearn** is an intelligent e-learning platform developed for the introductory C programming course at **ESPRIT School of Engineering**.
 
+The platform combines traditional course content such as lessons, videos, and quizzes with AI-powered features designed to help students identify weaknesses, receive personalized support, and monitor their progress.
 
-<img width="1565" height="821" alt="nextlearn architecture" src="https://github.com/user-attachments/assets/474e1ef2-4942-4e6a-a957-2becfb79bc68" />
+### Key Features
 
+*  **Student performance prediction** — predicts exam grades and identifies students who may be at risk of falling behind.
+*  **SHAP explanations** — provides explanations for the factors influencing each prediction.
+*  **RAG-based chatbot** — answers student questions using the course material as its knowledge base.
+*  **Personalized recommendations** — recommends learning content based on the student's learning profile and competency gaps.
+*  **VARK learning profile** — identifies the student's preferred learning style and uses it to personalize recommendations.
+*  **Competency-based mastery tracking** — estimates mastery of individual skills and subskills from quiz performance.
+*  **Attention tracking** — estimates student attention using browser-based webcam processing while keeping the camera data on the user's device.
+*  **AI-assisted quiz generation** — helps teachers create quizzes from course content.
+*  **Competency graph** — represents relationships and prerequisites between C programming skills.
+
+---
+
+## Architecture
+
+<p align="center">
+  <img width="800" alt="NextLearn Architecture" src="https://github.com/user-attachments/assets/474e1ef2-4942-4e6a-a957-2becfb79bc68" />
+</p>
+
+NextLearn is organized into three main parts:
+
+* **Node.js / TypeScript / Express** — handles the main application logic, authentication, API routes, curriculum management, quizzes, and communication with the database and Python service.
+* **Vanilla JavaScript** — provides the student, teacher, and authentication interfaces without relying on a frontend framework.
+* **MongoDB** — stores users, curriculum data, quiz attempts, progress, and uploaded course files.
+* **Python / FastAPI** — provides the machine-learning and AI services, including predictions, SHAP explanations, the RAG chatbot, VARK clustering, mastery calculations, and attention processing.
+
+The application can run locally with Node automatically starting the Python service, or as three Docker containers for deployment.
+
+---
+
+## AI & Data Science Components
+
+NextLearn uses several AI and data science techniques:
+
+### Student Prediction
+
+Two Random Forest models are used to:
+
+* estimate the probability that a student can catch up;
+* predict the student's expected grade.
+
+The models use behavioral and performance-related features such as quiz scores, login frequency, learning gaps, and competency weaknesses.
+
+**SHAP (SHapley Additive exPlanations)** is used to make the predictions more understandable by showing which features contributed to each result.
+
+### RAG Chatbot
+
+The chatbot uses **Retrieval-Augmented Generation (RAG)** to ground its answers in the actual course material.
+
+Course documents such as PDF, PPTX, and DOCX files are extracted, converted into embeddings, and stored in a **ChromaDB** vector index. When a student asks a question, relevant course content is retrieved before generating the answer.
+
+### Personalized Learning
+
+Student progress is connected to a competency graph containing the course skills and their prerequisites.
+
+The platform uses this graph together with mastery estimates and the student's VARK learning profile to recommend relevant content.
+
+### Attention Tracking
+
+Attention tracking is performed directly in the browser using **MediaPipe FaceMesh**.
+
+The webcam is processed locally and only derived attention information is sent to the server. Raw camera images are not uploaded or stored.
+
+---
 
 ## Prerequisites
 
-* Node.js 20+
-* A MongoDB database (local or Atlas)
-* Python 3.10+ **required**: Node automatically starts the Python service, and the chatbot/predictions depend on it.
-* LibreOffice
+Before running NextLearn, make sure you have:
+
+* **Node.js 20+**
+* **Python 3.10+**
+* **MongoDB** (local installation or MongoDB Atlas)
+* **LibreOffice** — required for some document processing operations
+
+Python is required because the Node.js application automatically starts the FastAPI service used by the AI/ML features.
+
+---
 
 ## Installation
 
+Clone the repository and install the Node.js dependencies:
+
 ```bash
 npm install
-npm run shap:install   # Python dependencies (only needed once)
+npm run shap:install   # Install Python dependencies (only needed once)
 ```
 
 Create a `.env` file at the root of the project:
 
-```
+```env
 MONGODB_URI=mongodb://...
-AUTH_SECRET=...               # used to sign JWT sessions; required in production
-APP_BASE_URL=http://localhost:3000   # PUBLIC URL (used in password reset links)
-# INTERNAL_BASE_URL=http://app:3000  # only if the Python service runs on another host
-                                     # (in Docker: the service name, not the public domain)
+AUTH_SECRET=...
+APP_BASE_URL=http://localhost:3000
 
-# LLM/embedding provider: Gemini is used first if its key is available,
-# otherwise it falls back to the OPENAI_* variables (compatible with OpenRouter).
+# Optional internal URL when the Python service runs separately
+# INTERNAL_BASE_URL=http://app:3000
+
+# LLM / embedding provider
 GEMINI_API_KEY=...
-OPENAI_API_KEY=...            #openRouter (or OpenAI) key
+
+# OpenAI-compatible provider (OpenRouter or OpenAI)
+OPENAI_API_KEY=...
 OPENAI_CHAT_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_CHAT_MODEL=meta-llama/llama-3.3-70b-instruct
 OPENAI_EMBEDDING_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_EMBEDDING_MODEL=openai/text-embedding-3-small
 
-SMTP_HOST=...                 #email stuff used for password reset
+# SMTP - used for password reset emails
+SMTP_HOST=...
 SMTP_USER=...
 SMTP_PASS=...
 ```
 
-## Running
+Gemini is used first when a Gemini API key is available. Otherwise, the application falls back to the OpenAI-compatible configuration.
+
+---
+
+## Running Locally
+
+Start the development server with:
 
 ```bash
 npm run dev
 ```
 
-The server runs on http://localhost:3000. It automatically starts the Python service (`ml/shap_service.py`, port 8000) in the background through `shapSupervisor.ts`, so there is normally no need to start it manually during development. This service contains, under one FastAPI application, the Random Forest models (`ml/models/rf-risk.joblib`, `rf-grade.joblib`), SHAP explanations, the chatbot RAG (`ml/rag/`, ChromaDB vector index), VARK clustering and attention tracking.
+The application will be available at:
 
-If you want to work on the Python part separately, without having to restart Node every time you make a change:
-
-```bash
-npm run shap:serve     # FastAPI on :8000
+```text
+http://localhost:3000
 ```
 
-Node detects an already running instance and uses it instead of starting another one.
+The Node.js server automatically starts the FastAPI service on port `8000` through `shapSupervisor.ts`.
 
-The lesson content (PDF/PPTX) needs to be indexed for the chatbot to have something to work with. A `POST /rag/reindex` is automatically triggered whenever the curriculum is saved from the back-office, but it can also be forced manually:
+If a FastAPI instance is already running, Node detects it and reuses it instead of starting another process.
+
+### Running the Python Service Separately
+
+When working on the Python code, you can start the FastAPI service manually:
 
 ```bash
-npm run reindex:rag            # incremental
-npm run reindex:rag -- --reset # rebuilds the vector index from scratch
+npm run shap:serve
 ```
+
+This is useful when developing the ML/RAG components without restarting the Node.js application every time.
+
+---
+
+## RAG Indexing
+
+The chatbot needs an indexed version of the course material before it can answer questions using the curriculum.
+
+Normally, the RAG index is automatically updated when the curriculum is saved from the back-office.
+
+It can also be rebuilt manually:
+
+```bash
+npm run reindex:rag
+```
+
+For a complete rebuild:
+
+```bash
+npm run reindex:rag -- --reset
+```
+
+---
 
 ## Deployment
+
+NextLearn can be deployed using Docker Compose:
 
 ```bash
 docker compose up --build
 ```
 
-There are three containers: `mongo`, `ml` (FastAPI), and `app` (Node). the compose file handles the network configuration between the containers itself. Two volumes are used to persist the data: `mongo-data` (database + course files stored in GridFS) and `chroma-store` (chatbot index).
+The deployment consists of three containers:
 
-Before deploying to production, check the following:
+```text
+mongo  → MongoDB database
+ml     → FastAPI AI/ML service
+app    → Node.js application
+```
 
-* `AUTH_SECRET` must be defined; the server refuses to start without it.
-* `APP_BASE_URL` must be the public domain since it is used in password reset emails. In Docker, `INTERNAL_BASE_URL` is already set to `http://app:3000`; this is how the Python service accesses the course files to build the index.
-* Put an HTTPS reverse proxy in front of the application: session cookies are issued with `secure` in production and will not work over plain HTTP.
-* `mongo-data` contains **all** files uploaded by teachers, so make sure to regularly back up the volume.
+Docker Compose handles the internal network configuration between the services.
 
-## Useful Scripts
+Two persistent volumes are used:
 
-| Command                                                                                    | Purpose                                                           |
-| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `npm run dev`                                                                              | Development server (tsx watch), also starts the Python service    |
-| `npm test`                                                                                 | Unit tests (Vitest)                                               |
-| `npx tsc --noEmit`                                                                         | TypeScript check                                                  |
-| `npm run build` / `npm start`                                                              | Production build and launch (`dist/`)                             |
-| `npm run train:model`                                                                      | Retrains the Random Forest models (risk + grade)                  |
-| `npm run reindex:rag`                                                                      | (Re)builds the chatbot vector index from the persisted curriculum |
+* `mongo-data` — MongoDB data and course files stored through GridFS.
+* `chroma-store` — the chatbot's ChromaDB vector index.
 
-## Code Structure
+### Production Checklist
+
+Before deploying:
+
+* Set a strong `AUTH_SECRET`.
+* Set `APP_BASE_URL` to the public application domain.
+* Configure `INTERNAL_BASE_URL` correctly when using Docker or a separate Python service.
+* Put an HTTPS reverse proxy in front of the application.
+* Regularly back up the `mongo-data` volume because it contains uploaded course files.
+* Keep API keys and SMTP credentials outside the repository.
+
+---
+
+## Project Structure
 
 ```text
 src/
-  server.ts            Express startup, mounts the routers, starts shapSupervisor
-  routes/               auth, pages, web/ (curriculum, quiz, media, prediction...),
-                        student/ (chatbot, attention), backoffice/
-  services/             prediction + SHAP, chatbot (learnerProfile, ragClient),
-                        content extraction, class access, clustering
-  models/               Mongoose schemas
+  server.ts                 Express startup and application entry point
+  routes/                   Authentication, curriculum, quizzes, media,
+                            predictions, chatbot, attention, back-office...
+  services/                 Business logic and integrations
+  models/                   MongoDB / Mongoose schemas
+
 ml/
-  shap_service.py       single FastAPI application: mounts all the routers below
-  routers/               risk, clustering, attention, rag_routes, mastery, quiz
-  rag/                   chatbot RAG: retrieve/generate (LLM), embed, content
-                         extraction (PDF/PPTX/DOCX), store (ChromaDB, on disk)
-  models/                trained models (.joblib, SAKT .pt)
-scripts/               training, RAG reindexing, seed, resync
-public/                student / back-office / auth pages, themes, i18n FR-EN
-data/                  normalized quizzes, calendar, training datasets
+  shap_service.py           FastAPI application
+  routers/                  AI/ML API endpoints
+  rag/                      RAG chatbot and document processing
+  models/                   Trained machine-learning models
+
+scripts/                    Training, indexing, seeding and maintenance scripts
+
+public/
+  student/                  Student interface
+  back-office/              Teacher / administrator interface
+  auth/                     Authentication pages
+  themes/                   UI themes
+  i18n/                     French / English translations
+
+data/
+  normalized quizzes
+  calendar data
+  training datasets
 ```
+
+---
+
+## Useful Scripts
+
+| Command                          | Purpose                                         |
+| -------------------------------- | ----------------------------------------------- |
+| `npm run dev`                    | Start the development server and Python service |
+| `npm test`                       | Run the unit tests                              |
+| `npx tsc --noEmit`               | Check TypeScript types                          |
+| `npm run build`                  | Build the production application                |
+| `npm start`                      | Start the production build                      |
+| `npm run train:model`            | Retrain the Random Forest models                |
+| `npm run reindex:rag`            | Build or update the chatbot vector index        |
+| `npm run reindex:rag -- --reset` | Rebuild the chatbot index from scratch          |
+| `npm run shap:serve`             | Start the FastAPI service separately            |
+
+---
+
+## Privacy & Security
+
+NextLearn includes several measures to protect student data:
+
+* Authentication uses JWT-based sessions stored in **HttpOnly cookies**.
+* Passwords are stored using **bcrypt hashing**.
+* Role-based middleware restricts access to student, teacher, and administrator features.
+* Webcam processing for attention tracking happens directly in the browser.
+* Raw webcam images are not uploaded or stored by the application.
+* API keys and authentication secrets are provided through environment variables rather than being stored in the source code.
+* HTTPS is required in production for secure session cookies.
+
+---
+
+## Development
+
+Before submitting changes, it is recommended to run:
+
+```bash
+npm test
+npx tsc --noEmit
+npm run build
+```
+
+This helps catch failing tests, TypeScript errors, and production build issues before deployment.
+
+---
+
+## License
+
+Add the project's license here if the repository is intended to be publicly distributed.
