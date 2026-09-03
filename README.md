@@ -1,4 +1,6 @@
-<img width="879" height="284" alt="Gemini_Generated_Image_itpol2itpol2itpo-removebg-preview" src="https://github.com/user-attachments/assets/abdaa0b9-d46a-4a12-823f-02e08dc943c7" />
+<p align="center">
+  <img src="public/images/dark-mode-nextlearn-logo.png" alt="NextLearn Logo" width="300"/>
+</p>
 
 
 An e-learning platform for the C programming course at Esprit. Students can go through the different modules (PDF materials, videos, quizzes for each sub-skill), while the platform adds an intelligence layer on top of that: prediction of the risk of needing a retake and the exam grade, with SHAP explanations, a chatbot grounded in the course content (RAG), recommendations based on the student's learning style (VARK), and webcam-based attention tracking processed entirely in the browser.
