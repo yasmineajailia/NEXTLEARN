@@ -14,15 +14,15 @@ The platform combines traditional course content such as lessons, videos, and qu
 
 ### Key Features
 
-*  **Student performance prediction** — predicts exam grades and identifies students who may be at risk of falling behind.
-*  **SHAP explanations** — provides explanations for the factors influencing each prediction.
-*  **RAG-based chatbot** — answers student questions using the course material as its knowledge base.
-*  **Personalized recommendations** — recommends learning content based on the student's learning profile and competency gaps.
-*  **VARK learning profile** — identifies the student's preferred learning style and uses it to personalize recommendations.
-*  **Competency-based mastery tracking** — estimates mastery of individual skills and subskills from quiz performance.
-*  **Attention tracking** — estimates student attention using browser-based webcam processing while keeping the camera data on the user's device.
-*  **AI-assisted quiz generation** — helps teachers create quizzes from course content.
-*  **Competency graph** — represents relationships and prerequisites between C programming skills.
+*  **Student performance prediction** predicts exam grades and identifies students who may be at risk of falling behind.
+*  **SHAP explanations** provides explanations for the factors influencing each prediction.
+*  **RAG-based chatbot** answers student questions using the course material as its knowledge base.
+*  **Personalized recommendations** recommends learning content based on the student's learning profile and competency gaps.
+*  **VARK learning profile** identifies the student's preferred learning style and uses it to personalize recommendations.
+*  **Competency-based mastery tracking** estimates mastery of individual skills and subskills from quiz performance.
+*  **Attention tracking** estimates student attention using browser-based webcam processing while keeping the camera data on the user's device.
+*  **AI-assisted quiz generation** helps teachers create quizzes from course content.
+*  **Competency graph** represents relationships and prerequisites between C programming skills.
 
 ---
 
@@ -34,10 +34,10 @@ The platform combines traditional course content such as lessons, videos, and qu
 
 NextLearn is organized into three main parts:
 
-* **Node.js / TypeScript / Express** — handles the main application logic, authentication, API routes, curriculum management, quizzes, and communication with the database and Python service.
-* **Vanilla JavaScript** — provides the student, teacher, and authentication interfaces without relying on a frontend framework.
-* **MongoDB** — stores users, curriculum data, quiz attempts, progress, and uploaded course files.
-* **Python / FastAPI** — provides the machine-learning and AI services, including predictions, SHAP explanations, the RAG chatbot, VARK clustering, mastery calculations, and attention processing.
+* **Node.js / TypeScript / Express** handles the main application logic, authentication, API routes, curriculum management, quizzes, and communication with the database and Python service.
+* **Vanilla JavaScript** provides the student, teacher, and authentication interfaces without relying on a frontend framework.
+* **MongoDB** stores users, curriculum data, quiz attempts, progress, and uploaded course files.
+* **Python / FastAPI** provides the machine-learning and AI services, including predictions, SHAP explanations, the RAG chatbot, VARK clustering, mastery calculations, and attention processing.
 
 The application can run locally with Node automatically starting the Python service, or as three Docker containers for deployment.
 
@@ -85,7 +85,7 @@ Before running NextLearn, make sure you have:
 * **Node.js 20+**
 * **Python 3.10+**
 * **MongoDB** (local installation or MongoDB Atlas)
-* **LibreOffice** — required for some document processing operations
+* **LibreOffice** required for some document processing operations
 
 Python is required because the Node.js application automatically starts the FastAPI service used by the AI/ML features.
 
@@ -200,8 +200,8 @@ Docker Compose handles the internal network configuration between the services.
 
 Two persistent volumes are used:
 
-* `mongo-data` — MongoDB data and course files stored through GridFS.
-* `chroma-store` — the chatbot's ChromaDB vector index.
+* `mongo-data` MongoDB data and course files stored through GridFS.
+* `chroma-store` the chatbot's ChromaDB vector index.
 
 ### Production Checklist
 
@@ -293,6 +293,4 @@ This helps catch failing tests, TypeScript errors, and production build issues b
 
 ---
 
-## License
 
-Add the project's license here if the repository is intended to be publicly distributed.
