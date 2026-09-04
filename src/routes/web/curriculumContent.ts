@@ -799,10 +799,10 @@ export async function readExternalVideoLinks(subRoot: string): Promise<string[]>
   await scan(subRoot);
 
   if (links.size === 0) {
-    const globalCandidates = [
-      path.join(supportRoot, "video-links.json"),
-      path.join(supportRoot, "video-links.template.json")
-    ];
+    // Only an explicitly configured video-links.json may apply links globally.
+    // The template file contains examples and must never be exposed to every
+    // subskill as real student content.
+    const globalCandidates = [path.join(supportRoot, "video-links.json")];
 
     for (const candidatePath of globalCandidates) {
       try {
@@ -1312,7 +1312,10 @@ export async function readPersistedSubAcquisResources(moduleId: string, subAcqui
         .filter((entry) => {
           const url = String(entry?.url || "");
           const source = String(entry?.source || "").toLowerCase();
-          return url.startsWith("/api/media/") || source === "db" || source === "gridfs";
+          // Teacher-entered links are stored as `external`; keep valid HTTP(S)
+          // URLs alongside videos mirrored into GridFS/media storage.
+          const isExternalUrl = /^https?:\/\//i.test(url);
+          return isExternalUrl || url.startsWith("/api/media/") || source === "db" || source === "gridfs";
         })
         .map((entry) => String(entry.url || "").trim())
         .filter(Boolean)

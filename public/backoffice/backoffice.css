@@ -2417,6 +2417,181 @@ th {
   font-size: 0.85rem;
 }
 
+/* ── Dark mode: teacher/admin backoffice readability ─────────────── */
+:root[data-theme="dark"] .backoffice-shell {
+  background: transparent;
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(207, 31, 46, 0.2), transparent 25%),
+    radial-gradient(circle at 4% 96%, rgba(255, 74, 92, 0.16), transparent 24%),
+    linear-gradient(140deg, #090d13, #121821 58%, #0d1117);
+}
+
+:root[data-theme="dark"] .ambient-a {
+  background: radial-gradient(circle at 35% 35%, rgba(224, 67, 92, 0.22), rgba(224, 67, 92, 0));
+}
+
+:root[data-theme="dark"] .ambient-b {
+  background: radial-gradient(circle at 40% 40%, rgba(255, 95, 109, 0.18), rgba(255, 95, 109, 0));
+}
+
+:root[data-theme="dark"] .backoffice-shell .sidebar,
+:root[data-theme="dark"] .backoffice-shell .main-panel {
+  background: #151a21;
+  border-color: #2b3440;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.42);
+  color: #e6edf3;
+}
+
+:root[data-theme="dark"] .backoffice-shell .sidebar {
+  backdrop-filter: none;
+}
+
+:root[data-theme="dark"] .backoffice-shell .role-box {
+  background: #1b222c;
+  border-color: #303b49;
+}
+
+:root[data-theme="dark"] .backoffice-shell .sidebar h1,
+:root[data-theme="dark"] .backoffice-shell .panel-header h2,
+:root[data-theme="dark"] .backoffice-shell .card h3,
+:root[data-theme="dark"] .backoffice-shell .graph-card h3,
+:root[data-theme="dark"] .backoffice-shell .module-manage-toolbar-title {
+  color: #f2f5f9;
+}
+
+:root[data-theme="dark"] .backoffice-shell .sidebar-subtitle,
+:root[data-theme="dark"] .backoffice-shell label,
+:root[data-theme="dark"] .backoffice-shell .form-hint,
+:root[data-theme="dark"] .backoffice-shell .kpi-card p,
+:root[data-theme="dark"] .backoffice-shell .graph-caption,
+:root[data-theme="dark"] .backoffice-shell .graph-empty,
+:root[data-theme="dark"] .backoffice-shell .insight-meta {
+  color: #aab4c1;
+}
+
+:root[data-theme="dark"] .backoffice-shell #sidebar-user-name,
+:root[data-theme="dark"] .backoffice-shell .graph-value,
+:root[data-theme="dark"] .backoffice-shell .mini-bar-head,
+:root[data-theme="dark"] .backoffice-shell .tree-module,
+:root[data-theme="dark"] .backoffice-shell .ai-qcard-prompt-text {
+  color: #e6edf3;
+}
+
+:root[data-theme="dark"] .backoffice-shell .nav-item,
+:root[data-theme="dark"] .backoffice-shell .content-switch-btn,
+:root[data-theme="dark"] .backoffice-shell .students-switch-btn,
+:root[data-theme="dark"] .backoffice-shell .header-actions button,
+:root[data-theme="dark"] .backoffice-shell .secondary-btn,
+:root[data-theme="dark"] .backoffice-shell .button-row .secondary-btn {
+  background: #1d2530;
+  border-color: #354150;
+  color: #dce3eb;
+}
+
+:root[data-theme="dark"] .backoffice-shell .nav-item:hover,
+:root[data-theme="dark"] .backoffice-shell .content-switch-btn:hover,
+:root[data-theme="dark"] .backoffice-shell .students-switch-btn:hover,
+:root[data-theme="dark"] .backoffice-shell .header-actions button:hover,
+:root[data-theme="dark"] .backoffice-shell .secondary-btn:hover {
+  background: #27313e;
+  border-color: #677689;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .backoffice-shell .nav-item.active,
+:root[data-theme="dark"] .backoffice-shell .content-switch-btn.active,
+:root[data-theme="dark"] .backoffice-shell .students-switch-btn.active {
+  background: linear-gradient(135deg, #e0435c, #a91f3b);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .backoffice-shell input,
+:root[data-theme="dark"] .backoffice-shell select,
+:root[data-theme="dark"] .backoffice-shell textarea,
+:root[data-theme="dark"] .backoffice-shell .ai-quiz-config select {
+  background-color: #1c2430;
+  border-color: #354150;
+  color: #edf2f7;
+}
+
+:root[data-theme="dark"] .backoffice-shell input::placeholder,
+:root[data-theme="dark"] .backoffice-shell textarea::placeholder {
+  color: #7f8b9b;
+}
+
+:root[data-theme="dark"] .backoffice-shell select {
+  background-color: #1c2430;
+  border-color: #354150;
+  color: #edf2f7;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #aeb9c7 50%),
+    linear-gradient(135deg, #aeb9c7 50%, transparent 50%),
+    linear-gradient(to right, #354150, #354150);
+}
+
+:root[data-theme="dark"] .backoffice-shell select:hover {
+  background-color: #252f3c;
+  border-color: #718096;
+}
+
+:root[data-theme="dark"] .backoffice-shell select:focus {
+  background-color: #1c2430;
+  border-color: #ff7180;
+  box-shadow: 0 0 0 3px rgba(224, 67, 92, 0.2);
+}
+
+:root[data-theme="dark"] .backoffice-shell .card,
+:root[data-theme="dark"] .backoffice-shell .kpi-card,
+:root[data-theme="dark"] .backoffice-shell .graph-card,
+:root[data-theme="dark"] .backoffice-shell .insight-card,
+:root[data-theme="dark"] .backoffice-shell .module-table-card,
+:root[data-theme="dark"] .backoffice-shell .content-panel,
+:root[data-theme="dark"] .backoffice-shell .tree-module,
+:root[data-theme="dark"] .backoffice-shell .ai-qcard {
+  background: #171d25;
+  border-color: #2b3440;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"] .backoffice-shell .module-table th,
+:root[data-theme="dark"] .backoffice-shell th {
+  background: #1e2732;
+  color: #f0a0aa;
+}
+
+:root[data-theme="dark"] .backoffice-shell .module-table td,
+:root[data-theme="dark"] .backoffice-shell td,
+:root[data-theme="dark"] .backoffice-shell th {
+  border-color: #2b3440;
+}
+
+:root[data-theme="dark"] .backoffice-shell .insight-row,
+:root[data-theme="dark"] .backoffice-shell .class-gauge,
+:root[data-theme="dark"] .backoffice-shell .struggle-row {
+  border-color: #2b3440;
+}
+
+:root[data-theme="dark"] .backoffice-shell .progress-track,
+:root[data-theme="dark"] .backoffice-shell .mini-bar-track,
+:root[data-theme="dark"] .backoffice-shell .gauge-track,
+:root[data-theme="dark"] .backoffice-shell .struggle-bar-wrap {
+  background: #2b3440;
+}
+
+:root[data-theme="dark"] .backoffice-shell .risk-badge.risk-medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf75;
+}
+
+:root[data-theme="dark"] .backoffice-shell .inactive-badge {
+  background: #27313e;
+  color: #b8c2ce;
+}
+
 /* ── Class overview grid ────────────────────────────────── */
 .classes-grid {
   display: grid;

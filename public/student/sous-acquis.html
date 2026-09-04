@@ -1736,6 +1736,9 @@
         if (exts.some(e=>l.endsWith(e))) return true;
         try {
           const u = new URL(f, window.location.origin);
+          // Google Drive links do not expose a video extension in their path;
+          // they are rendered through the Drive preview iframe instead.
+          if (u.hostname === "drive.google.com" && Boolean(extractGoogleDriveFileId(f))) return true;
           return exts.some(e=>u.pathname.toLowerCase().endsWith(e));
         } catch { return false; }
       }

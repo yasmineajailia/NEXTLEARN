@@ -360,6 +360,142 @@
 :root[data-theme="dark"] .att-consent-modal p { color: #aab3bf; }
 :root[data-theme="dark"] .att-btn-secondary { background: #232a33; color: #cdd6e0; }
 
+/* ---------- Buttons: readable dark surfaces and restrained hover states ---------- */
+:root[data-theme="dark"] .btn--primary,
+:root[data-theme="dark"] .action-cta,
+:root[data-theme="dark"] .action-link,
+:root[data-theme="dark"] .mcard-btn {
+  background: linear-gradient(135deg, #e0435c, #b91f3d);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(224, 67, 92, 0.22);
+}
+
+:root[data-theme="dark"] .btn--primary:hover,
+:root[data-theme="dark"] .action-cta:hover,
+:root[data-theme="dark"] .action-link:hover,
+:root[data-theme="dark"] .mcard-btn:hover {
+  background: linear-gradient(135deg, #f05a70, #d52e4c);
+  box-shadow: 0 12px 26px rgba(224, 67, 92, 0.3);
+}
+
+:root[data-theme="dark"] .btn--secondary,
+:root[data-theme="dark"] .btn--ghost,
+:root[data-theme="dark"] .module-back-btn,
+:root[data-theme="dark"] .course-embed-head button,
+:root[data-theme="dark"] .focus-mode-btn {
+  background: #1c222b;
+  border-color: #3a4351;
+  color: #e6edf3;
+}
+
+:root[data-theme="dark"] .btn--secondary:hover,
+:root[data-theme="dark"] .btn--ghost:hover,
+:root[data-theme="dark"] .module-back-btn:hover,
+:root[data-theme="dark"] .course-embed-head button:hover,
+:root[data-theme="dark"] .focus-mode-btn:hover {
+  background: #252d38;
+  border-color: #ff7180;
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .focus-mode-btn.active {
+  background: #e0435c;
+  border-color: #e0435c;
+  color: #ffffff;
+}
+
+/* ---------- Questionnaire recommendations ---------- */
+:root[data-theme="dark"] .quiz-submit {
+  background: linear-gradient(135deg, #c42d45, #8f2035);
+  box-shadow: 0 8px 20px rgba(196, 45, 69, 0.22);
+}
+
+:root[data-theme="dark"] .quiz-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e0435c, #b91f3d);
+  box-shadow: 0 12px 26px rgba(224, 67, 92, 0.3);
+}
+
+:root[data-theme="dark"] .quiz-submit:disabled {
+  background: #632535;
+  color: #d1aab2;
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .quiz-retry {
+  background: #1c222b;
+  border-color: #3a4351;
+  color: #e6edf3;
+}
+
+:root[data-theme="dark"] .rec-panel.rec-forward {
+  background: rgba(22, 163, 74, 0.12);
+  border-color: rgba(52, 196, 106, 0.35);
+}
+
+:root[data-theme="dark"] .rec-panel.rec-remediation {
+  background: rgba(239, 83, 80, 0.12);
+  border-color: rgba(239, 83, 80, 0.35);
+}
+
+:root[data-theme="dark"] .rec-panel.rec-forward .rec-panel-title {
+  color: #6ee7a0;
+}
+
+:root[data-theme="dark"] .rec-panel.rec-remediation .rec-panel-title {
+  color: #ff9a9a;
+}
+
+:root[data-theme="dark"] .rec-panel-subtitle,
+:root[data-theme="dark"] .rec-empty {
+  color: #aab3bf;
+}
+
+:root[data-theme="dark"] .rec-item {
+  background: #1c222b;
+  border-color: #2f3844;
+}
+
+:root[data-theme="dark"] .rec-item-id {
+  color: #8f9aaa;
+}
+
+:root[data-theme="dark"] .rec-item-title {
+  color: #f2f5f9;
+}
+
+/* ---------- PDF viewer navigation ---------- */
+:root[data-theme="dark"] .viewer-controls button {
+  background: #252d38 !important;
+  border-color: #3a4351 !important;
+  color: #f2f5f9 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme="dark"] .viewer-controls button:hover:not(:disabled) {
+  background: #343e4c !important;
+  border-color: #718096 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .viewer-controls button:disabled {
+  background: #424a55 !important;
+  border-color: #505966 !important;
+  color: #b4bbc5 !important;
+  opacity: 1;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .viewer-page-indicator {
+  color: #aeb7c4 !important;
+}
+
+/* ---------- Self-evaluation badge ---------- */
+:root[data-theme="dark"] .pill-explain {
+  background: rgba(196, 29, 56, 0.14) !important;
+  border-color: #3a4351 !important;
+  color: #ff9aa2 !important;
+}
+
 /* ---------- Mission Apprenant result: strategy card uses a light gradient ---------- */
 :root[data-theme="dark"] .rec-card {
   background: #191f28;
