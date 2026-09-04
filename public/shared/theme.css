@@ -172,17 +172,6 @@
 }
 :root[data-theme="dark"] .student-card #student-name { color: #f2f5f9; }
 
-/* Brand logos are dark-ink PNGs with no white variant, so they disappear on a
-   dark sidebar. Seat them on a compact light plaque so the (red + dark) brand
-   colors stay intact instead of inverting them. */
-:root[data-theme="dark"] .brand-line {
-  width: fit-content;
-  padding: 0.4rem 0.7rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-}
 :root[data-theme="dark"] .brand-line .brand-by { color: #727a8b; }
 
 /* Mission Apprenant banner uses inline light gradient + inline text colours. */
@@ -225,6 +214,62 @@
 :root[data-theme="dark"] .objectives-head h2 { color: #f2f5f9; }
 :root[data-theme="dark"] .objectives-text,
 :root[data-theme="dark"] .sub-next-cta { color: #cdd6e0; }
+
+/* Dashboard module rows must keep their dark surface while hovering. */
+:root[data-theme="dark"] .mod-prog-row,
+:root[data-theme="dark"] .mod-prog-row:hover { background: #161b22; border-color: #2a313c; }
+
+:root[data-theme="dark"] .module-back-btn {
+  background: #1c222b;
+  border-color: #2f3844;
+  color: #ff9aa2;
+}
+:root[data-theme="dark"] .module-back-btn:hover {
+  background: #232a33;
+  border-color: #ff8088;
+}
+
+:root[data-theme="dark"] .sidebar-toggle {
+  background: #1c222b;
+  border-color: #2f3844;
+  color: #cdd6e0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+}
+:root[data-theme="dark"] .sidebar-toggle:hover {
+  background: #232a33;
+  color: #f2f5f9;
+}
+
+/* Explanation card: its detailed styles live in sous-acquis.html and need
+   explicit overrides for the hardcoded light surfaces and text colors. */
+:root[data-theme="dark"] .explain-card {
+  background: #161b22;
+  border-color: #2a313c;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+:root[data-theme="dark"] .explain-head-text h2 { color: #f2f5f9; }
+:root[data-theme="dark"] .explain-hint { color: #cdd6e0; }
+:root[data-theme="dark"] .explain-icon,
+:root[data-theme="dark"] .pill-explain { background: rgba(255, 95, 109, .14); color: #ff9aa2; }
+:root[data-theme="dark"] .explain-toggle {
+  background: #1c222b;
+  border-color: #2a313c;
+  color: #aab3bf;
+}
+:root[data-theme="dark"] .explain-toggle:hover { background: #232a33; color: #ff9aa2; }
+:root[data-theme="dark"] .explain-textarea {
+  background: #1c222b;
+  border-color: #2f3844;
+  color: #e6edf3;
+}
+:root[data-theme="dark"] .explain-textarea:focus { background: #232a33; border-color: #ff5f6d; }
+:root[data-theme="dark"] .explain-textarea::placeholder { color: #8a94a0; }
+:root[data-theme="dark"] .explain-count,
+:root[data-theme="dark"] .explain-group-title,
+:root[data-theme="dark"] .explain-note { color: #9aa4b0; }
+:root[data-theme="dark"] .explain-result { border-top-color: #2f3844; }
+:root[data-theme="dark"] .explain-chip-ok { background: rgba(4, 120, 87, .2); color: #6ee7b7; border-color: rgba(110, 231, 183, .35); }
+:root[data-theme="dark"] .explain-chip-todo { background: rgba(180, 83, 9, .2); color: #fbbf75; border-color: rgba(251, 191, 117, .35); }
 /* Chatbot panel title was #111827 (dark) on the now-dark panel — invisible. */
 :root[data-theme="dark"] .chatbot-panel-title { color: #f2f5f9; }
 :root[data-theme="dark"] .chatbot-suggestion {

@@ -30,8 +30,14 @@
     try { return localStorage.getItem("nextlearnCvd") === "on" ? "on" : "off"; } catch (e) { return "off"; }
   }
   function apply() {
-    root.setAttribute("data-theme", readTheme());
+    var theme = readTheme();
+    root.setAttribute("data-theme", theme);
     root.setAttribute("data-cvd", readCvd());
+    Array.prototype.forEach.call(document.querySelectorAll("[data-dark-src]"), function (logo) {
+      var lightSrc = logo.getAttribute("data-light-src") || logo.src;
+      logo.setAttribute("data-light-src", lightSrc);
+      logo.src = theme === "dark" ? logo.getAttribute("data-dark-src") : lightSrc;
+    });
   }
 
   // Run immediately (script sits in <head> before the body renders).
@@ -64,6 +70,7 @@
   }
 
   function bind() {
+    apply();
     Array.prototype.forEach.call(document.querySelectorAll("[data-theme-toggle]"), function (btn) {
       if (btn.dataset.themeBound) return;
       btn.dataset.themeBound = "1";
